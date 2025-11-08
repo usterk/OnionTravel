@@ -244,27 +244,29 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [x] Navigation works correctly
 - [x] Budget calculator works correctly
 
-### 🔄 Phase 5: Categories (TODO)
-#### Backend
-- [ ] Category CRUD schemas
-- [ ] Category service
-- [ ] Category endpoints
-- [ ] Default categories initialization
+### ✅ Phase 5: Categories (COMPLETED)
+#### Backend ✅
+- [x] Category CRUD schemas
+- [x] Category service
+- [x] Category endpoints
+- [x] Default categories initialization
 
-#### Frontend
-- [ ] Category list component
-- [ ] Category form (with color picker, icon picker)
-- [ ] Category management page
-- [ ] Budget allocation interface (percentage sliders)
+#### Frontend ✅
+- [x] Category list component
+- [x] Category form (with color picker, icon picker)
+- [x] Category management page
+- [x] Budget allocation interface (percentage sliders)
 
-#### E2E Testing
-- [ ] Default categories are created when trip is created
-- [ ] User can view category list for a trip
-- [ ] User can create custom category
-- [ ] User can edit category (name, color, icon, budget %)
-- [ ] User can delete custom category
-- [ ] Budget percentages sum validation works
-- [ ] Category colors display correctly
+#### E2E Testing ✅
+- [x] Default categories are created when trip is created
+- [x] User can view category list for a trip
+- [x] User can create custom category
+- [x] User can edit category (name, color, icon, budget %)
+- [x] User can delete custom category
+- [x] Budget percentages sum validation works
+- [x] Category colors display correctly
+- [x] All 27 category tests passing
+- [x] All 115 backend tests passing
 
 ### 🔄 Phase 6: Expenses (TODO - PRIORITY)
 #### Backend

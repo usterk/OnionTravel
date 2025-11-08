@@ -17,9 +17,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { TripForm } from '@/components/trips/TripForm';
-import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { CategoryList, BudgetAllocation } from '@/components/categories';
+import { getCategoriesWithStats } from '@/lib/categories-api';
+import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
+import type { CategoryWithStats } from '@/types/models';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +34,7 @@ export default function TripDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [categories, setCategories] = useState<CategoryWithStats[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -45,10 +49,20 @@ export default function TripDetail() {
     try {
       const trip = await tripApi.getTrip(tripId);
       setCurrentTrip(trip);
+      loadCategories(tripId);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trip');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadCategories = async (tripId: number) => {
+    try {
+      const categoriesData = await getCategoriesWithStats(tripId);
+      setCategories(categoriesData);
+    } catch (err: any) {
+      console.error('Failed to load categories:', err);
     }
   };
 
@@ -185,6 +199,10 @@ export default function TripDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="categories">
+              <Tag className="h-4 w-4 mr-2" />
+              Categories ({categories.length})
+            </TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-2" />
               Members ({currentTrip.members.length})
@@ -266,6 +284,26 @@ export default function TripDetail() {
                 </dl>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories">
+            <div className="space-y-6">
+              {/* Budget Allocation Visualization */}
+              <BudgetAllocation
+                categories={categories}
+                tripCurrency={currentTrip.currency_code}
+                totalBudget={currentTrip.total_budget}
+              />
+
+              {/* Category List */}
+              <CategoryList
+                categories={categories}
+                tripId={currentTrip.id}
+                onCategoryUpdated={() => loadCategories(currentTrip.id)}
+                showStats={true}
+              />
+            </div>
           </TabsContent>
 
           {/* Members Tab */}
