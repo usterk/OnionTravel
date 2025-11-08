@@ -1,0 +1,174 @@
+import httpx
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Optional, Dict, List
+from sqlalchemy.orm import Session
+from app.config import settings
+from app.models.exchange_rate import ExchangeRate
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class CurrencyService:
+    """Service for handling currency conversion and exchange rates"""
+
+    # Common currencies to fetch rates for
+    BASE_CURRENCIES = ["USD", "EUR", "PLN", "GBP", "THB", "JPY", "AUD", "CAD", "CHF"]
+
+    def __init__(self, db: Session):
+        self.db = db
+        self.api_url = settings.EXCHANGE_RATE_API_URL
+        self.api_key = settings.EXCHANGE_RATE_API_KEY
+
+    async def fetch_rate_from_api(self, from_currency: str, to_currency: str) -> Optional[Decimal]:
+        """Fetch exchange rate from external API"""
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{self.api_url}/{self.api_key}/pair/{from_currency}/{to_currency}"
+                response = await client.get(url, timeout=10.0)
+                response.raise_for_status()
+                data = response.json()
+
+                if data.get("result") == "success":
+                    rate = Decimal(str(data["conversion_rate"]))
+                    logger.info(f"Fetched rate {from_currency}/{to_currency}: {rate}")
+                    return rate
+                else:
+                    logger.error(f"API error: {data.get('error-type')}")
+                    return None
+        except Exception as e:
+            logger.error(f"Failed to fetch rate {from_currency}/{to_currency}: {str(e)}")
+            return None
+
+    def get_rate_from_db(
+        self,
+        from_currency: str,
+        to_currency: str,
+        rate_date: Optional[date] = None
+    ) -> Optional[Decimal]:
+        """Get exchange rate from database"""
+        if rate_date is None:
+            rate_date = date.today()
+
+        rate_record = self.db.query(ExchangeRate).filter(
+            ExchangeRate.from_currency == from_currency,
+            ExchangeRate.to_currency == to_currency,
+            ExchangeRate.date == rate_date
+        ).first()
+
+        if rate_record:
+            return rate_record.rate
+
+        # Try reverse rate (e.g., if USD/EUR not found, try EUR/USD and invert)
+        reverse_rate = self.db.query(ExchangeRate).filter(
+            ExchangeRate.from_currency == to_currency,
+            ExchangeRate.to_currency == from_currency,
+            ExchangeRate.date == rate_date
+        ).first()
+
+        if reverse_rate:
+            return Decimal("1.0") / reverse_rate.rate
+
+        return None
+
+    async def get_rate(
+        self,
+        from_currency: str,
+        to_currency: str,
+        rate_date: Optional[date] = None
+    ) -> Optional[Decimal]:
+        """
+        Get exchange rate. First tries database, then API if not found.
+        """
+        if from_currency == to_currency:
+            return Decimal("1.0")
+
+        # Try to get from database first
+        rate = self.get_rate_from_db(from_currency, to_currency, rate_date)
+        if rate:
+            return rate
+
+        # If not in database and it's today's rate, fetch from API
+        if rate_date is None or rate_date == date.today():
+            rate = await self.fetch_rate_from_api(from_currency, to_currency)
+            if rate:
+                # Save to database
+                self.save_rate(from_currency, to_currency, rate)
+                return rate
+
+        return None
+
+    def save_rate(
+        self,
+        from_currency: str,
+        to_currency: str,
+        rate: Decimal,
+        rate_date: Optional[date] = None
+    ):
+        """Save exchange rate to database"""
+        if rate_date is None:
+            rate_date = date.today()
+
+        # Check if rate already exists
+        existing_rate = self.db.query(ExchangeRate).filter(
+            ExchangeRate.from_currency == from_currency,
+            ExchangeRate.to_currency == to_currency,
+            ExchangeRate.date == rate_date
+        ).first()
+
+        if existing_rate:
+            existing_rate.rate = rate
+            existing_rate.fetched_at = datetime.now()
+        else:
+            new_rate = ExchangeRate(
+                from_currency=from_currency,
+                to_currency=to_currency,
+                rate=rate,
+                date=rate_date
+            )
+            self.db.add(new_rate)
+
+        self.db.commit()
+        logger.info(f"Saved rate {from_currency}/{to_currency}: {rate} for {rate_date}")
+
+    async def convert_amount(
+        self,
+        amount: Decimal,
+        from_currency: str,
+        to_currency: str,
+        rate_date: Optional[date] = None
+    ) -> Optional[Decimal]:
+        """Convert amount from one currency to another"""
+        rate = await self.get_rate(from_currency, to_currency, rate_date)
+        if rate:
+            return amount * rate
+        return None
+
+    def update_all_rates(self):
+        """
+        Update all common currency pairs.
+        This is called by the scheduler daily.
+        """
+        import asyncio
+
+        async def _update():
+            today = date.today()
+            logger.info(f"Updating exchange rates for {today}")
+
+            # Fetch rates for all combinations of base currencies
+            for from_curr in self.BASE_CURRENCIES:
+                for to_curr in self.BASE_CURRENCIES:
+                    if from_curr != to_curr:
+                        rate = await self.fetch_rate_from_api(from_curr, to_curr)
+                        if rate:
+                            self.save_rate(from_curr, to_curr, rate, today)
+                        # Small delay to avoid rate limiting
+                        await asyncio.sleep(0.5)
+
+        # Run async function
+        asyncio.run(_update())
+
+    def get_supported_currencies(self) -> List[str]:
+        """Get list of supported currencies"""
+        return self.BASE_CURRENCIES
