@@ -208,28 +208,41 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [x] Get current user endpoint
 - [x] Auth middleware (get_current_user dependency)
 
-### 🔄 Phase 3: Frontend Authentication (TODO)
-- [ ] Auth store (Zustand or Context)
-- [ ] Login page + form
-- [ ] Register page + form
-- [ ] Protected route wrapper
-- [ ] Token management (localStorage, auto-refresh)
-- [ ] Logout functionality
+### ✅ Phase 3: Frontend Authentication (COMPLETED)
+- [x] Auth store (Zustand with persistence)
+- [x] Login page + form
+- [x] Register page + form
+- [x] Protected route wrapper
+- [x] Token management (localStorage, auto-refresh)
+- [x] Logout functionality
 
-### 🔄 Phase 4: Trip Management (TODO)
-#### Backend
-- [ ] Trip CRUD schemas
-- [ ] Trip service (create, read, update, delete)
-- [ ] Trip endpoints
-- [ ] Multi-user management (add/remove members)
-- [ ] Budget calculation logic (daily ↔ total)
+### ✅ Phase 4: Trip Management (COMPLETED)
+#### Backend ✅ (COMPLETED)
+- [x] Trip CRUD schemas
+- [x] Trip service (create, read, update, delete)
+- [x] Trip endpoints
+- [x] Multi-user management (add/remove members)
+- [x] Budget calculation logic (daily ↔ total)
 
-#### Frontend
-- [ ] Trip list page
-- [ ] Trip creation form (with budget calculator)
-- [ ] Trip detail page
-- [ ] Member management UI
-- [ ] Trip selection/switching
+#### Frontend ✅ (COMPLETED)
+- [x] Trip store (Zustand with persistence)
+- [x] Trip list page
+- [x] Trip creation form (with budget calculator)
+- [x] Trip detail page (with Overview, Members, Settings tabs)
+- [x] Member management UI
+- [x] Trip selection/switching
+- [x] Update trip functionality
+- [x] Delete trip functionality
+
+#### E2E Testing
+- [x] User can view trips list
+- [x] User can create a new trip
+- [x] User can view trip details
+- [x] User can update trip information
+- [x] User can delete a trip
+- [x] User can view trip members
+- [x] Navigation works correctly
+- [x] Budget calculator works correctly
 
 ### 🔄 Phase 5: Categories (TODO)
 #### Backend
@@ -243,6 +256,15 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [ ] Category form (with color picker, icon picker)
 - [ ] Category management page
 - [ ] Budget allocation interface (percentage sliders)
+
+#### E2E Testing
+- [ ] Default categories are created when trip is created
+- [ ] User can view category list for a trip
+- [ ] User can create custom category
+- [ ] User can edit category (name, color, icon, budget %)
+- [ ] User can delete custom category
+- [ ] Budget percentages sum validation works
+- [ ] Category colors display correctly
 
 ### 🔄 Phase 6: Expenses (TODO - PRIORITY)
 #### Backend
@@ -263,6 +285,17 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [ ] Expense detail/edit form
 - [ ] Expense card component
 
+#### E2E Testing
+- [ ] User can add single-day expense via QuickExpenseEntry
+- [ ] User can add multi-day expense (hotel booking)
+- [ ] Currency conversion calculates correctly
+- [ ] User can view expense list
+- [ ] User can filter expenses by date range
+- [ ] User can filter expenses by category
+- [ ] User can edit expense
+- [ ] User can delete expense
+- [ ] Expense statistics update in real-time
+
 ### 🔄 Phase 7: Currency System (TODO)
 #### Backend
 - [x] Exchange rate model
@@ -275,6 +308,14 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [ ] Currency selector component
 - [ ] Real-time conversion display
 - [ ] Manual rate override option
+
+#### E2E Testing
+- [ ] Currency selector displays all supported currencies
+- [ ] Real-time conversion updates when amount changes
+- [ ] Real-time conversion updates when currency changes
+- [ ] Exchange rates are fetched and cached correctly
+- [ ] Manual rate override works
+- [ ] Trip currency is used as base for conversions
 
 ### 🔄 Phase 8: Dashboard & Visualizations (TODO)
 #### Backend
@@ -293,6 +334,16 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [ ] Timeline chart (daily expenses) - Recharts
 - [ ] Category breakdown table
 - [ ] Budget alerts (over-budget warnings)
+
+#### E2E Testing
+- [ ] Budget overview cards display correct totals
+- [ ] Progress bars reflect actual spending
+- [ ] Pie chart shows all categories with expenses
+- [ ] Pie chart colors match category colors
+- [ ] Timeline chart displays daily spending trends
+- [ ] Budget alerts appear when over budget
+- [ ] Dashboard updates after adding expense
+- [ ] Category breakdown shows correct percentages
 
 ### 🔄 Phase 9: Polish & Testing (TODO)
 - [ ] Form validation (react-hook-form + zod)

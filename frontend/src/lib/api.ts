@@ -86,3 +86,76 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Trip API functions
+import type {
+  TripCreate,
+  TripUpdate,
+  TripResponse,
+  TripDetailResponse,
+  TripListResponse,
+  TripUserCreate,
+  TripUserUpdate,
+  TripMemberInfo,
+} from '@/types/trip';
+
+export const tripApi = {
+  // Get all trips for the current user
+  getTrips: async (): Promise<TripResponse[]> => {
+    const response = await api.get<TripResponse[]>('/trips/');
+    return response.data;
+  },
+
+  // Get trip by ID with full details (including members)
+  getTrip: async (tripId: number): Promise<TripDetailResponse> => {
+    const response = await api.get<TripDetailResponse>(`/trips/${tripId}`);
+    return response.data;
+  },
+
+  // Create new trip
+  createTrip: async (trip: TripCreate): Promise<TripResponse> => {
+    const response = await api.post<TripResponse>('/trips/', trip);
+    return response.data;
+  },
+
+  // Update trip
+  updateTrip: async (tripId: number, trip: TripUpdate): Promise<TripResponse> => {
+    const response = await api.put<TripResponse>(`/trips/${tripId}`, trip);
+    return response.data;
+  },
+
+  // Delete trip
+  deleteTrip: async (tripId: number): Promise<void> => {
+    await api.delete(`/trips/${tripId}`);
+  },
+
+  // Get trip members
+  getMembers: async (tripId: number): Promise<TripMemberInfo[]> => {
+    const response = await api.get<TripMemberInfo[]>(`/trips/${tripId}/members`);
+    return response.data;
+  },
+
+  // Add member to trip
+  addMember: async (tripId: number, member: TripUserCreate): Promise<TripMemberInfo> => {
+    const response = await api.post<TripMemberInfo>(`/trips/${tripId}/members`, member);
+    return response.data;
+  },
+
+  // Update member role
+  updateMember: async (
+    tripId: number,
+    userId: number,
+    update: TripUserUpdate
+  ): Promise<TripMemberInfo> => {
+    const response = await api.put<TripMemberInfo>(
+      `/trips/${tripId}/members/${userId}`,
+      update
+    );
+    return response.data;
+  },
+
+  // Remove member from trip
+  removeMember: async (tripId: number, userId: number): Promise<void> => {
+    await api.delete(`/trips/${tripId}/members/${userId}`);
+  },
+};
