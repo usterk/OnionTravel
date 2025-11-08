@@ -84,3 +84,45 @@ def auth_headers(client, test_user_data):
 
     token_data = response.json()
     return {"Authorization": f"Bearer {token_data['access_token']}"}
+
+
+@pytest.fixture
+def test_user_data_2():
+    """Sample user data for second user in tests"""
+    return {
+        "email": "test2@example.com",
+        "username": "testuser2",
+        "password": "TestPass456",
+        "full_name": "Test User 2"
+    }
+
+
+@pytest.fixture
+def auth_headers_user2(client, test_user_data_2):
+    """Login and return authorization headers for second user"""
+    # Register user
+    client.post("/api/v1/auth/register", json=test_user_data_2)
+
+    # Login
+    login_data = {
+        "email": test_user_data_2["email"],
+        "password": test_user_data_2["password"]
+    }
+    response = client.post("/api/v1/auth/login", json=login_data)
+    assert response.status_code == 200
+
+    token_data = response.json()
+    return {"Authorization": f"Bearer {token_data['access_token']}"}
+
+
+@pytest.fixture
+def test_trip_data():
+    """Sample trip data for tests"""
+    return {
+        "name": "Summer Vacation 2025",
+        "description": "Trip to Thailand",
+        "start_date": "2025-07-01",
+        "end_date": "2025-07-14",
+        "currency_code": "THB",
+        "total_budget": 50000.00
+    }
