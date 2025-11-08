@@ -268,35 +268,37 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [x] All 27 category tests passing
 - [x] All 115 backend tests passing
 
-### 🔄 Phase 6: Expenses (TODO - PRIORITY)
-#### Backend
-- [ ] Expense CRUD schemas
-- [ ] Currency service integration
-- [ ] Expense endpoints
-- [ ] Multi-day expense logic
-- [ ] Expense statistics/aggregation
+### ✅ Phase 6: Expenses (COMPLETED)
+#### Backend ✅
+- [x] Expense CRUD schemas
+- [x] Currency service integration
+- [x] Expense endpoints
+- [x] Multi-day expense logic
+- [x] Expense statistics/aggregation
+- [x] 27 comprehensive expense tests
+- [x] All 142 backend tests passing
 
-#### Frontend
-- [ ] **QuickExpenseEntry** component (TOP PRIORITY)
+#### Frontend ✅
+- [x] **QuickExpenseEntry** component (TOP PRIORITY)
   - Large amount input (autofocus)
   - Category icon picker (one-click)
   - Date selector with multi-day range
   - Currency selector
   - Submit with Enter key
-- [ ] Expense list with filters
-- [ ] Expense detail/edit form
-- [ ] Expense card component
+- [x] Expense list with filters
+- [x] Expense detail/edit form
+- [x] Expense card component
 
-#### E2E Testing
-- [ ] User can add single-day expense via QuickExpenseEntry
-- [ ] User can add multi-day expense (hotel booking)
-- [ ] Currency conversion calculates correctly
-- [ ] User can view expense list
-- [ ] User can filter expenses by date range
-- [ ] User can filter expenses by category
-- [ ] User can edit expense
-- [ ] User can delete expense
-- [ ] Expense statistics update in real-time
+#### E2E Testing ✅
+- [x] User can add single-day expense via QuickExpenseEntry
+- [x] User can add multi-day expense (hotel booking)
+- [x] Currency conversion calculates correctly
+- [x] User can view expense list
+- [x] User can filter expenses by date range
+- [x] User can filter expenses by category
+- [x] User can edit expense
+- [x] User can delete expense
+- [x] Expense statistics update in real-time
 
 ### 🔄 Phase 7: Currency System (TODO)
 #### Backend

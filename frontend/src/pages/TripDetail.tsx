@@ -18,11 +18,12 @@ import {
 } from '@/components/ui/dialog';
 import { TripForm } from '@/components/trips/TripForm';
 import { CategoryList, BudgetAllocation } from '@/components/categories';
+import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
 import { getCategoriesWithStats } from '@/lib/categories-api';
-import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
-import type { CategoryWithStats } from '@/types/models';
+import type { CategoryWithStats, Category } from '@/types/models';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export default function TripDetail() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
+  const [plainCategories, setPlainCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -59,8 +61,13 @@ export default function TripDetail() {
 
   const loadCategories = async (tripId: number) => {
     try {
-      const categoriesData = await getCategoriesWithStats(tripId);
+      const { getCategoriesWithStats, getCategories } = await import('@/lib/categories-api');
+      const [categoriesData, plainCategoriesData] = await Promise.all([
+        getCategoriesWithStats(tripId),
+        getCategories(tripId),
+      ]);
       setCategories(categoriesData);
+      setPlainCategories(plainCategoriesData);
     } catch (err: any) {
       console.error('Failed to load categories:', err);
     }
@@ -199,6 +206,10 @@ export default function TripDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="expenses">
+              <Receipt className="h-4 w-4 mr-2" />
+              Expenses
+            </TabsTrigger>
             <TabsTrigger value="categories">
               <Tag className="h-4 w-4 mr-2" />
               Categories ({categories.length})
@@ -284,6 +295,27 @@ export default function TripDetail() {
                 </dl>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Expenses Tab */}
+          <TabsContent value="expenses">
+            <div className="space-y-6">
+              {/* Quick Expense Entry */}
+              <QuickExpenseEntry
+                tripId={currentTrip.id}
+                tripCurrency={currentTrip.currency_code}
+                categories={plainCategories}
+                onExpenseCreated={() => loadCategories(currentTrip.id)}
+              />
+
+              {/* Expense List */}
+              <ExpenseList
+                tripId={currentTrip.id}
+                tripCurrency={currentTrip.currency_code}
+                categories={plainCategories}
+                onExpenseUpdated={() => loadCategories(currentTrip.id)}
+              />
+            </div>
           </TabsContent>
 
           {/* Categories Tab */}
