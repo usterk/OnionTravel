@@ -45,6 +45,13 @@ export interface Category {
   created_at: string;
 }
 
+export interface CategoryWithStats extends Category {
+  total_spent: number;
+  allocated_budget: number;
+  remaining_budget: number;
+  percentage_used: number;
+}
+
 export interface Expense {
   id: number;
   trip_id: number;

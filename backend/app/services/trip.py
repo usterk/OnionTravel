@@ -103,6 +103,10 @@ class TripService:
         self.db.add(trip_user)
         self.db.commit()
 
+        # Initialize default categories for the trip
+        from app.services.category_service import initialize_default_categories
+        initialize_default_categories(self.db, db_trip.id)
+
         return db_trip
 
     def update_trip(self, trip_id: int, trip_data: TripUpdate, user_id: int) -> Trip:
