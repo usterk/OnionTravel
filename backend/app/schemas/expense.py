@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 from typing import Optional
 from decimal import Decimal
+from app.schemas.category import CategoryResponse
 
 
 class ExpenseBase(BaseModel):
@@ -79,6 +80,7 @@ class ExpenseResponse(BaseModel):
     location: Optional[str]
     notes: Optional[str]
     created_at: datetime
+    category: Optional[CategoryResponse] = None
 
     class Config:
         from_attributes = True

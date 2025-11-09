@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import date, timedelta
 from decimal import Decimal
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_
 from fastapi import HTTPException, status
 
@@ -113,7 +113,7 @@ def get_expense_by_id(db: Session, expense_id: int, trip_id: int) -> Optional[Ex
     Returns:
         Expense if found, None otherwise
     """
-    return db.query(Expense).filter(
+    return db.query(Expense).options(joinedload(Expense.category)).filter(
         Expense.id == expense_id,
         Expense.trip_id == trip_id
     ).first()
@@ -147,7 +147,7 @@ def get_expenses_by_trip(
     Returns:
         List of expenses
     """
-    query = db.query(Expense).filter(Expense.trip_id == trip_id)
+    query = db.query(Expense).options(joinedload(Expense.category)).filter(Expense.trip_id == trip_id)
 
     # Apply filters
     if category_id is not None:

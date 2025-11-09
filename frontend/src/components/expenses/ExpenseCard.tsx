@@ -43,20 +43,8 @@ export function ExpenseCard({
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
-          {/* Left side - Icon and Info */}
+          {/* Left side - Info */}
           <div className="flex items-start gap-3 flex-1">
-            {/* Category Icon */}
-            {category && (
-              <div
-                className="flex items-center justify-center w-12 h-12 rounded-lg shrink-0"
-                style={{ backgroundColor: category.color + '20' }}
-              >
-                {IconComponent && (
-                  <IconComponent className="h-6 w-6" style={{ color: category.color }} />
-                )}
-              </div>
-            )}
-
             {/* Expense Details */}
             <div className="flex-1 min-w-0">
               {/* Title and Category */}
