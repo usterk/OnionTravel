@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Category, CategoryWithStats } from '@/types/models';
+import type { Category, CategoryWithStats } from '@/types/models';
 
 export interface CategoryCreate {
   name: string;

@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Expense } from '@/types/models';
+import type { Expense } from '@/types/models';
 
 export interface ExpenseCreate {
   title: string;
