@@ -199,11 +199,6 @@ export default function Dashboard() {
                   </option>
                 ))}
               </select>
-              {selectedTrip && (
-                <Badge style={getTripStatusBadge(selectedTrip).style}>
-                  {getTripStatusBadge(selectedTrip).label}
-                </Badge>
-              )}
               <Button onClick={() => navigate('/trips/new')} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 New Trip
@@ -244,7 +239,12 @@ export default function Dashboard() {
             {/* Page Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">{selectedTrip.name}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-bold text-gray-900">{selectedTrip.name}</h2>
+                  <Badge style={getTripStatusBadge(selectedTrip).style}>
+                    {getTripStatusBadge(selectedTrip).label}
+                  </Badge>
+                </div>
                 <p className="text-gray-600 mt-1">Budget Dashboard</p>
               </div>
               <Button onClick={() => navigate(`/trips/${selectedTrip.id}`)}>
