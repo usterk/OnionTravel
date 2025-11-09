@@ -7,6 +7,7 @@ import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
 
@@ -155,6 +156,27 @@ export default function Dashboard() {
     return <TrendingUp className="h-5 w-5 text-green-500" />;
   };
 
+  const getTripStatusBadge = (trip: typeof trips[0]) => {
+    const status = getTripStatus(trip);
+
+    if (status === 'active') {
+      return {
+        label: 'Active',
+        style: { backgroundColor: '#16a34a', color: 'white' }
+      };
+    } else if (status === 'upcoming') {
+      return {
+        label: 'Upcoming',
+        style: { backgroundColor: '#dbeafe', color: '#1e40af' }
+      };
+    } else {
+      return {
+        label: 'Completed',
+        style: { backgroundColor: '#f3f4f6', color: '#374151' }
+      };
+    }
+  };
+
   return (
     <>
       {/* Main Content */}
@@ -177,6 +199,11 @@ export default function Dashboard() {
                   </option>
                 ))}
               </select>
+              {selectedTrip && (
+                <Badge style={getTripStatusBadge(selectedTrip).style}>
+                  {getTripStatusBadge(selectedTrip).label}
+                </Badge>
+              )}
               <Button onClick={() => navigate('/trips/new')} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 New Trip
