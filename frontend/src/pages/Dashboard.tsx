@@ -8,7 +8,7 @@ import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
