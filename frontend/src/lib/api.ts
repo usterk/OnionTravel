@@ -159,3 +159,74 @@ export const tripApi = {
     await api.delete(`/trips/${tripId}/members/${userId}`);
   },
 };
+
+// Category API functions
+import type { Category } from '@/types/models';
+
+export interface CategoryCreate {
+  name: string;
+  color: string;
+  icon?: string;
+  budget_percentage?: number;
+}
+
+export interface CategoryUpdate {
+  name?: string;
+  color?: string;
+  icon?: string;
+  budget_percentage?: number;
+}
+
+export interface BudgetAllocation {
+  allocations: { [categoryId: number]: number };
+}
+
+export const categoryApi = {
+  // Get all categories for a trip
+  getCategories: async (tripId: number): Promise<Category[]> => {
+    const response = await api.get<Category[]>(`/trips/${tripId}/categories`);
+    return response.data;
+  },
+
+  // Create new category
+  createCategory: async (tripId: number, category: CategoryCreate): Promise<Category> => {
+    const response = await api.post<Category>(`/trips/${tripId}/categories`, category);
+    return response.data;
+  },
+
+  // Update category
+  updateCategory: async (
+    tripId: number,
+    categoryId: number,
+    category: CategoryUpdate
+  ): Promise<Category> => {
+    const response = await api.put<Category>(
+      `/trips/${tripId}/categories/${categoryId}`,
+      category
+    );
+    return response.data;
+  },
+
+  // Delete category
+  deleteCategory: async (tripId: number, categoryId: number): Promise<void> => {
+    await api.delete(`/trips/${tripId}/categories/${categoryId}`);
+  },
+
+  // Initialize default categories
+  initializeDefaultCategories: async (tripId: number): Promise<Category[]> => {
+    const response = await api.post<Category[]>(`/trips/${tripId}/categories/defaults`);
+    return response.data;
+  },
+
+  // Update budget allocations
+  updateBudgetAllocations: async (
+    tripId: number,
+    allocations: BudgetAllocation
+  ): Promise<Category[]> => {
+    const response = await api.put<Category[]>(
+      `/trips/${tripId}/categories/budget-allocations`,
+      allocations
+    );
+    return response.data;
+  },
+};

@@ -17,7 +17,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { TripForm } from '@/components/trips/TripForm';
-import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { CategoriesList } from '@/components/categories/CategoriesList';
+import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
 
@@ -185,6 +186,10 @@ export default function TripDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="categories">
+              <Tag className="h-4 w-4 mr-2" />
+              Categories
+            </TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-2" />
               Members ({currentTrip.members.length})
@@ -264,6 +269,21 @@ export default function TripDetail() {
                     </dd>
                   </div>
                 </dl>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories">
+            <Card>
+              <CardHeader>
+                <CardTitle>Budget Categories</CardTitle>
+                <CardDescription>
+                  Manage how your budget is allocated across different expense categories
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CategoriesList tripId={currentTrip.id} />
               </CardContent>
             </Card>
           </TabsContent>
