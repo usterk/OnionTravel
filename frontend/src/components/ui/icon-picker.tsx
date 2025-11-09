@@ -34,7 +34,6 @@ import {
   Star,
   Bookmark,
   Tag,
-  LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './input';
@@ -46,7 +45,7 @@ export interface IconPickerProps {
 }
 
 // Map of icon names to their components
-export const ICON_MAP: Record<string, LucideIcon> = {
+export const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Home,
   Plane,
   Car,
