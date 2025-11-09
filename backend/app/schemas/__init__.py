@@ -8,6 +8,10 @@ from app.schemas.category import (
     CategoryBase, CategoryCreate, CategoryUpdate, CategoryResponse,
     CategoryBudgetAllocation
 )
+from app.schemas.expense import (
+    ExpenseBase, ExpenseCreate, ExpenseUpdate, ExpenseResponse,
+    ExpenseWithDetails, ExpenseStats
+)
 
 __all__ = [
     # Auth
@@ -20,4 +24,7 @@ __all__ = [
     # Category
     "CategoryBase", "CategoryCreate", "CategoryUpdate", "CategoryResponse",
     "CategoryBudgetAllocation",
+    # Expense
+    "ExpenseBase", "ExpenseCreate", "ExpenseUpdate", "ExpenseResponse",
+    "ExpenseWithDetails", "ExpenseStats",
 ]
