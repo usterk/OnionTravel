@@ -46,6 +46,8 @@ export interface ExpenseStatistics {
   by_category: Array<{
     category_id: number;
     category_name: string;
+    category_color: string;
+    category_icon: string;
     total_spent: number;
   }>;
   by_payment_method: Array<{
@@ -57,6 +59,27 @@ export interface ExpenseStatistics {
     total_spent: number;
   }>;
   average_daily_spending: number;
+}
+
+export interface DailyBudgetStatistics {
+  date: string;
+  daily_budget: number | null;
+  total_spent_today: number;
+  remaining_today: number;
+  percentage_used_today: number;
+  expense_count_today: number;
+  by_category_today: Array<{
+    category_id: number;
+    category_name: string;
+    category_color: string;
+    category_icon: string;
+    total_spent: number;
+    category_daily_budget: number;
+    remaining_budget: number;
+  }>;
+  is_over_budget: boolean;
+  days_into_trip: number;
+  total_days: number;
 }
 
 /**
@@ -126,5 +149,24 @@ export const deleteExpense = async (tripId: number, expenseId: number): Promise<
  */
 export const getExpenseStatistics = async (tripId: number): Promise<ExpenseStatistics> => {
   const response = await api.get<ExpenseStatistics>(`/trips/${tripId}/expenses/stats`);
+  return response.data;
+};
+
+/**
+ * Get daily budget statistics for a specific date
+ * @param tripId - Trip ID
+ * @param targetDate - Optional date in YYYY-MM-DD format (defaults to today)
+ */
+export const getDailyBudgetStatistics = async (
+  tripId: number,
+  targetDate?: string
+): Promise<DailyBudgetStatistics> => {
+  const params = new URLSearchParams();
+  if (targetDate) params.append('target_date', targetDate);
+
+  const queryString = params.toString();
+  const url = `/trips/${tripId}/expenses/daily-stats${queryString ? `?${queryString}` : ''}`;
+
+  const response = await api.get<DailyBudgetStatistics>(url);
   return response.data;
 };

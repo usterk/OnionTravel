@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
+import { getIconComponent } from '@/components/ui/icon-picker';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -252,6 +254,14 @@ export default function Dashboard() {
               </Button>
             </div>
 
+            {/* Daily Budget View */}
+            <DailyBudgetView
+              tripId={selectedTrip.id}
+              currencyCode={selectedTrip.currency_code}
+              tripStartDate={selectedTrip.start_date}
+              tripEndDate={selectedTrip.end_date}
+            />
+
             {/* Budget Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Total Budget */}
@@ -366,18 +376,30 @@ export default function Dashboard() {
                       const percentage = statistics.total_spent > 0
                         ? (category.total_spent / statistics.total_spent) * 100
                         : 0;
+                      const CategoryIcon = getIconComponent(category.category_icon);
                       return (
                         <div key={category.category_id}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">{category.category_name}</span>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="flex items-center justify-center w-6 h-6 rounded"
+                                style={{ backgroundColor: category.category_color + '20' }}
+                              >
+                                <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />
+                              </div>
+                              <span className="text-sm font-medium">{category.category_name}</span>
+                            </div>
                             <span className="text-sm text-gray-600">
                               {formatCurrency(category.total_spent)} ({formatNumber(percentage, 1)}%)
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-blue-500 h-2 rounded-full"
-                              style={{ width: `${percentage}%` }}
+                              className="h-2 rounded-full"
+                              style={{
+                                backgroundColor: category.category_color,
+                                width: `${percentage}%`
+                              }}
                             />
                           </div>
                         </div>

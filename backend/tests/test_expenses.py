@@ -737,3 +737,251 @@ class TestMultiDayExpenses:
         assert response.status_code == 200
         stats = response.json()
         assert stats['total_expenses'] == 1
+
+
+class TestDailyBudgetStatistics:
+    """Test daily budget statistics endpoint"""
+
+    @patch('app.services.expense_service.CurrencyService')
+    def test_get_daily_stats_with_expenses(
+        self, mock_currency_service, client, auth_headers, created_trip, trip_category
+    ):
+        """Test daily budget statistics with expenses"""
+        trip_id = created_trip['id']
+        today = date.today().isoformat()
+
+        # Create some expenses for today
+        mock_service_instance = mock_currency_service.return_value
+        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+
+        expense1_data = {
+            "title": "Lunch",
+            "amount": 250.00,
+            "currency_code": "THB",
+            "category_id": trip_category['id'],
+            "start_date": today,
+            "payment_method": "cash"
+        }
+
+        expense2_data = {
+            "title": "Dinner",
+            "amount": 450.00,
+            "currency_code": "THB",
+            "category_id": trip_category['id'],
+            "start_date": today,
+            "payment_method": "card"
+        }
+
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=expense1_data, headers=auth_headers)
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=expense2_data, headers=auth_headers)
+
+        # Get daily stats
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        stats = response.json()
+
+        assert stats['date'] == today
+        assert stats['expense_count_today'] == 2
+        assert stats['total_spent_today'] == 700.0
+        assert 'daily_budget' in stats
+        assert 'remaining_today' in stats
+        assert 'percentage_used_today' in stats
+        assert 'by_category_today' in stats
+        assert 'is_over_budget' in stats
+        assert 'days_into_trip' in stats
+        assert 'total_days' in stats
+
+    @patch('app.services.expense_service.CurrencyService')
+    def test_get_daily_stats_with_specific_date(
+        self, mock_currency_service, client, auth_headers, created_trip, trip_category
+    ):
+        """Test daily statistics for a specific target date"""
+        trip_id = created_trip['id']
+        target_date = "2025-07-03"
+
+        # Create expense for specific date
+        mock_service_instance = mock_currency_service.return_value
+        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+
+        expense_data = {
+            "title": "Shopping",
+            "amount": 1000.00,
+            "currency_code": "THB",
+            "category_id": trip_category['id'],
+            "start_date": target_date,
+            "payment_method": "card"
+        }
+
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=expense_data, headers=auth_headers)
+
+        # Get daily stats for specific date
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats?target_date={target_date}",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        stats = response.json()
+        assert stats['date'] == target_date
+        assert stats['total_spent_today'] == 1000.0
+
+    @patch('app.services.expense_service.CurrencyService')
+    def test_daily_stats_with_multi_day_expense(
+        self, mock_currency_service, client, auth_headers, created_trip, trip_category
+    ):
+        """Test that multi-day expenses are split across days"""
+        trip_id = created_trip['id']
+        start_date = "2025-07-02"
+        end_date = "2025-07-04"
+
+        # Create 3-day hotel expense
+        mock_service_instance = mock_currency_service.return_value
+        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+
+        hotel_data = {
+            "title": "Hotel",
+            "amount": 3000.00,
+            "currency_code": "THB",
+            "category_id": trip_category['id'],
+            "start_date": start_date,
+            "end_date": end_date,
+            "payment_method": "card"
+        }
+
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=hotel_data, headers=auth_headers)
+
+        # Get daily stats for middle day
+        middle_date = "2025-07-03"
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats?target_date={middle_date}",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        stats = response.json()
+
+        # Hotel should be split: 3000 / 3 days = 1000 per day
+        assert stats['total_spent_today'] == 1000.0
+        # Expense count should be 0 because it didn't start on this day
+        assert stats['expense_count_today'] == 0
+
+    def test_daily_stats_no_expenses(
+        self, client, auth_headers, created_trip
+    ):
+        """Test daily statistics when no expenses exist"""
+        trip_id = created_trip['id']
+
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        stats = response.json()
+
+        assert stats['total_spent_today'] == 0.0
+        assert stats['expense_count_today'] == 0
+        assert len(stats['by_category_today']) == 0
+
+    def test_daily_stats_trip_not_found(
+        self, client, auth_headers
+    ):
+        """Test 404 when trip doesn't exist"""
+        response = client.get(
+            "/api/v1/trips/99999/expenses/daily-stats",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 404
+        assert "Trip not found" in response.json()['detail']
+
+    def test_daily_stats_unauthorized(
+        self, client, auth_headers, test_trip_data
+    ):
+        """Test 401 when not authenticated"""
+        # Create a trip with auth
+        trip_response = client.post("/api/v1/trips/", json=test_trip_data, headers=auth_headers)
+        trip_id = trip_response.json()['id']
+
+        # Try to access without auth
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats"
+        )
+
+        # Should get 401 because no auth provided
+        assert response.status_code in [401, 403]  # Both are acceptable for unauthorized access
+
+    def test_daily_stats_forbidden_for_other_user(
+        self, client, auth_headers, auth_headers_user2, created_trip
+    ):
+        """Test 403 when user doesn't have access to trip"""
+        trip_id = created_trip['id']
+
+        # Try to access with different user's credentials
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats",
+            headers=auth_headers_user2
+        )
+
+        assert response.status_code == 403
+        assert "don't have access" in response.json()['detail']
+
+    @patch('app.services.expense_service.CurrencyService')
+    def test_daily_stats_category_breakdown(
+        self, mock_currency_service, client, auth_headers, created_trip
+    ):
+        """Test that category breakdown is included in daily stats"""
+        trip_id = created_trip['id']
+        today = date.today().isoformat()
+
+        # Get categories
+        categories_response = client.get(
+            f"/api/v1/trips/{trip_id}/categories",
+            headers=auth_headers
+        )
+        categories = categories_response.json()
+        assert len(categories) >= 2
+
+        # Create expenses in different categories
+        mock_service_instance = mock_currency_service.return_value
+        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+
+        expense1 = {
+            "title": "Food",
+            "amount": 300.00,
+            "currency_code": "THB",
+            "category_id": categories[0]['id'],
+            "start_date": today
+        }
+
+        expense2 = {
+            "title": "Transport",
+            "amount": 200.00,
+            "currency_code": "THB",
+            "category_id": categories[1]['id'],
+            "start_date": today
+        }
+
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=expense1, headers=auth_headers)
+        client.post(f"/api/v1/trips/{trip_id}/expenses", json=expense2, headers=auth_headers)
+
+        # Get daily stats
+        response = client.get(
+            f"/api/v1/trips/{trip_id}/expenses/daily-stats",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        stats = response.json()
+
+        # Check category breakdown
+        assert len(stats['by_category_today']) == 2
+
+        # Verify totals
+        category_totals = {cat['category_id']: cat['total_spent'] for cat in stats['by_category_today']}
+        assert category_totals[categories[0]['id']] == 300.0
+        assert category_totals[categories[1]['id']] == 200.0

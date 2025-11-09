@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_
@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from app.models.expense import Expense
 from app.models.trip import Trip
 from app.models.category import Category
-from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseStatistics
+from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseStatistics, DailyBudgetStatistics
 from app.services.currency import CurrencyService
 
 
@@ -321,18 +321,22 @@ def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
     category_stats = db.query(
         Category.id.label("category_id"),
         Category.name.label("category_name"),
+        Category.color.label("category_color"),
+        Category.icon.label("category_icon"),
         func.coalesce(func.sum(Expense.amount_in_trip_currency), 0).label("total_spent")
     ).outerjoin(
         Expense,
         and_(Expense.category_id == Category.id, Expense.trip_id == trip_id)
     ).filter(
         Category.trip_id == trip_id
-    ).group_by(Category.id, Category.name).all()
+    ).group_by(Category.id, Category.name, Category.color, Category.icon).all()
 
     by_category = [
         {
             "category_id": stat.category_id,
             "category_name": stat.category_name,
+            "category_color": stat.category_color,
+            "category_icon": stat.category_icon or "more-horizontal",
             "total_spent": float(stat.total_spent)
         }
         for stat in category_stats
@@ -390,4 +394,124 @@ def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
         by_payment_method=by_payment_method,
         daily_spending=by_date,
         average_daily_spending=average_daily
+    )
+
+
+def get_daily_budget_statistics(
+    db: Session,
+    trip_id: int,
+    target_date: Optional[date] = None
+) -> DailyBudgetStatistics:
+    """
+    Get budget statistics for a specific day.
+
+    Args:
+        db: Database session
+        trip_id: Trip ID
+        target_date: Date to get stats for (defaults to today)
+
+    Returns:
+        Daily budget statistics including spending, remaining, and category breakdown
+    """
+    # Use today if no date specified
+    if target_date is None:
+        target_date = datetime.now().date()
+
+    # Get trip and daily budget
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trip not found"
+        )
+
+    daily_budget = float(trip.daily_budget or 0)
+
+    # Calculate days into trip
+    days_into_trip = (target_date - trip.start_date).days + 1
+    total_days = (trip.end_date - trip.start_date).days + 1
+
+    # Query expenses for target_date
+    # Include expenses where:
+    # - Single-day expense: start_date = target_date AND end_date IS NULL
+    # - Multi-day expense: start_date <= target_date <= end_date
+    expenses_today = db.query(Expense).options(joinedload(Expense.category)).filter(
+        Expense.trip_id == trip_id,
+        or_(
+            # Single-day expense on target_date
+            and_(Expense.end_date.is_(None), Expense.start_date == target_date),
+            # Multi-day expense that includes target_date
+            and_(
+                Expense.end_date.isnot(None),
+                Expense.start_date <= target_date,
+                Expense.end_date >= target_date
+            )
+        )
+    ).all()
+
+    # Get all categories for this trip with their budget percentages
+    all_categories = db.query(Category).filter(Category.trip_id == trip_id).all()
+
+    # Initialize category spending with budgets
+    category_spending = {}
+    for cat in all_categories:
+        category_daily_budget = 0.0
+        if daily_budget > 0 and cat.budget_percentage:
+            category_daily_budget = daily_budget * (float(cat.budget_percentage) / 100.0)
+
+        category_spending[cat.id] = {
+            "category_id": cat.id,
+            "category_name": cat.name,
+            "category_color": cat.color,
+            "category_icon": cat.icon or "more-horizontal",
+            "total_spent": 0.0,
+            "category_daily_budget": category_daily_budget,
+            "remaining_budget": category_daily_budget
+        }
+
+    # For multi-day expenses, split the cost across days
+    total_spent_today = 0.0
+    expense_count = 0
+
+    for expense in expenses_today:
+        if expense.end_date is None or expense.start_date == expense.end_date:
+            # Single-day expense
+            daily_amount = float(expense.amount_in_trip_currency)
+            # Only count as expense if it started today
+            if expense.start_date == target_date:
+                expense_count += 1
+        else:
+            # Multi-day expense - split evenly across days
+            days_span = (expense.end_date - expense.start_date).days + 1
+            daily_amount = float(expense.amount_in_trip_currency) / days_span
+            # Only count as expense if it started today
+            if expense.start_date == target_date:
+                expense_count += 1
+
+        total_spent_today += daily_amount
+
+        # Track category spending
+        category_id = expense.category_id
+        if category_id in category_spending:
+            category_spending[category_id]["total_spent"] += daily_amount
+            category_spending[category_id]["remaining_budget"] = (
+                category_spending[category_id]["category_daily_budget"] -
+                category_spending[category_id]["total_spent"]
+            )
+
+    # Calculate remaining and percentage
+    remaining_today = daily_budget - total_spent_today
+    percentage_used = (total_spent_today / daily_budget * 100) if daily_budget > 0 else 0
+
+    return DailyBudgetStatistics(
+        date=target_date,
+        daily_budget=daily_budget if daily_budget > 0 else None,
+        total_spent_today=total_spent_today,
+        remaining_today=remaining_today,
+        percentage_used_today=min(percentage_used, 999.9),
+        expense_count_today=expense_count,
+        by_category_today=list(category_spending.values()),
+        is_over_budget=total_spent_today > daily_budget if daily_budget > 0 else False,
+        days_into_trip=days_into_trip,
+        total_days=total_days
     )
