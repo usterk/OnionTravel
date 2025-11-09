@@ -9,6 +9,44 @@ from app.models.user import User
 from app.schemas.trip import TripCreate, TripUpdate, TripUserCreate, TripUserUpdate
 
 
+def verify_trip_access(trip_id: int, user_id: int, db: Session, required_role: Optional[str] = None):
+    """
+    Verify that a user has access to a trip with optional role requirement.
+
+    Args:
+        trip_id: ID of the trip
+        user_id: ID of the user
+        db: Database session
+        required_role: Optional role requirement ('admin', 'owner'). If None, just checks access.
+
+    Raises:
+        HTTPException: If user doesn't have access or required role
+    """
+    trip_user = (
+        db.query(TripUser)
+        .filter(TripUser.trip_id == trip_id, TripUser.user_id == user_id)
+        .first()
+    )
+
+    if not trip_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trip not found or you don't have access to it"
+        )
+
+    if required_role:
+        if required_role == "admin" and trip_user.role not in ["owner", "admin"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to perform this action"
+            )
+        elif required_role == "owner" and trip_user.role != "owner":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only trip owner can perform this action"
+            )
+
+
 class TripService:
     """Service for trip management operations"""
 
@@ -102,6 +140,10 @@ class TripService:
         )
         self.db.add(trip_user)
         self.db.commit()
+
+        # Create default categories for the trip
+        from app.services.category import create_default_categories
+        create_default_categories(db_trip.id, self.db)
 
         return db_trip
 
