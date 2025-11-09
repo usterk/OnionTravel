@@ -90,6 +90,34 @@ async def create_expense(
 
 
 @router.get(
+    "/trips/{trip_id}/expenses/stats",
+    response_model=ExpenseStats,
+    summary="Get expense statistics"
+)
+def get_expense_stats(
+    trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get expense statistics for a trip.
+
+    Returns:
+    - Total expenses count
+    - Total amount spent (in trip currency)
+    - Spending by category
+    - Spending by currency
+    - Daily average
+    - Expenses by date
+    """
+    # Verify user has access to the trip
+    verify_trip_access(trip_id, current_user.id, db)
+
+    stats = expense_service.get_expense_statistics(trip_id, db)
+    return stats
+
+
+@router.get(
     "/trips/{trip_id}/expenses/{expense_id}",
     response_model=ExpenseResponse,
     summary="Get expense details"
@@ -208,31 +236,3 @@ def delete_expense(
 
     expense_service.delete_expense(expense_id, trip_id, db)
     return None
-
-
-@router.get(
-    "/trips/{trip_id}/expenses/stats",
-    response_model=ExpenseStats,
-    summary="Get expense statistics"
-)
-def get_expense_stats(
-    trip_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get expense statistics for a trip.
-
-    Returns:
-    - Total expenses count
-    - Total amount spent (in trip currency)
-    - Spending by category
-    - Spending by currency
-    - Daily average
-    - Expenses by date
-    """
-    # Verify user has access to the trip
-    verify_trip_access(trip_id, current_user.id, db)
-
-    stats = expense_service.get_expense_statistics(trip_id, db)
-    return stats

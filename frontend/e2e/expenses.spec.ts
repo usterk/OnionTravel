@@ -11,10 +11,11 @@ test.describe('Expense Management E2E Tests (API)', () => {
   let categoryId: number;
 
   test.beforeEach(async ({ page, request }) => {
-    // Generate unique credentials
+    // Generate unique credentials with timestamp and random string
     const timestamp = Date.now();
-    testEmail = `exptest-${timestamp}@example.com`;
-    testUsername = `testuser${timestamp}`;
+    const random = Math.random().toString(36).substring(2, 8);
+    testEmail = `exptest-${timestamp}-${random}@example.com`;
+    testUsername = `testuser${timestamp}${random}`;
 
     // Register user
     const registerResponse = await request.post(`${API_BASE_URL}/auth/register`, {
@@ -92,7 +93,7 @@ test.describe('Expense Management E2E Tests (API)', () => {
 
     expect(expense).toHaveProperty('id');
     expect(expense.title).toBe(expenseData.title);
-    expect(expense.amount).toBe(expenseData.amount.toString());
+    expect(parseFloat(expense.amount)).toBe(expenseData.amount);
     expect(expense.currency_code).toBe('USD');
     expect(expense.start_date).toBe(expenseData.start_date);
     expect(expense.end_date).toBeNull();
@@ -293,7 +294,7 @@ test.describe('Expense Management E2E Tests (API)', () => {
     const updated = await updateResponse.json();
 
     expect(updated.title).toBe('Updated Title');
-    expect(updated.amount).toBe('150');
+    expect(parseFloat(updated.amount)).toBe(150);
   });
 
   test('User can delete expense', async ({ request }) => {
