@@ -69,8 +69,8 @@ export default function Dashboard() {
     }
   };
 
-  const formatCurrency = (amount: number | undefined | null) => {
-    const value = amount ?? 0;
+  const formatCurrency = (amount: number | string | undefined | null) => {
+    const value = Number(amount ?? 0);
     if (!selectedTrip) return value.toFixed(2);
     return `${value.toFixed(2)} ${selectedTrip.currency_code}`;
   };
