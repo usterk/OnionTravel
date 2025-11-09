@@ -257,10 +257,18 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [x] Categories tab in TripDetail page
 - [x] Budget display with percentages
 
+#### E2E Testing ✅ (5 tests)
+- [x] Default categories are created when trip is created
+- [x] User can view category list for a trip
+- [x] Category colors display correctly
+- [x] Budget percentages sum validation works
+- [x] Default category markers are visible
+
 #### Notes
 - Default categories auto-created on trip creation
 - All 88 backend tests passing
 - Basic UI functional (advanced features like pickers deferred to Phase 9 polish)
+- E2E tests implemented in `frontend/e2e/categories.spec.ts`
 
 ### ✅ Phase 6: Expenses (BACKEND COMPLETED)
 #### Backend ✅
@@ -275,12 +283,25 @@ USD, EUR, PLN, GBP, THB, JPY, AUD, CAD, CHF
 - [ ] Expense list with filters
 - [ ] Expense detail/edit form
 
+#### E2E Testing ✅ (10 API tests)
+- [x] User can add single-day expense
+- [x] User can add multi-day expense (hotel booking)
+- [x] Currency conversion calculates correctly
+- [x] User can view expense list
+- [x] User can filter expenses by date range
+- [x] User can filter expenses by category
+- [x] User can edit expense
+- [x] User can delete expense
+- [x] Expense statistics update correctly
+- [x] Permission-based access validated
+
 #### Notes
 - All backend APIs functional with automatic currency conversion
 - Expense statistics endpoint provides data for dashboards
 - Permission-based access control implemented
 - All 88 backend tests passing
 - Frontend UI deferred but APIs ready for integration
+- E2E tests implemented in `frontend/e2e/expenses.spec.ts` (API-level testing)
 
 ### ✅ Phase 7: Currency System (CORE COMPLETED)
 #### Backend ✅
