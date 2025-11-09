@@ -37,9 +37,38 @@ export default function Dashboard() {
       const data = await tripApi.getTrips();
       setTrips(data);
 
-      // If there's at least one trip and no trip selected, select the first one
+      // If there's at least one trip and no trip selected, select the best match
       if (data.length > 0 && !selectedTrip) {
-        setSelectedTrip(data[0]);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
+
+        // Find currently active trip (today is between start_date and end_date)
+        const activeTrip = data.find((trip) => {
+          const startDate = new Date(trip.start_date);
+          const endDate = new Date(trip.end_date);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          return today >= startDate && today <= endDate;
+        });
+
+        if (activeTrip) {
+          setSelectedTrip(activeTrip);
+        } else {
+          // If no active trip, find the nearest upcoming trip
+          const upcomingTrips = data.filter((trip) => {
+            const startDate = new Date(trip.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            return startDate > today;
+          }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+          if (upcomingTrips.length > 0) {
+            setSelectedTrip(upcomingTrips[0]);
+          } else {
+            // If no upcoming trips, select the most recent past trip
+            const pastTrips = data.sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
+            setSelectedTrip(pastTrips[0]);
+          }
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trips');
