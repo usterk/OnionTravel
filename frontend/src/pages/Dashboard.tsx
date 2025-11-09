@@ -29,21 +29,63 @@ export default function Dashboard() {
     }
   }, [selectedTrip]);
 
+  const getTripStatus = (trip: typeof trips[0]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(trip.start_date);
+    const endDate = new Date(trip.end_date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (today >= startDate && today <= endDate) {
+      return 'active';
+    } else if (today < startDate) {
+      return 'upcoming';
+    } else {
+      return 'completed';
+    }
+  };
+
+  const sortTrips = (tripsData: typeof trips) => {
+    return [...tripsData].sort((a, b) => {
+      const statusA = getTripStatus(a);
+      const statusB = getTripStatus(b);
+
+      // Priority order: active > upcoming > completed
+      const statusPriority = { active: 0, upcoming: 1, completed: 2 };
+
+      if (statusA !== statusB) {
+        return statusPriority[statusA] - statusPriority[statusB];
+      }
+
+      // Within same status, sort by date
+      if (statusA === 'active' || statusA === 'upcoming') {
+        // Sort by start_date ascending (nearest first)
+        return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      } else {
+        // For completed, sort by end_date descending (most recent first)
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+      }
+    });
+  };
+
   const loadTrips = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const data = await tripApi.getTrips();
-      setTrips(data);
+      const sortedTrips = sortTrips(data);
+      setTrips(sortedTrips);
 
       // If there's at least one trip and no trip selected, select the best match
-      if (data.length > 0 && !selectedTrip) {
+      if (sortedTrips.length > 0 && !selectedTrip) {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
 
         // Find currently active trip (today is between start_date and end_date)
-        const activeTrip = data.find((trip) => {
+        const activeTrip = sortedTrips.find((trip) => {
           const startDate = new Date(trip.start_date);
           const endDate = new Date(trip.end_date);
           startDate.setHours(0, 0, 0, 0);
@@ -55,7 +97,7 @@ export default function Dashboard() {
           setSelectedTrip(activeTrip);
         } else {
           // If no active trip, find the nearest upcoming trip
-          const upcomingTrips = data.filter((trip) => {
+          const upcomingTrips = sortedTrips.filter((trip) => {
             const startDate = new Date(trip.start_date);
             startDate.setHours(0, 0, 0, 0);
             return startDate > today;
@@ -65,7 +107,7 @@ export default function Dashboard() {
             setSelectedTrip(upcomingTrips[0]);
           } else {
             // If no upcoming trips, select the most recent past trip
-            const pastTrips = data.sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
+            const pastTrips = sortedTrips.sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
             setSelectedTrip(pastTrips[0]);
           }
         }
