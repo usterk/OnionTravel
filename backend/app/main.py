@@ -52,8 +52,9 @@ async def health():
 
 
 # Import and include routers
-from app.api.v1 import auth, trips, categories, expenses, currency
+from app.api.v1 import auth, trips, categories, expenses, currency, users
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(trips.router, prefix="/api/v1/trips", tags=["trips"])
 app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
 app.include_router(expenses.router, prefix="/api/v1", tags=["expenses"])

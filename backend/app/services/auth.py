@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import HTTPException, status
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 from app.schemas.auth import Token
 from app.utils.security import (
     verify_password,
@@ -9,7 +10,7 @@ from app.utils.security import (
     create_access_token,
     create_refresh_token,
 )
-from typing import Optional
+from typing import Optional, List
 
 
 class AuthService:
@@ -76,4 +77,58 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer"
+        )
+
+    def update_user(self, user_id: int, user_data: UserUpdate) -> User:
+        """Update user profile"""
+        user = self.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Check if new email is already taken by another user
+        if user_data.email and user_data.email != user.email:
+            existing_user = self.get_user_by_email(user_data.email)
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
+
+        # Check if new username is already taken by another user
+        if user_data.username and user_data.username != user.username:
+            existing_user = self.get_user_by_username(user_data.username)
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Username already taken"
+                )
+
+        # Update fields
+        update_data = user_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(user, field, value)
+
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def search_users(self, query: str, limit: int = 20) -> List[User]:
+        """Search users by username or email"""
+        if not query or len(query) < 2:
+            return []
+
+        return (
+            self.db.query(User)
+            .filter(
+                or_(
+                    User.username.ilike(f"%{query}%"),
+                    User.email.ilike(f"%{query}%"),
+                    User.full_name.ilike(f"%{query}%")
+                )
+            )
+            .limit(limit)
+            .all()
         )
