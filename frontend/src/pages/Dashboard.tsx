@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
 import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
+import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
@@ -71,8 +72,8 @@ export default function Dashboard() {
 
   const formatCurrency = (amount: number | string | undefined | null) => {
     const value = Number(amount ?? 0);
-    if (!selectedTrip) return value.toFixed(2);
-    return `${value.toFixed(2)} ${selectedTrip.currency_code}`;
+    if (!selectedTrip) return formatNumber(value);
+    return `${formatNumber(value)} ${selectedTrip.currency_code}`;
   };
 
   const getProgressColor = (percentage: number) => {
@@ -239,7 +240,7 @@ export default function Dashboard() {
                 <CardHeader className="pb-2">
                   <CardDescription>Budget Used</CardDescription>
                   <CardTitle className="text-3xl">
-                    {statistics?.percentage_used.toFixed(1) || '0.0'}%
+                    {formatNumber(statistics?.percentage_used || 0, 1)}%
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -257,7 +258,7 @@ export default function Dashboard() {
                 <CardHeader>
                   <CardTitle>Budget Progress</CardTitle>
                   <CardDescription>
-                    {statistics.percentage_used.toFixed(1)}% of budget used
+                    {formatNumber(statistics.percentage_used, 1)}% of budget used
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -299,7 +300,7 @@ export default function Dashboard() {
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium">{category.category_name}</span>
                             <span className="text-sm text-gray-600">
-                              {formatCurrency(category.total_spent)} ({percentage.toFixed(1)}%)
+                              {formatCurrency(category.total_spent)} ({formatNumber(percentage, 1)}%)
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">

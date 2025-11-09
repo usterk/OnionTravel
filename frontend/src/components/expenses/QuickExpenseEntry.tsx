@@ -142,7 +142,7 @@ export function QuickExpenseEntry({
             <Label htmlFor="quick-expense-amount" className="text-sm font-medium">
               Amount ({currency}) *
             </Label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
               <Input
                 id="quick-expense-amount"
                 type="number"
@@ -152,14 +152,14 @@ export function QuickExpenseEntry({
                 onChange={(e) => setAmount(e.target.value)}
                 onKeyDown={handleAmountKeyDown}
                 placeholder="0.00"
-                className="text-4xl font-bold h-20 text-right flex-1"
+                className="text-4xl font-bold h-20 text-right flex-[9]"
                 autoFocus
                 disabled={isSubmitting}
               />
               <Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-24"
+                className="flex-[1] h-20 text-lg"
                 disabled={isSubmitting}
               >
                 <option value={tripCurrency}>{tripCurrency}</option>
@@ -227,6 +227,23 @@ export function QuickExpenseEntry({
             )}
           </div>
 
+          {/* Title Input */}
+          <div>
+            <Label htmlFor="quick-expense-title" className="text-sm font-medium">
+              Title (Optional)
+            </Label>
+            <Input
+              id="quick-expense-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={
+                selectedCategory ? `${selectedCategory.name} expense` : 'Enter title'
+              }
+              disabled={isSubmitting}
+            />
+          </div>
+
           {/* Date Input */}
           <div className="flex gap-2 items-end">
             <div className="flex-1">
@@ -277,22 +294,6 @@ export function QuickExpenseEntry({
           {/* Advanced Options */}
           {showAdvanced && (
             <div className="space-y-4 pt-2 border-t">
-              <div>
-                <Label htmlFor="quick-expense-title" className="text-sm font-medium">
-                  Title (Optional)
-                </Label>
-                <Input
-                  id="quick-expense-title"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    selectedCategory ? `${selectedCategory.name} expense` : 'Enter title'
-                  }
-                  disabled={isSubmitting}
-                />
-              </div>
-
               <div>
                 <Label htmlFor="quick-expense-payment" className="text-sm font-medium">
                   Payment Method (Optional)

@@ -16,6 +16,7 @@ import {
 import { ExpenseCard } from './ExpenseCard';
 import { ExpenseForm } from './ExpenseForm';
 import { getExpenses, deleteExpense } from '@/lib/expenses-api';
+import { formatNumber } from '@/lib/utils';
 import { Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Expense, Category } from '@/types/models';
 import type { ExpenseFilters } from '@/lib/expenses-api';
@@ -356,7 +357,7 @@ export function ExpenseList({
                 </p>
                 <p className="text-sm">
                   <strong>Amount:</strong> {deletingExpense.currency_code}{' '}
-                  {deletingExpense.amount.toFixed(2)}
+                  {formatNumber(deletingExpense.amount)}
                 </p>
               </div>
             )}

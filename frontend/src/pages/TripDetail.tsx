@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTripStore } from '@/store/tripStore';
 import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
+import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -254,11 +255,11 @@ export default function TripDetail() {
                   {currentTrip.total_budget ? (
                     <>
                       <p className="text-2xl font-bold">
-                        {currentTrip.currency_code} {currentTrip.total_budget.toLocaleString()}
+                        {currentTrip.currency_code} {formatNumber(currentTrip.total_budget)}
                       </p>
                       {currentTrip.daily_budget && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {currentTrip.currency_code} {currentTrip.daily_budget.toLocaleString()} per day
+                          {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)} per day
                         </p>
                       )}
                     </>
