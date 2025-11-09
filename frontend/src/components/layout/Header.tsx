@@ -17,10 +17,8 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
-              <Map className="h-5 w-5 text-white" />
-            </div>
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <img src="/images/logo.png" alt="OnionTravel Logo" className="h-10 w-auto" />
             <span className="text-xl font-bold text-gray-900">OnionTravel</span>
           </Link>
 

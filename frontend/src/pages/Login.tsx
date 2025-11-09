@@ -71,10 +71,10 @@ export default function Login() {
             <img src="/images/logo.png" alt="OnionTravel Logo" className="h-32 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome back
+            Sign in to OnionTravel
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your email and password to sign in
+            Track your travel budget with ease
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
