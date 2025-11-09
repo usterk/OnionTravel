@@ -16,6 +16,12 @@ export function BudgetAllocation({
   tripCurrency = 'USD',
   totalBudget,
 }: BudgetAllocationProps) {
+  // Safe number formatter helper
+  const formatNumber = (value: number | string | undefined | null, decimals: number = 2): string => {
+    const num = Number(value ?? 0);
+    return num.toFixed(decimals);
+  };
+
   const stats = useMemo(() => {
     const totalAllocated = categories.reduce(
       (sum, cat) => sum + (cat.budget_percentage || 0),
@@ -72,7 +78,7 @@ export function BudgetAllocation({
                   : 'text-green-600'
               }`}
             >
-              {stats.totalAllocated.toFixed(1)}%
+              {formatNumber(stats.totalAllocated, 1)}%
             </span>
           </div>
 
@@ -89,13 +95,13 @@ export function BudgetAllocation({
               style={{ width: `${Math.min(100, stats.totalAllocated)}%` }}
             />
             <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-900">
-              {stats.totalAllocated.toFixed(1)}% of 100%
+              {formatNumber(stats.totalAllocated, 1)}% of 100%
             </div>
           </div>
 
           {stats.unallocated > 0 && (
             <p className="text-sm text-gray-600">
-              {stats.unallocated.toFixed(1)}% unallocated
+              {formatNumber(stats.unallocated, 1)}% unallocated
             </p>
           )}
         </div>
@@ -106,13 +112,13 @@ export function BudgetAllocation({
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Budget:</span>
               <span className="font-medium">
-                {tripCurrency} {totalBudget.toFixed(2)}
+                {tripCurrency} {formatNumber(totalBudget)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Spent:</span>
               <span className="font-medium">
-                {tripCurrency} {stats.totalSpent.toFixed(2)}
+                {tripCurrency} {formatNumber(stats.totalSpent)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -124,7 +130,7 @@ export function BudgetAllocation({
                     : 'text-green-600'
                 }`}
               >
-                {tripCurrency} {(totalBudget - stats.totalSpent).toFixed(2)}
+                {tripCurrency} {formatNumber(Number(totalBudget ?? 0) - stats.totalSpent)}
               </span>
             </div>
           </div>
@@ -161,7 +167,7 @@ export function BudgetAllocation({
                         )}
                         <span className="font-medium text-gray-900">{category.name}</span>
                       </div>
-                      <span className="text-gray-600">{budgetPercentage.toFixed(1)}%</span>
+                      <span className="text-gray-600">{formatNumber(budgetPercentage, 1)}%</span>
                     </div>
 
                     {/* Budget allocation bar */}
@@ -185,7 +191,7 @@ export function BudgetAllocation({
                       <div className="absolute inset-0 flex items-center px-2">
                         <div className="flex items-center justify-between w-full text-xs">
                           <span className="font-medium text-gray-900">
-                            {tripCurrency} {category.total_spent.toFixed(2)}
+                            {tripCurrency} {formatNumber(category.total_spent)}
                           </span>
                           <div className="flex items-center gap-1">
                             {percentageUsed > 100 ? (
@@ -202,7 +208,7 @@ export function BudgetAllocation({
                                   : 'text-gray-600'
                               }
                             >
-                              {percentageUsed.toFixed(1)}%
+                              {formatNumber(percentageUsed, 1)}%
                             </span>
                           </div>
                         </div>
@@ -212,7 +218,7 @@ export function BudgetAllocation({
                     {/* Details */}
                     <div className="flex justify-between text-xs text-gray-500 px-1">
                       <span>
-                        Budget: {tripCurrency} {category.allocated_budget.toFixed(2)}
+                        Budget: {tripCurrency} {formatNumber(category.allocated_budget)}
                       </span>
                       <span
                         className={
@@ -221,7 +227,7 @@ export function BudgetAllocation({
                             : 'text-green-600'
                         }
                       >
-                        Remaining: {tripCurrency} {category.remaining_budget.toFixed(2)}
+                        Remaining: {tripCurrency} {formatNumber(category.remaining_budget)}
                       </span>
                     </div>
                   </div>
@@ -239,7 +245,7 @@ export function BudgetAllocation({
               <div className="text-sm">
                 <p className="font-medium text-red-900">Budget Over-allocated</p>
                 <p className="text-red-700 mt-1">
-                  Your total budget allocation is {stats.totalAllocated.toFixed(1)}%, which
+                  Your total budget allocation is {formatNumber(stats.totalAllocated, 1)}%, which
                   exceeds 100%. Consider adjusting your category budgets.
                 </p>
               </div>
