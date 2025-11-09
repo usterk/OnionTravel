@@ -1,6 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { Edit2, Trash2, Calendar, CreditCard, MapPin, FileText } from 'lucide-react';
 import { format } from 'date-fns';
@@ -47,28 +46,17 @@ export function ExpenseCard({
           <div className="flex items-start gap-3 flex-1">
             {/* Expense Details */}
             <div className="flex-1 min-w-0">
-              {/* Title and Category */}
+              {/* Title and Category Icon */}
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex items-center gap-2">
-                  {category && IconComponent && (
-                    <div
-                      className="flex items-center justify-center w-6 h-6 rounded shrink-0"
-                      style={{ backgroundColor: category.color + '20' }}
-                    >
-                      <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                    </div>
-                  )}
-                  <h3 className="font-semibold text-gray-900 truncate">{expense.title}</h3>
-                </div>
-                {category && (
-                  <Badge
-                    variant="secondary"
-                    className="shrink-0 text-xs"
-                    style={{ backgroundColor: category.color + '20', color: category.color }}
+                {category && IconComponent && (
+                  <div
+                    className="flex items-center justify-center w-6 h-6 rounded shrink-0"
+                    style={{ backgroundColor: category.color + '20' }}
                   >
-                    {category.name}
-                  </Badge>
+                    <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                  </div>
                 )}
+                <h3 className="font-semibold text-gray-900 truncate">{expense.title}</h3>
               </div>
 
               {/* Description */}
