@@ -140,27 +140,22 @@ export function QuickExpenseEntry({
           {/* Amount Input - Large and Prominent */}
           <div className="space-y-2">
             <Label htmlFor="quick-expense-amount" className="text-sm font-medium">
-              Amount *
+              Amount ({currency}) *
             </Label>
             <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  id="quick-expense-amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  onKeyDown={handleAmountKeyDown}
-                  placeholder="0.00"
-                  className="text-4xl font-bold h-20 pr-16 text-right"
-                  autoFocus
-                  disabled={isSubmitting}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-semibold text-gray-400">
-                  {currency}
-                </div>
-              </div>
+              <Input
+                id="quick-expense-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                onKeyDown={handleAmountKeyDown}
+                placeholder="0.00"
+                className="text-4xl font-bold h-20 text-right flex-1"
+                autoFocus
+                disabled={isSubmitting}
+              />
               <Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}

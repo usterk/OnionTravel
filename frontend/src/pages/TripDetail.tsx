@@ -37,6 +37,7 @@ export default function TripDetail() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [plainCategories, setPlainCategories] = useState<Category[]>([]);
+  const [expensesRefreshKey, setExpensesRefreshKey] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -305,15 +306,22 @@ export default function TripDetail() {
                 tripId={currentTrip.id}
                 tripCurrency={currentTrip.currency_code}
                 categories={plainCategories}
-                onExpenseCreated={() => loadCategories(currentTrip.id)}
+                onExpenseCreated={() => {
+                  loadCategories(currentTrip.id);
+                  setExpensesRefreshKey((prev) => prev + 1);
+                }}
               />
 
               {/* Expense List */}
               <ExpenseList
+                key={expensesRefreshKey}
                 tripId={currentTrip.id}
                 tripCurrency={currentTrip.currency_code}
                 categories={plainCategories}
-                onExpenseUpdated={() => loadCategories(currentTrip.id)}
+                onExpenseUpdated={() => {
+                  loadCategories(currentTrip.id);
+                  setExpensesRefreshKey((prev) => prev + 1);
+                }}
               />
             </div>
           </TabsContent>

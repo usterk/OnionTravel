@@ -121,6 +121,50 @@ test.describe('Console Error Detection', () => {
     }
   });
 
+  test('Dashboard page should load without module import errors', async ({ page }) => {
+    const timestamp = Date.now();
+    const testEmail = `dashboard-test-${timestamp}@example.com`;
+    const testUsername = `dashuser${timestamp}`;
+
+    // Register a new user
+    await page.goto('/register');
+    await page.waitForLoadState('networkidle');
+
+    await page.fill('input#email', testEmail);
+    await page.fill('input#username', testUsername);
+    await page.fill('input#full_name', 'Dashboard Test User');
+    await page.fill('input#password', 'TestPassword123!');
+    await page.fill('input#confirmPassword', 'TestPassword123!');
+
+    await page.click('button[type="submit"]');
+
+    // Wait for redirect
+    await page.waitForLoadState('networkidle');
+
+    // Clear errors from previous steps
+    consoleErrors.length = 0;
+
+    // Navigate to Dashboard (root path)
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Check for module import errors specifically
+    const moduleErrors = consoleErrors.filter(err =>
+      err.includes('does not provide an export') ||
+      err.includes('Expense') ||
+      err.includes('models.ts')
+    );
+
+    expect(moduleErrors, `Module import errors found on Dashboard:\n${moduleErrors.join('\n')}`).toHaveLength(0);
+    expect(consoleErrors, `Console errors found on Dashboard:\n${consoleErrors.join('\n')}`).toHaveLength(0);
+
+    if (consoleWarnings.length > 0) {
+      console.log(`⚠️ Warnings on Dashboard (${consoleWarnings.length}):`);
+      consoleWarnings.forEach((w) => console.log(`  - ${w}`));
+    }
+  });
+
   test('Creating a trip should not produce console errors', async ({ page }) => {
     const timestamp = Date.now();
     const testEmail = `trip-test-${timestamp}@example.com`;
