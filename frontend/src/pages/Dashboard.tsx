@@ -69,9 +69,10 @@ export default function Dashboard() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    if (!selectedTrip) return amount.toFixed(2);
-    return `${amount.toFixed(2)} ${selectedTrip.currency_code}`;
+  const formatCurrency = (amount: number | undefined | null) => {
+    const value = amount ?? 0;
+    if (!selectedTrip) return value.toFixed(2);
+    return `${value.toFixed(2)} ${selectedTrip.currency_code}`;
   };
 
   const getProgressColor = (percentage: number) => {
