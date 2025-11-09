@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTripStore } from '@/store/tripStore';
-import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
 import { TripCard } from '@/components/trips/TripCard';
 import { Button } from '@/components/ui/button';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function Trips() {
   const navigate = useNavigate();
   const { trips, setTrips, setLoading, isLoading, error, setError } = useTripStore();
-  const { user, logout } = useAuthStore();
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
@@ -36,31 +34,10 @@ export default function Trips() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">OnionTravel</h1>
-              <p className="text-sm text-gray-600 mt-1">Welcome, {user?.full_name || user?.username}</p>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -111,7 +88,7 @@ export default function Trips() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

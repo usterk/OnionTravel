@@ -8,12 +8,11 @@ import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { trips, setTrips } = useTripStore();
-  const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<typeof trips[0] | null>(null);
@@ -58,11 +57,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const handleTripChange = (tripId: number) => {
     const trip = trips.find(t => t.id === tripId);
     if (trip) {
@@ -91,30 +85,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">OnionTravel</h1>
-              <p className="text-sm text-gray-600 mt-1">Welcome, {user?.full_name || user?.username}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => navigate('/trips')}>
-                View All Trips
-              </Button>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Trip Selector */}
         {trips && trips.length > 0 && (
           <div className="mb-6">
@@ -380,7 +353,7 @@ export default function Dashboard() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

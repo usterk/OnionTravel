@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { Layout } from './components/layout';
 
 // Lazy load pages to avoid loading all dependencies at once
 const Login = lazy(() => import('./pages/Login'));
@@ -28,7 +29,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -36,7 +39,9 @@ function App() {
             path="/trips"
             element={
               <ProtectedRoute>
-                <Trips />
+                <Layout>
+                  <Trips />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -44,7 +49,9 @@ function App() {
             path="/trips/new"
             element={
               <ProtectedRoute>
-                <CreateTrip />
+                <Layout>
+                  <CreateTrip />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -52,7 +59,9 @@ function App() {
             path="/trips/:id"
             element={
               <ProtectedRoute>
-                <TripDetail />
+                <Layout>
+                  <TripDetail />
+                </Layout>
               </ProtectedRoute>
             }
           />
