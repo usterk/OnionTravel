@@ -24,10 +24,20 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   useEffect(() => {
-    // Set today as default
-    const today = new Date();
-    setSelectedDate(today.toISOString().split('T')[0]);
-  }, []);
+    // Set initial date based on trip range
+    const today = new Date().toISOString().split('T')[0];
+
+    if (today < tripStartDate) {
+      // Trip hasn't started yet - show first day
+      setSelectedDate(tripStartDate);
+    } else if (today > tripEndDate) {
+      // Trip has ended - show last day
+      setSelectedDate(tripEndDate);
+    } else {
+      // Trip is ongoing - show today
+      setSelectedDate(today);
+    }
+  }, [tripStartDate, tripEndDate]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -64,6 +74,23 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const getStatusBadge = () => {
     if (!statistics) return null;
 
+    const today = new Date().toISOString().split('T')[0];
+    const isPastDay = selectedDate < today;
+    const isFutureDay = selectedDate > today;
+
+    // Future days
+    if (isFutureDay) {
+      // No expenses yet - show placeholder
+      if (statistics.expense_count_today === 0) {
+        return {
+          label: 'Not Started',
+          style: { backgroundColor: '#9ca3af', color: 'white' } // gray-400
+        };
+      }
+      // Has expenses - show normal budget status
+    }
+
+    // Budget status (for today and past days with expenses, future days with expenses)
     if (statistics.is_over_budget) {
       return {
         label: 'Over Budget',
@@ -75,8 +102,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         style: { backgroundColor: '#f59e0b', color: 'white' } // amber-500
       };
     } else {
+      // Past days that stayed within budget - show "Completed"
+      // Today and future days - show "On Track"
       return {
-        label: 'On Track',
+        label: isPastDay ? 'Completed' : 'On Track',
         style: { backgroundColor: '#16a34a', color: 'white' } // green-600
       };
     }
@@ -116,8 +145,20 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     }
   };
 
+  const goToStart = () => {
+    setSelectedDate(tripStartDate);
+  };
+
+  const goToEnd = () => {
+    setSelectedDate(tripEndDate);
+  };
+
   const isAtTripStart = selectedDate <= tripStartDate;
   const isAtTripEnd = selectedDate >= tripEndDate;
+
+  // Check if today is within trip range
+  const today = new Date().toISOString().split('T')[0];
+  const isTodayInTripRange = today >= tripStartDate && today <= tripEndDate;
 
   const getDateTitle = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -237,7 +278,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                     onChange={(date) => setSelectedDate(date.toISOString().split('T')[0])}
                     min={new Date(tripStartDate)}
                     max={new Date(tripEndDate)}
+                    onStartClick={goToStart}
                     onTodayClick={goToToday}
+                    onEndClick={goToEnd}
+                    todayDisabled={!isTodayInTripRange}
                   />
                 </div>
               </div>

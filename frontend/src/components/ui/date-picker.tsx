@@ -11,9 +11,12 @@ interface DatePickerProps {
   min?: Date;
   max?: Date;
   onTodayClick?: () => void;
+  onStartClick?: () => void;
+  onEndClick?: () => void;
+  todayDisabled?: boolean;
 }
 
-export function DatePicker({ value, onChange, min, max, onTodayClick }: DatePickerProps) {
+export function DatePicker({ value, onChange, min, max, onTodayClick, onStartClick, onEndClick, todayDisabled }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +51,20 @@ export function DatePicker({ value, onChange, min, max, onTodayClick }: DatePick
     }
   };
 
+  const handleStartClick = () => {
+    if (onStartClick) {
+      onStartClick();
+      setIsOpen(false);
+    }
+  };
+
+  const handleEndClick = () => {
+    if (onEndClick) {
+      onEndClick();
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className="relative inline-block" ref={containerRef}>
       <Button
@@ -74,16 +91,39 @@ export function DatePicker({ value, onChange, min, max, onTodayClick }: DatePick
             defaultMonth={value}
             className="rdp-custom"
           />
-          {onTodayClick && (
-            <div className="mt-2 pt-2 border-t flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTodayClick}
-                className="w-full"
-              >
-                Today
-              </Button>
+          {(onStartClick || onTodayClick || onEndClick) && (
+            <div className="mt-2 pt-2 border-t flex gap-2">
+              {onStartClick && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartClick}
+                  className="flex-1"
+                >
+                  Start
+                </Button>
+              )}
+              {onTodayClick && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTodayClick}
+                  className="flex-1"
+                  disabled={todayDisabled}
+                >
+                  Today
+                </Button>
+              )}
+              {onEndClick && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEndClick}
+                  className="flex-1"
+                >
+                  End
+                </Button>
+              )}
             </div>
           )}
         </div>
