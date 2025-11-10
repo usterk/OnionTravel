@@ -3,6 +3,7 @@ import { AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getIconComponent } from '@/components/ui/icon-picker';
+import { formatNumber } from '@/lib/utils';
 import type { CategoryWithStats } from '@/types/models';
 
 interface BudgetAllocationProps {
@@ -16,12 +17,6 @@ export function BudgetAllocation({
   tripCurrency = 'USD',
   totalBudget,
 }: BudgetAllocationProps) {
-  // Safe number formatter helper
-  const formatNumber = (value: number | string | undefined | null, decimals: number = 2): string => {
-    const num = Number(value ?? 0);
-    return num.toFixed(decimals);
-  };
-
   const stats = useMemo(() => {
     const totalAllocated = categories.reduce(
       (sum, cat) => sum + (cat.budget_percentage || 0),

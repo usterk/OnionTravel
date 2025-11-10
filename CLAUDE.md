@@ -44,14 +44,14 @@ OnionTravel/
 ```bash
 cd backend
 source venv/bin/activate
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 7001
 ```
 
-**Important**: Backend runs on port 8001 (port 8000 was occupied).
+**Important**: Backend runs on port 7001.
 
-- API: http://localhost:8001
-- Swagger Docs: http://localhost:8001/docs
-- ReDoc: http://localhost:8001/redoc
+- API: http://localhost:7001
+- Swagger Docs: http://localhost:7001/docs
+- ReDoc: http://localhost:7001/redoc
 
 ### Frontend Development Server
 
@@ -61,8 +61,8 @@ npm install
 npm run dev
 ```
 
-- App: http://localhost:5173
-- Vite uses port 5173 by default
+- App: http://localhost:7000
+- Vite uses port 7000 by default
 
 ### After Code Changes
 
@@ -118,44 +118,37 @@ alembic current
 - `alembic revision --autogenerate -m "Update database"`
 - `alembic revision --autogenerate -m "Fix"`
 
-## Testing Requirements
+## Testing
 
-### Backend Testing
-
-**Minimum 90% test coverage required** for all new code.
+### Quick Start - Run All Tests
 
 ```bash
-cd backend
-source venv/bin/activate
-
-# Run all tests with coverage
-pytest tests/ --cov=app --cov-report=term --cov-report=html
-
-# Run specific test file
-pytest tests/test_auth.py -v
-
-# Fail if coverage is below 90%
-pytest tests/ --cov=app --cov-fail-under=90
+./test.sh              # Run all tests (backend + frontend + E2E)
+./test.sh backend      # Backend only (pytest)
+./test.sh frontend     # Frontend only (vitest)
+./test.sh e2e          # E2E only (playwright)
 ```
 
-Coverage report: `backend/htmlcov/index.html`
+**Note**: Complete test suite takes 5-10 minutes. Reports saved to `test-reports/` with timestamps.
 
-### Frontend Testing
+### Test Reports
+
+- Backend: `test-reports/backend/YYYY-MM-DD_HH-MM-SS_pytest.html`
+- Frontend: `test-reports/frontend/YYYY-MM-DD_HH-MM-SS_vitest.log`
+- E2E: `test-reports/e2e/YYYY-MM-DD_HH-MM-SS_playwright/` (view with `npm run test:e2e:report`)
+
+### Manual Testing
 
 ```bash
-cd frontend
+# Backend (90% coverage required)
+cd backend && source venv/bin/activate
+pytest tests/ --cov=app --cov-fail-under=90
 
-# Run unit tests (Vitest)
-npm run test
+# Frontend unit tests
+cd frontend && npm run test
 
-# Run tests with UI
-npm run test:ui
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests (Playwright)
-npm run test:e2e
+# E2E tests
+cd frontend && npm run test:e2e
 
 # Run E2E tests with UI
 npm run test:e2e:ui
@@ -275,7 +268,7 @@ if not user:
 - Axios instance in `src/lib/api.ts`
 - Request interceptor: Automatically adds JWT from localStorage
 - Response interceptor: Handles 401 errors, refreshes tokens automatically
-- Base URL from `VITE_API_BASE_URL` env variable (defaults to http://localhost:8001/api/v1)
+- Base URL from `VITE_API_BASE_URL` env variable (defaults to http://localhost:7001/api/v1)
 
 #### Component Structure
 
@@ -381,7 +374,7 @@ SECRET_KEY=<generate-with-openssl-rand-hex-32>
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:7000,http://localhost:3000
 EXCHANGE_RATE_API_KEY=<from-exchangerate-api.com>
 EXCHANGE_RATE_API_URL=https://v6.exchangerate-api.com/v6
 CURRENCY_UPDATE_HOUR=3
@@ -391,11 +384,11 @@ CURRENCY_UPDATE_TIMEZONE=UTC
 ### Frontend (.env)
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8001/api/v1
+VITE_API_BASE_URL=http://localhost:7001/api/v1
 VITE_APP_NAME=OnionTravel
 ```
 
-**Note**: Backend runs on port 8001 (not 8000)
+**Note**: Backend runs on port 7001, Frontend on port 7000
 
 ## Key Features
 

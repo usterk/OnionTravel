@@ -10,6 +10,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    port: 7000,
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

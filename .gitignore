@@ -1,0 +1,42 @@
+# Logs
+logs/*.log
+logs/*.pid
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+backend/oniontravel.db
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime files
+.run.pid
+
+# Test reports
+test-reports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

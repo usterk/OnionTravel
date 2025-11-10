@@ -29,6 +29,35 @@ export function TripCard({ trip, onClick }: TripCardProps) {
     }
   };
 
+  const getTripStatus = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(trip.start_date);
+    const endDate = new Date(trip.end_date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (today >= startDate && today <= endDate) {
+      return {
+        label: 'Active',
+        style: { backgroundColor: '#16a34a', color: 'white' } // green-600
+      };
+    } else if (today < startDate) {
+      return {
+        label: 'Upcoming',
+        style: { backgroundColor: '#dbeafe', color: '#1e40af' } // blue-100, blue-800
+      };
+    } else {
+      return {
+        label: 'Completed',
+        style: { backgroundColor: '#f3f4f6', color: '#374151' } // gray-100, gray-700
+      };
+    }
+  };
+
+  const status = getTripStatus();
+
   return (
     <Card
       className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -42,7 +71,12 @@ export function TripCard({ trip, onClick }: TripCardProps) {
               {trip.description || 'No description'}
             </CardDescription>
           </div>
-          <Badge variant="secondary">{trip.currency_code}</Badge>
+          <div className="flex flex-col gap-2 items-end">
+            <Badge style={status.style}>
+              {status.label}
+            </Badge>
+            <Badge variant="secondary">{trip.currency_code}</Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

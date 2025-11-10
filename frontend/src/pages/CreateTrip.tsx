@@ -33,10 +33,10 @@ export default function CreateTrip() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <>
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
             variant="outline"
             onClick={() => navigate('/trips')}
@@ -47,10 +47,10 @@ export default function CreateTrip() {
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">Create New Trip</h1>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Trip Details</CardTitle>
@@ -72,7 +72,7 @@ export default function CreateTrip() {
             />
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,0 +1,1191 @@
+[
+  {
+    "timestamp": "2025-11-10T18:10:45.320637",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483051,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:45.325473",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483059,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:45.337653",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483051,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:45.338932",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483054,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:45.350634",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483118,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:45.351154",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.9094235,
+        "total_duration_ms": 9483069,
+        "total_api_duration_ms": 2292344,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:10:51.811711",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.932313500000001,
+        "total_duration_ms": 9489649,
+        "total_api_duration_ms": 2298725,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:04.980123",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.960183999999998,
+        "total_duration_ms": 9502812,
+        "total_api_duration_ms": 2318073,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:04.980980",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.960183999999998,
+        "total_duration_ms": 9502813,
+        "total_api_duration_ms": 2318073,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:04.984434",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.960183999999998,
+        "total_duration_ms": 9502814,
+        "total_api_duration_ms": 2318073,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:09.309426",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.977907599999998,
+        "total_duration_ms": 9507148,
+        "total_api_duration_ms": 2323456,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:19.560959",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 12.99527665,
+        "total_duration_ms": 9517396,
+        "total_api_duration_ms": 2329527,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:26.871888",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.01795965,
+        "total_duration_ms": 9524703,
+        "total_api_duration_ms": 2336577,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:36.059337",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.04283695,
+        "total_duration_ms": 9533897,
+        "total_api_duration_ms": 2350717,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:42.936850",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.064827150000001,
+        "total_duration_ms": 9540776,
+        "total_api_duration_ms": 2358313,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:11:57.910977",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.090957300000001,
+        "total_duration_ms": 9555750,
+        "total_api_duration_ms": 2372175,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:07.984270",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.119790900000002,
+        "total_duration_ms": 9565809,
+        "total_api_duration_ms": 2381933,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:16.758257",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.145864200000002,
+        "total_duration_ms": 9574588,
+        "total_api_duration_ms": 2391554,
+        "total_lines_added": 871,
+        "total_lines_removed": 53
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:23.446738",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.172207450000002,
+        "total_duration_ms": 9581288,
+        "total_api_duration_ms": 2399089,
+        "total_lines_added": 879,
+        "total_lines_removed": 54
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:28.260691",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.194957200000001,
+        "total_duration_ms": 9586102,
+        "total_api_duration_ms": 2403578,
+        "total_lines_added": 879,
+        "total_lines_removed": 54
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:35.598208",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.222514250000001,
+        "total_duration_ms": 9593439,
+        "total_api_duration_ms": 2411615,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:43.582212",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.248409200000001,
+        "total_duration_ms": 9601419,
+        "total_api_duration_ms": 2419374,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:43.604105",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.248409200000001,
+        "total_duration_ms": 9601440,
+        "total_api_duration_ms": 2419374,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:43.957343",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.248409200000001,
+        "total_duration_ms": 9601794,
+        "total_api_duration_ms": 2419374,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:49.089104",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.272092500000001,
+        "total_duration_ms": 9606921,
+        "total_api_duration_ms": 2425302,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:12:53.948980",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.2956724,
+        "total_duration_ms": 9611789,
+        "total_api_duration_ms": 2431642,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:05.611299",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.319407450000002,
+        "total_duration_ms": 9623445,
+        "total_api_duration_ms": 2437759,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:15.836793",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.348289100000002,
+        "total_duration_ms": 9633677,
+        "total_api_duration_ms": 2449804,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:25.526326",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.377940450000002,
+        "total_duration_ms": 9643368,
+        "total_api_duration_ms": 2460547,
+        "total_lines_added": 879,
+        "total_lines_removed": 61
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:36.807487",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.417016300000004,
+        "total_duration_ms": 9654648,
+        "total_api_duration_ms": 2472913,
+        "total_lines_added": 886,
+        "total_lines_removed": 65
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:43.733464",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.448378900000003,
+        "total_duration_ms": 9661574,
+        "total_api_duration_ms": 2479378,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:13:51.238265",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.477256000000004,
+        "total_duration_ms": 9669069,
+        "total_api_duration_ms": 2486632,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:14:08.673068",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.515530900000005,
+        "total_duration_ms": 9686504,
+        "total_api_duration_ms": 2508107,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:20.936053",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.515530900000005,
+        "total_duration_ms": 10358690,
+        "total_api_duration_ms": 2508107,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:21.168285",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.515530900000005,
+        "total_duration_ms": 10358993,
+        "total_api_duration_ms": 2508107,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:40.505502",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.772846150000007,
+        "total_duration_ms": 10378259,
+        "total_api_duration_ms": 2518270,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:40.509239",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.772846150000007,
+        "total_duration_ms": 10378258,
+        "total_api_duration_ms": 2518270,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:40.511856",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.772846150000007,
+        "total_duration_ms": 10378260,
+        "total_api_duration_ms": 2518270,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T18:25:48.308388",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 13.804222800000007,
+        "total_duration_ms": 10386120,
+        "total_api_duration_ms": 2526406,
+        "total_lines_added": 886,
+        "total_lines_removed": 68
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b122\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T19:12:14.737120",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 17.07538010000001,
+        "total_duration_ms": 13172578,
+        "total_api_duration_ms": 3106917,
+        "total_lines_added": 1067,
+        "total_lines_removed": 165
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b125\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  },
+  {
+    "timestamp": "2025-11-10T19:12:29.288545",
+    "input_data": {
+      "session_id": "079f80b3-8757-447c-9ac5-ce8bd6434543",
+      "transcript_path": "/Users/usterk/.claude/projects/-Users-usterk-src-OnionTravel/079f80b3-8757-447c-9ac5-ce8bd6434543.jsonl",
+      "cwd": "/Users/usterk/src/OnionTravel",
+      "model": {
+        "id": "claude-sonnet-4-5-20250929",
+        "display_name": "Sonnet 4.5"
+      },
+      "workspace": {
+        "current_dir": "/Users/usterk/src/OnionTravel",
+        "project_dir": "/Users/usterk/src/OnionTravel"
+      },
+      "version": "2.0.36",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 17.13112565000001,
+        "total_duration_ms": 13187130,
+        "total_api_duration_ms": 3121239,
+        "total_lines_added": 1067,
+        "total_lines_removed": 165
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.5]\u001b[0m | \u001b[34m\ud83d\udcc1 OnionTravel\u001b[0m | \u001b[32m\ud83c\udf3f feature/ui-improvements \u00b125\u001b[0m | \u001b[90mv2.0.36\u001b[0m"
+  }
+]

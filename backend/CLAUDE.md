@@ -52,18 +52,17 @@ Bad:
 
 **Minimum 90% test coverage required** for all new code.
 
-### Running Tests
+### Quick Start
 
 ```bash
-# Run all tests with coverage
-pytest tests/ --cov=app --cov-report=term --cov-report=html
+# From project root - run all backend tests
+../test.sh backend
 
-# Run specific test file
-pytest tests/test_auth.py -v
-
-# Run with coverage check (fails if <90%)
-pytest tests/ --cov=app --cov-config=.coveragerc --cov-fail-under=90
+# From backend directory - manual testing
+pytest tests/ --cov=app --cov-fail-under=90
 ```
+
+**Reports**: `../test-reports/backend/YYYY-MM-DD_HH-MM-SS_pytest.html`
 
 ### Test Structure
 
@@ -241,7 +240,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run development server
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 7001
 
 # Run tests
 pytest tests/ -v

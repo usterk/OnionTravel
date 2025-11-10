@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ColorPicker, PRESET_COLORS } from '@/components/ui/color-picker';
-import { IconPicker } from '@/components/ui/icon-picker';
+import { IconPicker, toKebabCase } from '@/components/ui/icon-picker';
 import { createCategory, updateCategory, getCategories } from '@/lib/categories-api';
+import { formatNumber } from '@/lib/utils';
 import type { Category } from '@/types/models';
 import type { CategoryCreate, CategoryUpdate } from '@/lib/categories-api';
 
@@ -63,9 +64,7 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
     const newTotal = totalAllocated + budgetPercentage;
     if (newTotal > 100) {
       setError(
-        `Total budget allocation cannot exceed 100%. Currently allocated: ${totalAllocated.toFixed(
-          1
-        )}%. Available: ${(100 - totalAllocated).toFixed(1)}%`
+        `Total budget allocation cannot exceed 100%. Currently allocated: ${formatNumber(totalAllocated, 1)}%. Available: ${formatNumber(100 - totalAllocated, 1)}%`
       );
       return;
     }
@@ -73,12 +72,15 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
     setIsLoading(true);
 
     try {
+      // Convert icon to kebab-case for backend
+      const iconKebabCase = formData.icon ? toKebabCase(formData.icon) : undefined;
+
       if (category) {
         // Update existing category
         const updateData: CategoryUpdate = {
           name: formData.name,
           color: formData.color,
-          icon: formData.icon,
+          icon: iconKebabCase,
           budget_percentage: budgetPercentage,
         };
         await updateCategory(tripId, category.id, updateData);
@@ -87,7 +89,7 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
         const createData: CategoryCreate = {
           name: formData.name,
           color: formData.color,
-          icon: formData.icon,
+          icon: iconKebabCase,
           budget_percentage: budgetPercentage,
         };
         await createCategory(tripId, createData);
@@ -149,7 +151,7 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
             <Input
               id="budget_percentage"
               type="number"
-              step="0.1"
+              step="1.0"
               min="0"
               max="100"
               value={formData.budget_percentage}
@@ -167,11 +169,11 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
           <div className="text-sm space-y-1">
             <div className="flex justify-between text-gray-600">
               <span>Currently allocated (other categories):</span>
-              <span className="font-medium">{totalAllocated.toFixed(1)}%</span>
+              <span className="font-medium">{formatNumber(totalAllocated, 1)}%</span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>This category:</span>
-              <span className="font-medium">{budgetPercentage.toFixed(1)}%</span>
+              <span className="font-medium">{formatNumber(budgetPercentage, 1)}%</span>
             </div>
             <div className="flex justify-between border-t pt-1">
               <span
@@ -188,13 +190,13 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
                     : 'font-medium'
                 }
               >
-                {projectedTotal.toFixed(1)}%
+                {formatNumber(projectedTotal, 1)}%
               </span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>Available:</span>
               <span className="font-medium">
-                {Math.max(0, availablePercentage - budgetPercentage).toFixed(1)}%
+                {formatNumber(Math.max(0, availablePercentage - budgetPercentage), 1)}%
               </span>
             </div>
           </div>
@@ -206,7 +208,7 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
           )}
           {projectedTotal > 90 && projectedTotal <= 100 && (
             <p className="text-amber-600 text-sm">
-              Notice: You're allocating {projectedTotal.toFixed(1)}% of your budget.
+              Notice: You're allocating {formatNumber(projectedTotal, 1)}% of your budget.
             </p>
           )}
         </div>

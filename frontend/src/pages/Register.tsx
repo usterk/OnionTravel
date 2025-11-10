@@ -84,12 +84,15 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <img src="/images/logo.png" alt="OnionTravel Logo" className="h-32 w-auto" />
+          </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Create an account
+            Join OnionTravel
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your details to get started
+            Create your account and start tracking your travel budget
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>

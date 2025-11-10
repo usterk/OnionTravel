@@ -5,14 +5,17 @@ import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
 import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
+import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
+import { getIconComponent } from '@/components/ui/icon-picker';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { trips, setTrips } = useTripStore();
-  const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<typeof trips[0] | null>(null);
@@ -29,17 +32,88 @@ export default function Dashboard() {
     }
   }, [selectedTrip]);
 
+  const getTripStatus = (trip: typeof trips[0]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(trip.start_date);
+    const endDate = new Date(trip.end_date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (today >= startDate && today <= endDate) {
+      return 'active';
+    } else if (today < startDate) {
+      return 'upcoming';
+    } else {
+      return 'completed';
+    }
+  };
+
+  const sortTrips = (tripsData: typeof trips) => {
+    return [...tripsData].sort((a, b) => {
+      const statusA = getTripStatus(a);
+      const statusB = getTripStatus(b);
+
+      // Priority order: active > upcoming > completed
+      const statusPriority = { active: 0, upcoming: 1, completed: 2 };
+
+      if (statusA !== statusB) {
+        return statusPriority[statusA] - statusPriority[statusB];
+      }
+
+      // Within same status, sort by date
+      if (statusA === 'active' || statusA === 'upcoming') {
+        // Sort by start_date ascending (nearest first)
+        return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      } else {
+        // For completed, sort by end_date descending (most recent first)
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+      }
+    });
+  };
+
   const loadTrips = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const data = await tripApi.getTrips();
-      setTrips(data);
+      const sortedTrips = sortTrips(data);
+      setTrips(sortedTrips);
 
-      // If there's at least one trip and no trip selected, select the first one
-      if (data.length > 0 && !selectedTrip) {
-        setSelectedTrip(data[0]);
+      // If there's at least one trip and no trip selected, select the best match
+      if (sortedTrips.length > 0 && !selectedTrip) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
+
+        // Find currently active trip (today is between start_date and end_date)
+        const activeTrip = sortedTrips.find((trip) => {
+          const startDate = new Date(trip.start_date);
+          const endDate = new Date(trip.end_date);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          return today >= startDate && today <= endDate;
+        });
+
+        if (activeTrip) {
+          setSelectedTrip(activeTrip);
+        } else {
+          // If no active trip, find the nearest upcoming trip
+          const upcomingTrips = sortedTrips.filter((trip) => {
+            const startDate = new Date(trip.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            return startDate > today;
+          }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+          if (upcomingTrips.length > 0) {
+            setSelectedTrip(upcomingTrips[0]);
+          } else {
+            // If no upcoming trips, select the most recent past trip
+            const pastTrips = sortedTrips.sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
+            setSelectedTrip(pastTrips[0]);
+          }
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trips');
@@ -57,11 +131,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const handleTripChange = (tripId: number) => {
     const trip = trips.find(t => t.id === tripId);
     if (trip) {
@@ -71,8 +140,8 @@ export default function Dashboard() {
 
   const formatCurrency = (amount: number | string | undefined | null) => {
     const value = Number(amount ?? 0);
-    if (!selectedTrip) return value.toFixed(2);
-    return `${value.toFixed(2)} ${selectedTrip.currency_code}`;
+    if (!selectedTrip) return formatNumber(value);
+    return `${formatNumber(value)} ${selectedTrip.currency_code}`;
   };
 
   const getProgressColor = (percentage: number) => {
@@ -89,57 +158,31 @@ export default function Dashboard() {
     return <TrendingUp className="h-5 w-5 text-green-500" />;
   };
 
+  const getTripStatusBadge = (trip: typeof trips[0]) => {
+    const status = getTripStatus(trip);
+
+    if (status === 'active') {
+      return {
+        label: 'Active',
+        style: { backgroundColor: '#16a34a', color: 'white' }
+      };
+    } else if (status === 'upcoming') {
+      return {
+        label: 'Upcoming',
+        style: { backgroundColor: '#dbeafe', color: '#1e40af' }
+      };
+    } else {
+      return {
+        label: 'Completed',
+        style: { backgroundColor: '#f3f4f6', color: '#374151' }
+      };
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">OnionTravel</h1>
-              <p className="text-sm text-gray-600 mt-1">Welcome, {user?.full_name || user?.username}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => navigate('/trips')}>
-                View All Trips
-              </Button>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Trip Selector */}
-        {trips && trips.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Trip
-            </label>
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedTrip?.id || ''}
-                onChange={(e) => handleTripChange(parseInt(e.target.value))}
-                className="flex h-10 w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {trips.map((trip) => (
-                  <option key={trip.id} value={trip.id}>
-                    {trip.name}
-                  </option>
-                ))}
-              </select>
-              <Button onClick={() => navigate('/trips/new')} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Trip
-              </Button>
-            </div>
-          </div>
-        )}
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -172,13 +215,26 @@ export default function Dashboard() {
             {/* Page Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">{selectedTrip.name}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-bold text-gray-900">{selectedTrip.name}</h2>
+                  <Badge style={getTripStatusBadge(selectedTrip).style}>
+                    {getTripStatusBadge(selectedTrip).label}
+                  </Badge>
+                </div>
                 <p className="text-gray-600 mt-1">Budget Dashboard</p>
               </div>
               <Button onClick={() => navigate(`/trips/${selectedTrip.id}`)}>
                 View Trip Details
               </Button>
             </div>
+
+            {/* Daily Budget View */}
+            <DailyBudgetView
+              tripId={selectedTrip.id}
+              currencyCode={selectedTrip.currency_code}
+              tripStartDate={selectedTrip.start_date}
+              tripEndDate={selectedTrip.end_date}
+            />
 
             {/* Budget Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -239,7 +295,7 @@ export default function Dashboard() {
                 <CardHeader className="pb-2">
                   <CardDescription>Budget Used</CardDescription>
                   <CardTitle className="text-3xl">
-                    {statistics?.percentage_used.toFixed(1) || '0.0'}%
+                    {formatNumber(statistics?.percentage_used || 0, 1)}%
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -257,7 +313,7 @@ export default function Dashboard() {
                 <CardHeader>
                   <CardTitle>Budget Progress</CardTitle>
                   <CardDescription>
-                    {statistics.percentage_used.toFixed(1)}% of budget used
+                    {formatNumber(statistics.percentage_used, 1)}% of budget used
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -294,18 +350,30 @@ export default function Dashboard() {
                       const percentage = statistics.total_spent > 0
                         ? (category.total_spent / statistics.total_spent) * 100
                         : 0;
+                      const CategoryIcon = getIconComponent(category.category_icon);
                       return (
                         <div key={category.category_id}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">{category.category_name}</span>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="flex items-center justify-center w-6 h-6 rounded"
+                                style={{ backgroundColor: category.category_color + '20' }}
+                              >
+                                {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />}
+                              </div>
+                              <span className="text-sm font-medium">{category.category_name}</span>
+                            </div>
                             <span className="text-sm text-gray-600">
-                              {formatCurrency(category.total_spent)} ({percentage.toFixed(1)}%)
+                              {formatCurrency(category.total_spent)} ({formatNumber(percentage, 1)}%)
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-blue-500 h-2 rounded-full"
-                              style={{ width: `${percentage}%` }}
+                              className="h-2 rounded-full"
+                              style={{
+                                backgroundColor: category.category_color,
+                                width: `${percentage}%`
+                              }}
                             />
                           </div>
                         </div>
@@ -379,7 +447,7 @@ export default function Dashboard() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

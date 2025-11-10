@@ -1,22 +1,61 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTripStore } from '@/store/tripStore';
-import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
 import { TripCard } from '@/components/trips/TripCard';
 import { Button } from '@/components/ui/button';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function Trips() {
   const navigate = useNavigate();
   const { trips, setTrips, setLoading, isLoading, error, setError } = useTripStore();
-  const { user, logout } = useAuthStore();
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     loadTrips();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const getTripStatus = (trip: typeof trips[0]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(trip.start_date);
+    const endDate = new Date(trip.end_date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (today >= startDate && today <= endDate) {
+      return 'active';
+    } else if (today < startDate) {
+      return 'upcoming';
+    } else {
+      return 'completed';
+    }
+  };
+
+  const sortTrips = (tripsData: typeof trips) => {
+    return [...tripsData].sort((a, b) => {
+      const statusA = getTripStatus(a);
+      const statusB = getTripStatus(b);
+
+      // Priority order: active > upcoming > completed
+      const statusPriority = { active: 0, upcoming: 1, completed: 2 };
+
+      if (statusA !== statusB) {
+        return statusPriority[statusA] - statusPriority[statusB];
+      }
+
+      // Within same status, sort by date
+      if (statusA === 'active' || statusA === 'upcoming') {
+        // Sort by start_date ascending (nearest first)
+        return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      } else {
+        // For completed, sort by end_date descending (most recent first)
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+      }
+    });
+  };
 
   const loadTrips = async () => {
     if (isFetching) return; // Prevent multiple simultaneous loads
@@ -27,7 +66,8 @@ export default function Trips() {
 
     try {
       const data = await tripApi.getTrips();
-      setTrips(data);
+      const sortedTrips = sortTrips(data);
+      setTrips(sortedTrips);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trips');
     } finally {
@@ -36,31 +76,10 @@ export default function Trips() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">OnionTravel</h1>
-              <p className="text-sm text-gray-600 mt-1">Welcome, {user?.full_name || user?.username}</p>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -111,7 +130,7 @@ export default function Trips() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

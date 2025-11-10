@@ -10,7 +10,8 @@ from app.schemas.expense import (
     ExpenseCreate,
     ExpenseUpdate,
     ExpenseResponse,
-    ExpenseStatistics
+    ExpenseStatistics,
+    DailyBudgetStatistics
 )
 from app.services import expense_service
 from app.api.deps import get_current_user
@@ -157,6 +158,34 @@ def get_expense_stats(
     get_trip_or_404(db, trip_id, current_user)
 
     stats = expense_service.get_expense_statistics(db, trip_id)
+    return stats
+
+
+@router.get("/trips/{trip_id}/expenses/daily-stats", response_model=DailyBudgetStatistics)
+def get_daily_budget_stats(
+    trip_id: int,
+    target_date: Optional[date] = Query(None, description="Date to get stats for (defaults to today)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get daily budget statistics for a specific date.
+
+    Returns detailed statistics for the specified date including:
+    - Daily budget allocation
+    - Total spent on that day (including proportional multi-day expenses)
+    - Remaining budget for the day
+    - Percentage of daily budget used
+    - Category breakdown for the day
+    - Over budget indicator
+
+    Multi-day expenses are split proportionally across their date range.
+    If no date is specified, returns statistics for today.
+    """
+    # Verify trip access
+    get_trip_or_404(db, trip_id, current_user)
+
+    stats = expense_service.get_daily_budget_statistics(db, trip_id, target_date)
     return stats
 
 

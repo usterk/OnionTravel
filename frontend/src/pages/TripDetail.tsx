@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTripStore } from '@/store/tripStore';
 import { useAuthStore } from '@/store/authStore';
 import { tripApi } from '@/lib/api';
+import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -174,9 +175,9 @@ export default function TripDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
+    <>
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
             variant="outline"
@@ -194,10 +195,10 @@ export default function TripDetail() {
             <Badge variant="secondary">{currentTrip.currency_code}</Badge>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-red-800">{error}</p>
@@ -254,11 +255,11 @@ export default function TripDetail() {
                   {currentTrip.total_budget ? (
                     <>
                       <p className="text-2xl font-bold">
-                        {currentTrip.currency_code} {currentTrip.total_budget.toLocaleString()}
+                        {currentTrip.currency_code} {formatNumber(currentTrip.total_budget)}
                       </p>
                       {currentTrip.daily_budget && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {currentTrip.currency_code} {currentTrip.daily_budget.toLocaleString()} per day
+                          {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)} per day
                         </p>
                       )}
                     </>
@@ -423,7 +424,7 @@ export default function TripDetail() {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -476,6 +477,6 @@ export default function TripDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

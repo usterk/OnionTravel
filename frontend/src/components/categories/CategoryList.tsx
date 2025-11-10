@@ -15,6 +15,7 @@ import {
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { CategoryForm } from './CategoryForm';
 import { deleteCategory } from '@/lib/categories-api';
+import { formatNumber } from '@/lib/utils';
 import type { Category, CategoryWithStats } from '@/types/models';
 
 interface CategoryListProps {
@@ -113,10 +114,10 @@ export function CategoryList({
                           {showStats && categoryWithStats && (
                             <>
                               <span>
-                                Spent: ${categoryWithStats.total_spent.toFixed(2)}
+                                Spent: ${formatNumber(categoryWithStats.total_spent)}
                               </span>
                               <span>
-                                Remaining: ${categoryWithStats.remaining_budget.toFixed(2)}
+                                Remaining: ${formatNumber(categoryWithStats.remaining_budget)}
                               </span>
                               <span
                                 className={
@@ -127,7 +128,7 @@ export function CategoryList({
                                     : 'text-green-600'
                                 }
                               >
-                                {categoryWithStats.percentage_used.toFixed(1)}% used
+                                {formatNumber(categoryWithStats.percentage_used, 1)}% used
                               </span>
                             </>
                           )}

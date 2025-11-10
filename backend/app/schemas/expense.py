@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 from typing import Optional
 from decimal import Decimal
+from app.schemas.category import CategoryResponse
 
 
 class ExpenseBase(BaseModel):
@@ -79,6 +80,7 @@ class ExpenseResponse(BaseModel):
     location: Optional[str]
     notes: Optional[str]
     created_at: datetime
+    category: Optional[CategoryResponse] = None
 
     class Config:
         from_attributes = True
@@ -91,7 +93,21 @@ class ExpenseStatistics(BaseModel):
     total_budget: float
     remaining_budget: float
     percentage_used: float
-    by_category: list[dict]  # List of {category_id, category_name, total_spent}
+    by_category: list[dict]  # List of {category_id, category_name, category_color, category_icon, total_spent}
     by_payment_method: list[dict]  # List of {payment_method, total_spent}
     daily_spending: list[dict]  # List of {date, total_spent}
     average_daily_spending: float
+
+
+class DailyBudgetStatistics(BaseModel):
+    """Schema for daily budget statistics"""
+    date: date
+    daily_budget: Optional[float]
+    total_spent_today: float
+    remaining_today: float
+    percentage_used_today: float
+    expense_count_today: int
+    by_category_today: list[dict]  # List of {category_id, category_name, category_color, category_icon, total_spent, category_daily_budget, remaining_budget}
+    is_over_budget: bool
+    days_into_trip: int
+    total_days: int
