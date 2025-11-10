@@ -5,7 +5,7 @@ import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 
@@ -118,6 +118,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const isAtTripStart = selectedDate <= tripStartDate;
   const isAtTripEnd = selectedDate >= tripEndDate;
 
+  const getDateTitle = () => {
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+      return 'Today';
+    }
+    return formatDate(selectedDate);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -148,7 +156,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-lg md:text-2xl">
               <Calendar className="h-5 w-5 mr-2" />
               Daily Budget
             </CardTitle>
@@ -182,9 +190,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <CardTitle className="flex items-center">
+                  <CardTitle className="flex items-center text-lg md:text-2xl">
                     <Calendar className="h-5 w-5 mr-2" />
-                    Daily Budget Overview
+                    {getDateTitle()}
                   </CardTitle>
                   {status && (
                     <Badge style={status.style}>
@@ -193,7 +201,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   )}
                 </div>
                 <CardDescription className="mt-1">
-                  {formatDate(statistics.date)} - Day {statistics.days_into_trip} of {statistics.total_days}
+                  Day {statistics.days_into_trip} of {statistics.total_days}
                 </CardDescription>
               </div>
             </div>
@@ -247,25 +255,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       {/* Main Metrics - Single Row */}
       <Card className="border-2 border-green-500">
         <CardContent className="py-6">
-          <div className="grid grid-cols-3 gap-6 items-center">
-            {/* Already Spent - Left */}
-            <div className="text-left">
-              <p className="text-sm text-gray-600 mb-1">Already Spent Today</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(statistics.total_spent_today)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {statistics.expense_count_today} expense{statistics.expense_count_today !== 1 ? 's' : ''}
-              </p>
-            </div>
-
-            {/* YOU CAN STILL SPEND - Center (Main focus) */}
-            <div className="text-center border-l border-r border-gray-200 px-4">
-              <p className="text-base text-gray-600 mb-2">💰 You Can Still Spend Today</p>
-              <p className={`text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
+          <div className="flex flex-col gap-4">
+            {/* YOU CAN STILL SPEND - Main focus */}
+            <div className="text-center pb-4 border-b border-gray-200">
+              <p className="text-sm md:text-base text-gray-600 mb-2">💰 You Can Still Spend Today</p>
+              <p className={`text-4xl md:text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
                 {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
               </p>
-              <div className="flex items-center justify-center mt-2 text-sm">
+              <div className="flex items-center justify-center mt-2 text-xs md:text-sm">
                 {statistics.is_over_budget ? (
                   <>
                     <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
@@ -283,15 +280,44 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               </p>
             </div>
 
-            {/* Budget Used - Right */}
-            <div className="text-right">
-              <p className="text-sm text-gray-600 mb-1">Budget Used</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(statistics.percentage_used_today, 1)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {formatNumber(100 - statistics.percentage_used_today, 1)}% still available
-              </p>
+            {/* Already Spent / Budget Used - Combined */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded" style={{
+                    backgroundColor: statistics.is_over_budget ? '#ef444420' :
+                                   statistics.percentage_used_today >= 80 ? '#f59e0b20' : '#10b98120'
+                  }}>
+                    {statistics.is_over_budget ? (
+                      <TrendingDown className="h-3.5 w-3.5" style={{ color: '#ef4444' }} />
+                    ) : (
+                      <TrendingUp className="h-3.5 w-3.5" style={{ color: statistics.percentage_used_today >= 80 ? '#f59e0b' : '#10b981' }} />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium">Already Spent</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-gray-900">
+                    {formatCurrency(statistics.total_spent_today)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatNumber(statistics.percentage_used_today, 1)}% of budget
+                  </div>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all"
+                  style={{
+                    backgroundColor: statistics.is_over_budget ? '#ef4444' :
+                                   statistics.percentage_used_today >= 80 ? '#f59e0b' : '#10b981',
+                    width: `${Math.min(statistics.percentage_used_today, 100)}%`
+                  }}
+                />
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {statistics.expense_count_today} expense{statistics.expense_count_today !== 1 ? 's' : ''} • {formatNumber(100 - statistics.percentage_used_today, 1)}% available
+              </div>
             </div>
           </div>
         </CardContent>
@@ -301,7 +327,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       {statistics.by_category_today && statistics.by_category_today.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-lg md:text-xl">
               <Tag className="h-5 w-5 mr-2" />
               How Much You Can Still Spend Today
             </CardTitle>
@@ -315,8 +341,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 .filter(cat => cat.category_daily_budget > 0)  // Only show categories with budget
                 .sort((a, b) => b.remaining_budget - a.remaining_budget)  // Sort by remaining budget (highest first)
                 .map((category) => {
-                  const percentage = category.category_daily_budget > 0
-                    ? (category.remaining_budget / category.category_daily_budget) * 100
+                  // Progress bar shows how much was spent (visual intuition)
+                  const spentPercentage = category.category_daily_budget > 0
+                    ? (category.total_spent / category.category_daily_budget) * 100
                     : 0;
                   const CategoryIcon = getIconComponent(category.category_icon);
                   const isOverBudget = category.remaining_budget < 0;
@@ -347,7 +374,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                           className="h-2 rounded-full transition-all"
                           style={{
                             backgroundColor: category.category_color,
-                            width: `${Math.min(Math.max(percentage, 0), 100)}%`
+                            width: `${Math.min(Math.max(spentPercentage, 0), 100)}%`
                           }}
                         />
                       </div>
