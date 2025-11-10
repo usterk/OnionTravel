@@ -359,7 +359,7 @@ export default function Dashboard() {
                                 className="flex items-center justify-center w-6 h-6 rounded"
                                 style={{ backgroundColor: category.category_color + '20' }}
                               >
-                                <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />
+                                {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />}
                               </div>
                               <span className="text-sm font-medium">{category.category_name}</span>
                             </div>
