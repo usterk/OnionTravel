@@ -5,6 +5,7 @@ import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
@@ -123,7 +124,12 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     if (selectedDate === today) {
       return 'Today';
     }
-    return formatDate(selectedDate);
+    // Show only day of week (e.g., "Monday", "Friday")
+    try {
+      return format(new Date(selectedDate), 'EEEE');
+    } catch {
+      return selectedDate;
+    }
   };
 
   if (isLoading) {
@@ -186,63 +192,62 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       {/* Header with Date Navigation */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="flex items-center text-lg md:text-2xl">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    {getDateTitle()}
-                  </CardTitle>
-                  {status && (
-                    <Badge style={status.style}>
-                      {status.label}
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription className="mt-1">
-                  Day {statistics.days_into_trip} of {statistics.total_days}
-                </CardDescription>
-              </div>
-            </div>
-
-            {/* Date Navigation */}
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3">
+            {/* Compact Navigation Panel */}
+            <div className="flex items-center justify-between gap-4">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(-1)}
                 disabled={isAtTripStart}
-                className="h-9"
+                className="shrink-0"
               >
                 <ChevronLeft className="h-4 w-4" />
                 <span className="hidden md:inline ml-1">Previous</span>
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToToday}
-                className="h-9 flex-1 md:flex-initial"
-              >
-                Today
-              </Button>
-
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={tripStartDate}
-                max={tripEndDate}
-                className="flex h-9 w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
+              <div className="flex flex-col items-center gap-1 flex-1">
+                {status && (
+                  <Badge style={status.style} className="mb-1">
+                    {status.label}
+                  </Badge>
+                )}
+                <CardTitle className="flex items-center text-lg md:text-2xl">
+                  {selectedDate !== new Date().toISOString().split('T')[0] ? (
+                    <div className="relative group mr-2">
+                      <Calendar
+                        className="h-5 w-5 text-blue-600 cursor-pointer hover:text-blue-700 transition-colors"
+                        onClick={goToToday}
+                      />
+                      <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        Jump to Today
+                      </div>
+                    </div>
+                  ) : (
+                    <Calendar className="h-5 w-5 mr-2" />
+                  )}
+                  {getDateTitle()}
+                </CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Day {statistics.days_into_trip} of {statistics.total_days}
+                </CardDescription>
+                <div className="mt-2">
+                  <DatePicker
+                    value={new Date(selectedDate)}
+                    onChange={(date) => setSelectedDate(date.toISOString().split('T')[0])}
+                    min={new Date(tripStartDate)}
+                    max={new Date(tripEndDate)}
+                    onTodayClick={goToToday}
+                  />
+                </div>
+              </div>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(1)}
                 disabled={isAtTripEnd}
-                className="h-9"
+                className="shrink-0"
               >
                 <span className="hidden md:inline mr-1">Next</span>
                 <ChevronRight className="h-4 w-4" />
