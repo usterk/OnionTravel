@@ -183,32 +183,6 @@ export default function Dashboard() {
     <>
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Trip Selector */}
-        {trips && trips.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Trip
-            </label>
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedTrip?.id || ''}
-                onChange={(e) => handleTripChange(parseInt(e.target.value))}
-                className="flex h-10 w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {trips.map((trip) => (
-                  <option key={trip.id} value={trip.id}>
-                    {trip.name}
-                  </option>
-                ))}
-              </select>
-              <Button onClick={() => navigate('/trips/new')} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Trip
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
