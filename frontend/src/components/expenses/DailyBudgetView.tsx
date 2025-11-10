@@ -216,14 +216,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 className="h-9"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                <span className="hidden md:inline ml-1">Previous</span>
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={goToToday}
-                className="h-9 flex-1"
+                className="h-9 flex-1 md:flex-initial"
               >
                 Today
               </Button>
@@ -244,7 +244,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 disabled={isAtTripEnd}
                 className="h-9"
               >
-                Next
+                <span className="hidden md:inline mr-1">Next</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
