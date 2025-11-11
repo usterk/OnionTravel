@@ -23,6 +23,9 @@ frontend/test-results/
 # Environment variables
 .env
 .env.local
+.env.production
+backend/.env.production
+frontend/.env.production
 
 # OS
 .DS_Store

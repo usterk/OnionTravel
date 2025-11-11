@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: oniontravel-backend
+    restart: unless-stopped
+    ports:
+      - "7001:7001"
+    volumes:
+      - backend-data:/app/data
+      - backend-uploads:/app/uploads
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - DATABASE_URL=sqlite:////app/data/oniontravel.db
+    networks:
+      - oniontravel-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:7001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    container_name: oniontravel-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # Use port 7003 if port 80 is already taken:
+      # - "7003:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - oniontravel-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Nginx Reverse Proxy (recommended for production)
+  # Uncomment this service if you want everything through one port (80/443)
+  # Then update backend .env.production ALLOWED_ORIGINS to include your domain
+  # and frontend will be accessible at http://your-domain.pl
+  # nginx-proxy:
+  #   build:
+  #     context: ./nginx
+  #     dockerfile: Dockerfile
+  #   container_name: oniontravel-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     # Add HTTPS port if using SSL:
+  #     # - "443:443"
+  #   depends_on:
+  #     frontend:
+  #       condition: service_healthy
+  #     backend:
+  #       condition: service_healthy
+  #   networks:
+  #     - oniontravel-network
+  #   # Uncomment if adding SSL certificates:
+  #   # volumes:
+  #   #   - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+
+volumes:
+  backend-data:
+    driver: local
+  backend-uploads:
+    driver: local
+
+networks:
+  oniontravel-network:
+    driver: bridge
