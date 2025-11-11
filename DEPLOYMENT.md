@@ -4,13 +4,112 @@ Pełna instrukcja wdrożenia aplikacji OnionTravel na serwer (mikrus.pl lub inny
 
 ## Spis treści
 
+- [Quick Start dla Mikrus.pl](#quick-start-dla-mikruspl) ⭐
 - [Wymagania](#wymagania)
-- [Quick Start](#quick-start)
+- [Quick Start (standardowy VPS)](#quick-start)
 - [Konfiguracja krok po kroku](#konfiguracja-krok-po-kroku)
 - [Setup HTTPS (Let's Encrypt)](#setup-https-lets-encrypt)
 - [Dodawanie aplikacji do ekranu głównego iPhone](#dodawanie-aplikacji-do-ekranu-głównego-iphone)
 - [Utrzymanie i backupy](#utrzymanie-i-backupy)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start dla Mikrus.pl
+
+**Dla użytkowników Mikrus.pl VPS** - uproszczone instrukcje z uwzględnieniem specyfiki portów Mikrusa.
+
+### Informacje o portach Mikrus
+
+Mikrus **NIE** daje standardowych portów 80/443. Każdy serwer otrzymuje:
+- **10000 + ID** - SSH (np. 10209 dla serwera jola209)
+- **20000 + ID** - ogólnego przeznaczenia (użyjemy dla **frontendu**)
+- **30000 + ID** - ogólnego przeznaczenia (użyjemy dla **backendu**)
+
+Plus możliwość zamówienia 7 dodatkowych portów TCP w panelu.
+
+### Kroki deployment na Mikrus
+
+```bash
+# 1. SSH na serwer (zamień 209 na swój ID)
+ssh root@your-server-ip
+
+# 2. Zainstaluj Docker (jeśli nie ma)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+apt-get update && apt-get install -y docker-compose-plugin
+
+# 3. Sklonuj repozytorium
+cd ~
+git clone https://github.com/usterk/OnionTravel.git
+cd OnionTravel
+
+# 4. Sprawdź IP serwera i zapisz
+curl -4 ifconfig.me
+
+# 5. Wygeneruj SECRET_KEY
+openssl rand -hex 32
+
+# 6. Skonfiguruj .env files
+# Zamień:
+# - YOUR_ID na numer ID serwera (np. 209)
+# - YOUR_SECRET_KEY na wygenerowany klucz
+# - YOUR_SERVER_IP na IP z kroku 4
+
+# .env (root) - dla docker-compose
+cat > .env << 'EOF'
+FRONTEND_PORT=20YOUR_ID
+BACKEND_PORT=30YOUR_ID
+VITE_API_BASE_URL=http://YOUR_SERVER_IP:30YOUR_ID/api/v1
+EOF
+
+# backend/.env.production
+cat > backend/.env.production << 'EOF'
+DATABASE_URL=sqlite:////app/data/oniontravel.db
+SECRET_KEY=YOUR_SECRET_KEY
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+ALLOWED_ORIGINS=http://YOUR_SERVER_IP:20YOUR_ID
+EXCHANGE_RATE_API_KEY=your-api-key-from-exchangerate-api-com
+EXCHANGE_RATE_API_URL=https://v6.exchangerate-api.com/v6
+UPLOAD_DIR=/app/uploads
+MAX_UPLOAD_SIZE=10485760
+CURRENCY_UPDATE_HOUR=3
+CURRENCY_UPDATE_TIMEZONE=UTC
+APP_NAME=OnionTravel
+VERSION=1.0.0
+EOF
+
+# frontend/.env.production
+cat > frontend/.env.production << 'EOF'
+VITE_API_BASE_URL=http://YOUR_SERVER_IP:30YOUR_ID/api/v1
+VITE_APP_NAME=OnionTravel
+EOF
+
+# 7. Uruchom aplikację (zajmie 5-10 minut)
+docker compose up -d --build
+
+# 8. Sprawdź status
+docker compose ps
+
+# 9. Zobacz logi
+docker compose logs -f
+```
+
+### Dostęp do aplikacji
+
+Po uruchomieniu:
+- **Frontend**: `http://YOUR_SERVER_IP:20YOUR_ID` (np. http://65.21.32.55:20209)
+- **Backend API**: `http://YOUR_SERVER_IP:30YOUR_ID` (np. http://65.21.32.55:30209)
+
+### Na iPhone
+
+1. Otwórz Safari
+2. Wejdź na `http://YOUR_SERVER_IP:20YOUR_ID`
+3. Zarejestruj się / Zaloguj
+4. Kliknij "Udostępnij" → "Dodaj do ekranu głównego"
+5. Gotowe! Masz ikonę OnionTravel na ekranie głównym 🎉
 
 ---
 
