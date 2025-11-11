@@ -278,33 +278,34 @@ export default function TripDetail() {
                 </CardContent>
               </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Trip Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Status</dt>
-                    <dd className="mt-1">
-                      <Badge>Active</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Your Role</dt>
-                    <dd className="mt-1">
-                      <Badge variant="outline">{getUserRole()}</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Created</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {formatDate(currentTrip.created_at)}
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trip Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Status</dt>
+                      <dd className="mt-1">
+                        <Badge>Active</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Your Role</dt>
+                      <dd className="mt-1">
+                        <Badge variant="outline">{getUserRole()}</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Created</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {formatDate(currentTrip.created_at)}
+                      </dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Expenses Tab */}
