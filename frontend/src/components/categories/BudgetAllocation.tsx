@@ -172,7 +172,7 @@ export function BudgetAllocation({
                         className="absolute top-0 left-0 h-full opacity-30"
                         style={{
                           backgroundColor: category.color,
-                          width: `${budgetPercentage}%`,
+                          width: '100%',
                         }}
                       />
                       {/* Actual spending */}
@@ -180,7 +180,7 @@ export function BudgetAllocation({
                         className="absolute top-0 left-0 h-full transition-all"
                         style={{
                           backgroundColor: category.color,
-                          width: `${Math.min(100, (percentageUsed / 100) * budgetPercentage)}%`,
+                          width: `${Math.min(100, percentageUsed)}%`,
                         }}
                       />
                       <div className="absolute inset-0 flex items-center px-2">

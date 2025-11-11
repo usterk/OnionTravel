@@ -121,7 +121,14 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'transparent' }}
+                wrapperStyle={{ outline: 'none', zIndex: 1000 }}
+                position={{ x: 0, y: 0 }}
+                allowEscapeViewBox={{ x: true, y: true }}
+                isAnimationActive={false}
+              />
               <Legend
                 layout="vertical"
                 align="right"
