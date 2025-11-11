@@ -20,7 +20,10 @@ import {
 import { TripForm } from '@/components/trips/TripForm';
 import { CategoryList, BudgetAllocation } from '@/components/categories';
 import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
+import { BudgetOverviewCards } from '@/components/trip/BudgetOverviewCards';
 import { getCategoriesWithStats } from '@/lib/categories-api';
+import { getExpenseStatistics } from '@/lib/expenses-api';
+import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
@@ -39,12 +42,21 @@ export default function TripDetail() {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [plainCategories, setPlainCategories] = useState<Category[]>([]);
   const [expensesRefreshKey, setExpensesRefreshKey] = useState(0);
+  const [statistics, setStatistics] = useState<ExpenseStatistics | null>(null);
 
   useEffect(() => {
     if (id) {
       loadTrip(parseInt(id));
     }
   }, [id]);
+
+  // Refresh statistics when expenses change
+  useEffect(() => {
+    if (currentTrip && expensesRefreshKey > 0) {
+      loadStatistics(currentTrip.id);
+      loadCategories(currentTrip.id);
+    }
+  }, [expensesRefreshKey]);
 
   const loadTrip = async (tripId: number) => {
     setIsLoading(true);
@@ -54,6 +66,7 @@ export default function TripDetail() {
       const trip = await tripApi.getTrip(tripId);
       setCurrentTrip(trip);
       loadCategories(tripId);
+      loadStatistics(tripId);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trip');
     } finally {
@@ -72,6 +85,15 @@ export default function TripDetail() {
       setPlainCategories(plainCategoriesData);
     } catch (err: any) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const loadStatistics = async (tripId: number) => {
+    try {
+      const stats = await getExpenseStatistics(tripId);
+      setStatistics(stats);
+    } catch (err: any) {
+      console.error('Failed to load statistics:', err);
     }
   };
 
@@ -228,6 +250,13 @@ export default function TripDetail() {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
+            {/* Budget Overview Cards */}
+            <BudgetOverviewCards
+              statistics={statistics}
+              totalBudget={currentTrip.total_budget || 0}
+              currencyCode={currentTrip.currency_code}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
