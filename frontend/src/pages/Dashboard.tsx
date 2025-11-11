@@ -9,9 +9,8 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Tag } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
-import { getIconComponent } from '@/components/ui/icon-picker';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -235,58 +234,6 @@ export default function Dashboard() {
               tripStartDate={selectedTrip.start_date}
               tripEndDate={selectedTrip.end_date}
             />
-
-            {/* Category Breakdown */}
-            {statistics && statistics.by_category && statistics.by_category.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Tag className="h-5 w-5 mr-2" />
-                    Spending by Category
-                  </CardTitle>
-                  <CardDescription>
-                    Breakdown of expenses across categories
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {statistics.by_category.map((category) => {
-                      const percentage = statistics.total_spent > 0
-                        ? (category.total_spent / statistics.total_spent) * 100
-                        : 0;
-                      const CategoryIcon = getIconComponent(category.category_icon);
-                      return (
-                        <div key={category.category_id}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="flex items-center justify-center w-6 h-6 rounded"
-                                style={{ backgroundColor: category.category_color + '20' }}
-                              >
-                                {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />}
-                              </div>
-                              <span className="text-sm font-medium">{category.category_name}</span>
-                            </div>
-                            <span className="text-sm text-gray-600">
-                              {formatCurrency(category.total_spent)} ({formatNumber(percentage, 1)}%)
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                backgroundColor: category.category_color,
-                                width: `${percentage}%`
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Payment Method Breakdown */}
             {statistics && statistics.by_payment_method && statistics.by_payment_method.length > 0 && (
