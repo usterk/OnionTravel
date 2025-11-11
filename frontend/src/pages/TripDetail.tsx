@@ -270,36 +270,15 @@ export default function TripDetail() {
                   <p className="text-sm text-muted-foreground mt-2">
                     {formatDate(currentTrip.start_date)} - {formatDate(currentTrip.end_date)}
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Budget
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {currentTrip.total_budget ? (
-                    <>
-                      <p className="text-2xl font-bold">
-                        {currentTrip.currency_code} {formatNumber(currentTrip.total_budget)}
-                      </p>
-                      {currentTrip.daily_budget && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)} per day
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">No budget set</p>
+                  {currentTrip.daily_budget && (
+                    <p className="text-sm text-gray-600 mt-3">
+                      <span className="font-medium">Daily budget:</span> {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)}
+                    </p>
                   )}
                 </CardContent>
               </Card>
-            </div>
 
-            <Card className="mt-6">
+            <Card>
               <CardHeader>
                 <CardTitle>Trip Information</CardTitle>
               </CardHeader>

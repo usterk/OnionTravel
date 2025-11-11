@@ -152,6 +152,11 @@ export default function Dashboard() {
     }
   };
 
+  const formatCurrency = (amount: number | string | undefined | null) => {
+    const value = Number(amount ?? 0);
+    if (!selectedTrip) return formatNumber(value);
+    return `${formatNumber(value)} ${selectedTrip.currency_code}`;
+  };
 
   const getTripStatusBadge = (trip: typeof trips[0]) => {
     const status = getTripStatus(trip);
