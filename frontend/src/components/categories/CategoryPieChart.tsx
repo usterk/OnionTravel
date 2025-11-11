@@ -104,7 +104,49 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-80">
+        {/* Mobile: Smaller chart with legend at bottom */}
+        <div className="w-full h-96 md:hidden">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="45%"
+                labelLine={false}
+                label={renderCustomLabel}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'transparent' }}
+                wrapperStyle={{ outline: 'none', zIndex: 1000 }}
+                position={{ x: 0, y: 0 }}
+                allowEscapeViewBox={{ x: true, y: true }}
+                isAnimationActive={false}
+              />
+              <Legend
+                layout="horizontal"
+                align="center"
+                verticalAlign="bottom"
+                wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                formatter={(value, entry: any) => (
+                  <span className="text-xs text-gray-700">
+                    {value} ({formatNumber(entry.payload.value, 1)}%)
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Desktop: Larger chart with legend on right */}
+        <div className="w-full h-80 hidden md:block">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

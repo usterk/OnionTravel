@@ -204,17 +204,18 @@ export default function TripDetail() {
           <Button
             variant="outline"
             onClick={() => navigate('/')}
-            className="mb-2"
+            className="mb-2 text-sm"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{currentTrip.name}</h1>
-              <p className="text-gray-600 mt-1">{currentTrip.description || 'No description'}</p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{currentTrip.name}</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 break-words">{currentTrip.description || 'No description'}</p>
             </div>
-            <Badge variant="secondary">{currentTrip.currency_code}</Badge>
+            <Badge variant="secondary" className="self-start">{currentTrip.currency_code}</Badge>
           </div>
         </div>
       </div>
@@ -228,23 +229,28 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="expenses">
-              <Receipt className="h-4 w-4 mr-2" />
-              Expenses
+          <TabsList className="grid grid-cols-5 w-full">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Overview</span>
+              <span className="sm:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="categories">
-              <Tag className="h-4 w-4 mr-2" />
-              Categories ({categories.length})
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm">
+              <Receipt className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Expenses</span>
             </TabsTrigger>
-            <TabsTrigger value="members">
-              <Users className="h-4 w-4 mr-2" />
-              Members ({currentTrip.members.length})
+            <TabsTrigger value="categories" className="text-xs sm:text-sm">
+              <Tag className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Categories</span>
+              <span className="hidden md:inline"> ({categories.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="settings">
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Settings
+            <TabsTrigger value="members" className="text-xs sm:text-sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Members</span>
+              <span className="hidden md:inline"> ({currentTrip.members.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">
+              <SettingsIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
 
