@@ -22,12 +22,6 @@ export function BudgetOverviewCards({ statistics, totalBudget, currencyCode }: B
     return `${formatNumber(value)} ${currencyCode}`;
   };
 
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
   const getBudgetStatusIcon = () => {
     if (!statistics) return null;
     if (statistics.percentage_used >= 100) {
@@ -108,31 +102,6 @@ export function BudgetOverviewCards({ statistics, totalBudget, currencyCode }: B
           </CardContent>
         </Card>
       </div>
-
-      {/* Progress Bar */}
-      {statistics && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Budget Progress</CardTitle>
-            <CardDescription>
-              {formatNumber(statistics.percentage_used, 1)}% of budget used
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full bg-gray-200 rounded-full h-4">
-              <div
-                className={`h-4 rounded-full transition-all ${getProgressColor(statistics.percentage_used)}`}
-                style={{ width: `${Math.min(statistics.percentage_used, 100)}%` }}
-              />
-            </div>
-            {statistics.percentage_used >= 100 && (
-              <p className="text-sm text-red-600 mt-2 font-medium">
-                You have exceeded your budget by {formatCurrency(Math.abs(statistics.remaining_budget))}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </>
+</>
   );
 }
