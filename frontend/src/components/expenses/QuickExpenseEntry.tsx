@@ -153,14 +153,14 @@ export function QuickExpenseEntry({
                 onChange={(e) => setAmount(e.target.value)}
                 onKeyDown={handleAmountKeyDown}
                 placeholder="0.00"
-                className="text-4xl font-bold h-20 text-right flex-[9]"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold h-14 sm:h-16 md:h-20 text-right flex-[3] sm:flex-[4]"
                 autoFocus
                 disabled={isSubmitting}
               />
               <Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="flex-[1] h-20 text-lg"
+                className="flex-[1] h-14 sm:h-16 md:h-20 text-sm sm:text-base md:text-lg"
                 disabled={isSubmitting}
               >
                 <option value={tripCurrency}>{tripCurrency}</option>
@@ -172,7 +172,7 @@ export function QuickExpenseEntry({
               </Select>
             </div>
             {currency !== tripCurrency && (
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Will be converted to {tripCurrency} automatically
               </p>
             )}

@@ -9,13 +9,12 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Tag } from 'lucide-react';
+import { Plus, CreditCard, Calendar } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
-import { getIconComponent } from '@/components/ui/icon-picker';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { trips, setTrips } = useTripStore();
+  const { trips, setTrips, selectedTripId, setSelectedTripId } = useTripStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<typeof trips[0] | null>(null);
@@ -25,6 +24,16 @@ export default function Dashboard() {
     loadTrips();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync selectedTrip with selectedTripId from store
+  useEffect(() => {
+    if (selectedTripId && trips.length > 0) {
+      const trip = trips.find(t => t.id === selectedTripId);
+      if (trip) {
+        setSelectedTrip(trip);
+      }
+    }
+  }, [selectedTripId, trips]);
 
   useEffect(() => {
     if (selectedTrip) {
@@ -83,7 +92,7 @@ export default function Dashboard() {
       setTrips(sortedTrips);
 
       // If there's at least one trip and no trip selected, select the best match
-      if (sortedTrips.length > 0 && !selectedTrip) {
+      if (sortedTrips.length > 0 && !selectedTrip && !selectedTripId) {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
 
@@ -97,6 +106,7 @@ export default function Dashboard() {
         });
 
         if (activeTrip) {
+          setSelectedTripId(activeTrip.id);
           setSelectedTrip(activeTrip);
         } else {
           // If no active trip, find the nearest upcoming trip
@@ -107,10 +117,12 @@ export default function Dashboard() {
           }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
           if (upcomingTrips.length > 0) {
+            setSelectedTripId(upcomingTrips[0].id);
             setSelectedTrip(upcomingTrips[0]);
           } else {
             // If no upcoming trips, select the most recent past trip
             const pastTrips = sortedTrips.sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime());
+            setSelectedTripId(pastTrips[0].id);
             setSelectedTrip(pastTrips[0]);
           }
         }
@@ -134,6 +146,7 @@ export default function Dashboard() {
   const handleTripChange = (tripId: number) => {
     const trip = trips.find(t => t.id === tripId);
     if (trip) {
+      setSelectedTripId(tripId);
       setSelectedTrip(trip);
     }
   };
@@ -142,20 +155,6 @@ export default function Dashboard() {
     const value = Number(amount ?? 0);
     if (!selectedTrip) return formatNumber(value);
     return `${formatNumber(value)} ${selectedTrip.currency_code}`;
-  };
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getBudgetStatusIcon = () => {
-    if (!statistics) return null;
-    if (statistics.percentage_used >= 100) {
-      return <TrendingDown className="h-5 w-5 text-red-500" />;
-    }
-    return <TrendingUp className="h-5 w-5 text-green-500" />;
   };
 
   const getTripStatusBadge = (trip: typeof trips[0]) => {
@@ -235,154 +234,6 @@ export default function Dashboard() {
               tripStartDate={selectedTrip.start_date}
               tripEndDate={selectedTrip.end_date}
             />
-
-            {/* Budget Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Total Budget */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Total Budget</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {formatCurrency(statistics?.total_budget || selectedTrip.total_budget || 0)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    <span>Allocated for trip</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Total Spent */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Total Spent</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {formatCurrency(statistics?.total_spent || 0)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <CreditCard className="h-4 w-4 mr-1" />
-                    <span>{statistics?.total_expenses || 0} expenses</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Remaining Budget */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Remaining</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {formatCurrency(statistics?.remaining_budget || selectedTrip.total_budget || 0)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm">
-                    {getBudgetStatusIcon()}
-                    <span className={`ml-1 ${
-                      statistics && statistics.percentage_used >= 100 ? 'text-red-600' : 'text-gray-600'
-                    }`}>
-                      {statistics && statistics.percentage_used >= 100 ? 'Over budget!' : 'Available'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Budget Usage */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Budget Used</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {formatNumber(statistics?.percentage_used || 0, 1)}%
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>Of total budget</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Progress Bar */}
-            {statistics && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Budget Progress</CardTitle>
-                  <CardDescription>
-                    {formatNumber(statistics.percentage_used, 1)}% of budget used
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div
-                      className={`h-4 rounded-full transition-all ${getProgressColor(statistics.percentage_used)}`}
-                      style={{ width: `${Math.min(statistics.percentage_used, 100)}%` }}
-                    />
-                  </div>
-                  {statistics.percentage_used >= 100 && (
-                    <p className="text-sm text-red-600 mt-2 font-medium">
-                      You have exceeded your budget by {formatCurrency(Math.abs(statistics.remaining_budget))}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Category Breakdown */}
-            {statistics && statistics.by_category && statistics.by_category.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Tag className="h-5 w-5 mr-2" />
-                    Spending by Category
-                  </CardTitle>
-                  <CardDescription>
-                    Breakdown of expenses across categories
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {statistics.by_category.map((category) => {
-                      const percentage = statistics.total_spent > 0
-                        ? (category.total_spent / statistics.total_spent) * 100
-                        : 0;
-                      const CategoryIcon = getIconComponent(category.category_icon);
-                      return (
-                        <div key={category.category_id}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="flex items-center justify-center w-6 h-6 rounded"
-                                style={{ backgroundColor: category.category_color + '20' }}
-                              >
-                                {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />}
-                              </div>
-                              <span className="text-sm font-medium">{category.category_name}</span>
-                            </div>
-                            <span className="text-sm text-gray-600">
-                              {formatCurrency(category.total_spent)} ({formatNumber(percentage, 1)}%)
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                backgroundColor: category.category_color,
-                                width: `${percentage}%`
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Payment Method Breakdown */}
             {statistics && statistics.by_payment_method && statistics.by_payment_method.length > 0 && (

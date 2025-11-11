@@ -18,9 +18,24 @@
 ./run.sh
 ```
 
-- Frontend: http://localhost:7000
+- Frontend: http://localhost:7003
 - Backend API: http://localhost:7001
 - API Docs: http://localhost:7001/docs
+
+## Reset Password
+
+If you need to reset a user's password:
+
+```bash
+cd backend
+source venv/bin/activate
+python reset_password.py <email> <new_password>
+```
+
+Example:
+```bash
+python reset_password.py agata@guc.net.pl NewPassword123
+```
 
 ## Testing
 

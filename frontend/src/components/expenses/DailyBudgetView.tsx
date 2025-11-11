@@ -307,7 +307,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
           <div className="flex flex-col gap-4">
             {/* YOU CAN STILL SPEND - Main focus */}
             <div className="text-center pb-4 border-b border-gray-200">
-              <p className="text-sm md:text-base text-gray-600 mb-2">💰 You Can Still Spend Today</p>
+              <p className="text-sm md:text-base text-gray-600 mb-2">💰 Remaining Today</p>
               <p className={`text-4xl md:text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
                 {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
               </p>
@@ -378,7 +378,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
           <CardHeader>
             <CardTitle className="flex items-center text-lg md:text-xl">
               <Tag className="h-5 w-5 mr-2" />
-              How Much You Can Still Spend Today
+              Remaining by Category
             </CardTitle>
             <CardDescription>
               Remaining budget by category for {formatDate(statistics.date)}

@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_FILE="$SCRIPT_DIR/.run.pid"
 BACKEND_PORT=7001
-FRONTEND_PORT=7000
+FRONTEND_PORT=7003
 
 # Test reports configuration
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")

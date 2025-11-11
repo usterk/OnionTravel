@@ -18,9 +18,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { TripForm } from '@/components/trips/TripForm';
-import { CategoryList, BudgetAllocation } from '@/components/categories';
+import { CategoryList, BudgetAllocation, CategoryPieChart } from '@/components/categories';
 import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
+import { BudgetOverviewCards } from '@/components/trip/BudgetOverviewCards';
 import { getCategoriesWithStats } from '@/lib/categories-api';
+import { getExpenseStatistics } from '@/lib/expenses-api';
+import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
@@ -39,12 +42,21 @@ export default function TripDetail() {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [plainCategories, setPlainCategories] = useState<Category[]>([]);
   const [expensesRefreshKey, setExpensesRefreshKey] = useState(0);
+  const [statistics, setStatistics] = useState<ExpenseStatistics | null>(null);
 
   useEffect(() => {
     if (id) {
       loadTrip(parseInt(id));
     }
   }, [id]);
+
+  // Refresh statistics when expenses change
+  useEffect(() => {
+    if (currentTrip && expensesRefreshKey > 0) {
+      loadStatistics(currentTrip.id);
+      loadCategories(currentTrip.id);
+    }
+  }, [expensesRefreshKey]);
 
   const loadTrip = async (tripId: number) => {
     setIsLoading(true);
@@ -54,6 +66,7 @@ export default function TripDetail() {
       const trip = await tripApi.getTrip(tripId);
       setCurrentTrip(trip);
       loadCategories(tripId);
+      loadStatistics(tripId);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trip');
     } finally {
@@ -72,6 +85,15 @@ export default function TripDetail() {
       setPlainCategories(plainCategoriesData);
     } catch (err: any) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const loadStatistics = async (tripId: number) => {
+    try {
+      const stats = await getExpenseStatistics(tripId);
+      setStatistics(stats);
+    } catch (err: any) {
+      console.error('Failed to load statistics:', err);
     }
   };
 
@@ -181,18 +203,19 @@ export default function TripDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
             variant="outline"
-            onClick={() => navigate('/trips')}
-            className="mb-2"
+            onClick={() => navigate('/')}
+            className="mb-2 text-sm"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Trips
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{currentTrip.name}</h1>
-              <p className="text-gray-600 mt-1">{currentTrip.description || 'No description'}</p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{currentTrip.name}</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 break-words">{currentTrip.description || 'No description'}</p>
             </div>
-            <Badge variant="secondary">{currentTrip.currency_code}</Badge>
+            <Badge variant="secondary" className="self-start">{currentTrip.currency_code}</Badge>
           </div>
         </div>
       </div>
@@ -206,28 +229,40 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="expenses">
-              <Receipt className="h-4 w-4 mr-2" />
-              Expenses
+          <TabsList className="grid grid-cols-5 w-full">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Overview</span>
+              <span className="sm:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="categories">
-              <Tag className="h-4 w-4 mr-2" />
-              Categories ({categories.length})
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm">
+              <Receipt className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Expenses</span>
             </TabsTrigger>
-            <TabsTrigger value="members">
-              <Users className="h-4 w-4 mr-2" />
-              Members ({currentTrip.members.length})
+            <TabsTrigger value="categories" className="text-xs sm:text-sm">
+              <Tag className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Categories</span>
+              <span className="hidden md:inline"> ({categories.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="settings">
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Settings
+            <TabsTrigger value="members" className="text-xs sm:text-sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Members</span>
+              <span className="hidden md:inline"> ({currentTrip.members.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">
+              <SettingsIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview">
+            {/* Budget Overview Cards */}
+            <BudgetOverviewCards
+              statistics={statistics}
+              totalBudget={currentTrip.total_budget || 0}
+              currencyCode={currentTrip.currency_code}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -241,62 +276,42 @@ export default function TripDetail() {
                   <p className="text-sm text-muted-foreground mt-2">
                     {formatDate(currentTrip.start_date)} - {formatDate(currentTrip.end_date)}
                   </p>
+                  {currentTrip.daily_budget && (
+                    <p className="text-sm text-gray-600 mt-3">
+                      <span className="font-medium">Daily budget:</span> {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Budget
-                  </CardTitle>
+                  <CardTitle>Trip Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {currentTrip.total_budget ? (
-                    <>
-                      <p className="text-2xl font-bold">
-                        {currentTrip.currency_code} {formatNumber(currentTrip.total_budget)}
-                      </p>
-                      {currentTrip.daily_budget && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {currentTrip.currency_code} {formatNumber(currentTrip.daily_budget)} per day
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">No budget set</p>
-                  )}
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Status</dt>
+                      <dd className="mt-1">
+                        <Badge>Active</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Your Role</dt>
+                      <dd className="mt-1">
+                        <Badge variant="outline">{getUserRole()}</Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Created</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {formatDate(currentTrip.created_at)}
+                      </dd>
+                    </div>
+                  </dl>
                 </CardContent>
               </Card>
             </div>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Trip Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Status</dt>
-                    <dd className="mt-1">
-                      <Badge>Active</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Your Role</dt>
-                    <dd className="mt-1">
-                      <Badge variant="outline">{getUserRole()}</Badge>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Created</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {formatDate(currentTrip.created_at)}
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Expenses Tab */}
@@ -330,6 +345,12 @@ export default function TripDetail() {
           {/* Categories Tab */}
           <TabsContent value="categories">
             <div className="space-y-6">
+              {/* Pie Chart */}
+              <CategoryPieChart
+                categories={categories}
+                tripCurrency={currentTrip.currency_code}
+              />
+
               {/* Budget Allocation Visualization */}
               <BudgetAllocation
                 categories={categories}
