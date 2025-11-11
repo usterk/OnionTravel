@@ -21,7 +21,7 @@ export function Sidebar() {
 
   const handleTripClick = (tripId: number) => {
     setSelectedTripId(tripId);
-    navigate(`/trips/${tripId}`);
+    navigate('/');
     closeSidebar();
   };
 

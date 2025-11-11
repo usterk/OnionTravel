@@ -18,7 +18,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { TripForm } from '@/components/trips/TripForm';
-import { CategoryList, BudgetAllocation } from '@/components/categories';
+import { CategoryList, BudgetAllocation, CategoryPieChart } from '@/components/categories';
 import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
 import { BudgetOverviewCards } from '@/components/trip/BudgetOverviewCards';
 import { getCategoriesWithStats } from '@/lib/categories-api';
@@ -203,11 +203,11 @@ export default function TripDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
             variant="outline"
-            onClick={() => navigate('/trips')}
+            onClick={() => navigate('/')}
             className="mb-2"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Trips
+            Back to Dashboard
           </Button>
           <div className="flex items-start justify-between">
             <div>
@@ -339,6 +339,12 @@ export default function TripDetail() {
           {/* Categories Tab */}
           <TabsContent value="categories">
             <div className="space-y-6">
+              {/* Pie Chart */}
+              <CategoryPieChart
+                categories={categories}
+                tripCurrency={currentTrip.currency_code}
+              />
+
               {/* Budget Allocation Visualization */}
               <BudgetAllocation
                 categories={categories}

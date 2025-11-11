@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, CreditCard, Calendar } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
 
 export default function Dashboard() {
