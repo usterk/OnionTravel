@@ -211,18 +211,18 @@ export function BudgetAllocation({
                     </div>
 
                     {/* Details */}
-                    <div className="flex justify-between text-xs text-gray-500 px-1">
-                      <span>
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-gray-500 px-1">
+                      <span className="whitespace-nowrap">
                         Budget: {tripCurrency} {formatNumber(category.allocated_budget)}
                       </span>
                       <span
-                        className={
+                        className={`whitespace-nowrap ${
                           category.remaining_budget < 0
                             ? 'text-red-600'
                             : 'text-green-600'
-                        }
+                        }`}
                       >
-                        Remaining: {tripCurrency} {formatNumber(category.remaining_budget)}
+                        Left: {tripCurrency} {formatNumber(category.remaining_budget)}
                       </span>
                     </div>
                   </div>

@@ -83,12 +83,12 @@ export function CategoryList({
                 return (
                   <div
                     key={category.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                    className="flex items-start justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors gap-3"
                   >
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Icon */}
                       <div
-                        className="flex items-center justify-center w-10 h-10 rounded-md"
+                        className="flex items-center justify-center w-10 h-10 rounded-md shrink-0"
                         style={{ backgroundColor: category.color + '20' }}
                       >
                         {IconComponent && (
@@ -100,33 +100,33 @@ export function CategoryList({
                       </div>
 
                       {/* Category Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-gray-900">{category.name}</h4>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 className="font-medium text-gray-900 break-words">{category.name}</h4>
                           {category.is_default && (
                             <Badge variant="secondary" className="text-xs">
                               Default
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                          <span>Budget: {category.budget_percentage || 0}%</span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+                          <span className="whitespace-nowrap">Budget: {category.budget_percentage || 0}%</span>
                           {showStats && categoryWithStats && (
                             <>
-                              <span>
+                              <span className="whitespace-nowrap">
                                 Spent: ${formatNumber(categoryWithStats.total_spent)}
                               </span>
-                              <span>
-                                Remaining: ${formatNumber(categoryWithStats.remaining_budget)}
+                              <span className="whitespace-nowrap">
+                                Left: ${formatNumber(categoryWithStats.remaining_budget)}
                               </span>
                               <span
-                                className={
+                                className={`whitespace-nowrap ${
                                   categoryWithStats.percentage_used > 100
                                     ? 'text-red-600 font-medium'
                                     : categoryWithStats.percentage_used > 90
                                     ? 'text-amber-600'
                                     : 'text-green-600'
-                                }
+                                }`}
                               >
                                 {formatNumber(categoryWithStats.percentage_used, 1)}% used
                               </span>
@@ -137,11 +137,12 @@ export function CategoryList({
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setEditingCategory(category)}
+                        className="h-8 w-8"
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -149,8 +150,9 @@ export function CategoryList({
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeletingCategory(category)}
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
