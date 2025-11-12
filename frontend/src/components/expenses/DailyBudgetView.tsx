@@ -20,6 +20,7 @@ interface DailyBudgetViewProps {
 export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDate }: DailyBudgetViewProps) {
   const [statistics, setStatistics] = useState<DailyBudgetStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
 
@@ -46,7 +47,13 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   }, [tripId, selectedDate]);
 
   const loadStatistics = async () => {
-    setIsLoading(true);
+    // Only show loading state if we don't have any statistics yet (initial load)
+    // For subsequent loads (day changes), use isRefreshing to show smooth transition
+    if (!statistics) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
 
     try {
@@ -57,6 +64,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       console.error('Failed to load daily statistics:', err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -229,7 +237,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const status = getStatusBadge();
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}>
       {/* Header with Date Navigation */}
       <Card>
         <CardHeader>
@@ -240,7 +248,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(-1)}
-                disabled={isAtTripStart}
+                disabled={isAtTripStart || isRefreshing}
                 className="shrink-0"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -290,7 +298,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(1)}
-                disabled={isAtTripEnd}
+                disabled={isAtTripEnd || isRefreshing}
                 className="shrink-0"
               >
                 <span className="hidden md:inline mr-1">Next</span>
