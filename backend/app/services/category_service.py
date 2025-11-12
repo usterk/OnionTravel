@@ -116,7 +116,7 @@ def get_categories_with_stats(db: Session, trip_id: int, trip_budget: float) -> 
             total_spent=total_spent,
             allocated_budget=allocated_budget,
             remaining_budget=remaining_budget,
-            percentage_used=min(percentage_used, 100.0)  # Cap at 100%
+            percentage_used=percentage_used  # Show exact percentage, even if > 100%
         )
         result.append(category_stats)
 
