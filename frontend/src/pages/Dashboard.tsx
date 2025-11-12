@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, CreditCard, Calendar } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
+import { APP_VERSION } from '@/version';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -298,6 +299,11 @@ export default function Dashboard() {
             )}
           </div>
         )}
+
+        {/* Footer with version */}
+        <div className="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+          OnionTravel v{APP_VERSION}
+        </div>
       </div>
     </>
   );
