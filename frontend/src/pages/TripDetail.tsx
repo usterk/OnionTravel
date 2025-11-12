@@ -21,6 +21,7 @@ import { TripForm } from '@/components/trips/TripForm';
 import { CategoryList, BudgetAllocation, CategoryPieChart } from '@/components/categories';
 import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
 import { BudgetOverviewCards } from '@/components/trip/BudgetOverviewCards';
+import { TripMembers } from '@/components/trip/TripMembers';
 import { getCategoriesWithStats } from '@/lib/categories-api';
 import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
@@ -370,35 +371,12 @@ export default function TripDetail() {
 
           {/* Members Tab */}
           <TabsContent value="members">
-            <Card>
-              <CardHeader>
-                <CardTitle>Trip Members</CardTitle>
-                <CardDescription>
-                  People who have access to this trip
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {currentTrip.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                          {member.username.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium">{member.full_name || member.username}</p>
-                          <p className="text-sm text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">{member.role}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <TripMembers
+              tripId={currentTrip.id}
+              members={currentTrip.members}
+              ownerId={currentTrip.owner_id}
+              onMembersUpdated={() => loadTrip(currentTrip.id)}
+            />
           </TabsContent>
 
           {/* Settings Tab */}
