@@ -24,6 +24,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
 
+  // Touch gesture handling for mobile swipe
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
   useEffect(() => {
     // Set initial date based on trip range
     const today = new Date().toISOString().split('T')[0];
@@ -161,6 +165,38 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     setSelectedDate(tripEndDate);
   };
 
+  // Mobile swipe gesture handlers
+  const minSwipeDistance = 50; // minimum distance for swipe to trigger
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null); // reset
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // Don't process swipes if already refreshing
+    if (isRefreshing) return;
+
+    if (isLeftSwipe && !isAtTripEnd) {
+      // Swipe left = next day
+      changeDay(1);
+    }
+    if (isRightSwipe && !isAtTripStart) {
+      // Swipe right = previous day
+      changeDay(-1);
+    }
+  };
+
   const isAtTripStart = selectedDate <= tripStartDate;
   const isAtTripEnd = selectedDate >= tripEndDate;
 
@@ -237,7 +273,12 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const status = getStatusBadge();
 
   return (
-    <div className={`space-y-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}>
+    <div
+      className={`space-y-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Header with Date Navigation */}
       <Card>
         <CardHeader>
