@@ -122,9 +122,9 @@ export function CategoryList({
                               <span
                                 className={`whitespace-nowrap ${
                                   categoryWithStats.percentage_used > 100
-                                    ? 'text-red-600 font-medium'
+                                    ? 'text-red-600 font-bold'
                                     : categoryWithStats.percentage_used > 90
-                                    ? 'text-amber-600'
+                                    ? 'text-amber-600 font-medium'
                                     : 'text-green-600'
                                 }`}
                               >
