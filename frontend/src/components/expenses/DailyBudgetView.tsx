@@ -387,7 +387,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
           <CardContent>
             <div className="space-y-4">
               {statistics.by_category_today
-                .filter(cat => cat.category_daily_budget > 0)  // Only show categories with budget
+                .filter(cat => cat.category_daily_budget > 0 || cat.total_spent > 0)  // Show categories with budget OR spending
                 .sort((a, b) => b.remaining_budget - a.remaining_budget)  // Sort by remaining budget (highest first)
                 .map((category) => {
                   // Progress bar shows how much was spent (visual intuition)
