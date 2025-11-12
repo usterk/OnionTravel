@@ -1,21 +1,21 @@
+name: ${COMPOSE_PROJECT_NAME:-OnionTravel}
+
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: oniontravel-backend
+    container_name: ${COMPOSE_PROJECT_NAME:-OnionTravel}-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PORT:-7001}:7001"
+      - "127.0.0.1:7011:7001"  # Expose backend only on localhost
     volumes:
       - backend-data:/app/data
       - backend-uploads:/app/uploads
-    env_file:
-      - ./backend/.env.production
     environment:
       - DATABASE_URL=sqlite:////app/data/oniontravel.db
-    networks:
-      - oniontravel-network
+      - SECRET_KEY=${SECRET_KEY:-changeme-generate-with-openssl-rand-hex-32}
+      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY:-changeme}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
       interval: 30s
@@ -28,60 +28,23 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-    container_name: oniontravel-frontend
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://jola209.mikrus.xyz:30209/OnionTravel/api/v1}
+    container_name: ${COMPOSE_PROJECT_NAME:-OnionTravel}-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-80}:80"
+      - "127.0.0.1:7010:80"  # Expose frontend only on localhost
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - oniontravel-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # Optional: Nginx Reverse Proxy (recommended for production)
-  # Uncomment this service if you want everything through one port (80/443)
-  # Then update backend .env.production ALLOWED_ORIGINS to include your domain
-  # and frontend will be accessible at http://your-domain.pl
-  # nginx-proxy:
-  #   build:
-  #     context: ./nginx
-  #     dockerfile: Dockerfile
-  #   container_name: oniontravel-nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     # Add HTTPS port if using SSL:
-  #     # - "443:443"
-  #   depends_on:
-  #     frontend:
-  #       condition: service_healthy
-  #     backend:
-  #       condition: service_healthy
-  #   networks:
-  #     - oniontravel-network
-  #   # Uncomment if adding SSL certificates:
-  #   # volumes:
-  #   #   - ./nginx/ssl:/etc/nginx/ssl:ro
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
 
 volumes:
   backend-data:
     driver: local
   backend-uploads:
     driver: local
-
-networks:
-  oniontravel-network:
-    driver: bridge

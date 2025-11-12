@@ -42,8 +42,8 @@ npm run test:e2e:headed   # Playwright headed mode
 
 ### Ports
 
-- Frontend: http://localhost:7000
-- Backend API: http://localhost:7001
+- Frontend: http://localhost:7010
+- Backend API: http://localhost:7011
 - E2E Report Server: http://localhost:7002
 
 ### Key Technologies

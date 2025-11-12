@@ -15,39 +15,84 @@ ssh root@65.21.32.55 -p 10209
 ```
 
 **Application URLs:**
-- Frontend: http://65.21.32.55:20209
-- Backend API: http://65.21.32.55:30209/api/v1
-- API Docs: http://65.21.32.55:30209/docs
+- Frontend: https://jola209.mikrus.xyz:30209/OnionTravel
+- Backend API: https://jola209.mikrus.xyz:30209/OnionTravel/api/v1
+- API Docs: https://jola209.mikrus.xyz:30209/OnionTravel/docs
+- HTTP (redirects to HTTPS): http://jola209.mikrus.xyz:20209
+
+**Note**: Application uses self-signed SSL certificate. Browsers will show security warning - accept to proceed.
+
+**Server Architecture:**
+```
+Internet → System Nginx (ports 20209 HTTP / 30209 HTTPS)
+         → Frontend Container (localhost:7010)
+         → Backend Container (localhost:7011)
+```
 
 **Server paths:**
 - Application: `/root/OnionTravel/`
+- Nginx config: `/etc/nginx/sites-available/oniontravel`
 - Backups: `/root/backups/oniontravel/`
 - Docker volumes: `/var/lib/docker/volumes/oniontravel_*`
 
 **Important files:**
+- Nginx config: `/etc/nginx/sites-available/oniontravel`
+- Docker Compose: `/root/OnionTravel/docker-compose.yml`
 - Backup script: `/root/OnionTravel/backup.sh`
 - Restore script: `/root/OnionTravel/restore.sh`
 - Backup docs: `/root/OnionTravel/BACKUP_README.md`
-- Docker Compose: `/root/OnionTravel/docker-compose.yml`
 - Cron: `crontab -l` (daily backups at 3:00 AM)
 
 **Quick commands:**
 ```bash
-# Check application status
-docker compose ps
+# Docker containers
+docker compose ps                    # Container status
+docker compose logs -f               # View all logs
+docker compose logs -f backend       # Backend logs only
+docker compose restart               # Restart containers
 
-# View logs
-docker compose logs -f
+# System nginx
+systemctl status nginx               # Nginx status
+systemctl reload nginx               # Reload nginx config
+nginx -t                             # Test nginx config
+cat /etc/nginx/sites-available/oniontravel  # View config
 
-# Run backup manually
-/root/OnionTravel/backup.sh
+# Application
+/root/OnionTravel/check-health.sh    # Quick health check
+curl http://localhost:7010           # Test frontend (internal)
+curl http://localhost:7011/health    # Test backend (internal)
 
-# List backups
-ls -lh /root/backups/oniontravel/
-
-# Restart application
-docker compose restart
+# Backups
+/root/OnionTravel/backup.sh          # Run backup manually
+ls -lh /root/backups/oniontravel/    # List backups
 ```
+
+## Deployment
+
+### Deploy to Production
+
+**From local machine** (recommended):
+```bash
+./deploy.sh
+```
+
+This script:
+1. Copies nginx config to `/etc/nginx/sites-available/oniontravel`
+2. Copies application files (backend, frontend, docker-compose.yml)
+3. Enables nginx site and reloads nginx
+4. Rebuilds Docker containers with `--no-cache` flag
+5. Waits for containers to become healthy
+6. Tests all endpoints (internal and external)
+7. Shows deployment summary
+
+**From production server** (for git-based updates):
+```bash
+ssh root@jola209.mikrus.xyz -p 10209
+cd /root/OnionTravel
+./update.sh
+```
+
+**Important**: Always use `./deploy.sh` when deploying config changes to ensure nginx config is properly updated.
 
 ## Project Overview
 
@@ -91,25 +136,26 @@ OnionTravel/
 ```bash
 cd backend
 source venv/bin/activate
-uvicorn app.main:app --reload --port 7001
+uvicorn app.main:app --reload --port 7011
 ```
 
-**Important**: Backend runs on port 7001.
+**Important**: Backend runs on port 7011 (changed from 7001 to match production localhost ports).
 
-- API: http://localhost:7001
-- Swagger Docs: http://localhost:7001/docs
-- ReDoc: http://localhost:7001/redoc
+- API: http://localhost:7011
+- Swagger Docs: http://localhost:7011/docs
+- ReDoc: http://localhost:7011/redoc
 
 ### Frontend Development Server
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --port 7010
 ```
 
-- App: http://localhost:7000
-- Vite uses port 7000 by default
+**Important**: Frontend runs on port 7010 (changed from 7000 to match production localhost ports).
+
+- App: http://localhost:7010
 
 ### After Code Changes
 

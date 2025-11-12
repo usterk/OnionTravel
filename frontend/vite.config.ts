@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 7003,
+    port: 7010,
   },
   test: {
     globals: true,

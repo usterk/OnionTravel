@@ -13,7 +13,7 @@ const TripDetail = lazy(() => import('./pages/TripDetail'));
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/OnionTravel">
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
