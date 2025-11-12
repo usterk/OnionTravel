@@ -2,6 +2,53 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Production Server Access
+
+**Mikrus.pl VPS - jola209**
+
+```bash
+# SSH access
+ssh root@jola209.mikrus.xyz -p 10209
+
+# Or using IP
+ssh root@65.21.32.55 -p 10209
+```
+
+**Application URLs:**
+- Frontend: http://65.21.32.55:20209
+- Backend API: http://65.21.32.55:30209/api/v1
+- API Docs: http://65.21.32.55:30209/docs
+
+**Server paths:**
+- Application: `/root/OnionTravel/`
+- Backups: `/root/backups/oniontravel/`
+- Docker volumes: `/var/lib/docker/volumes/oniontravel_*`
+
+**Important files:**
+- Backup script: `/root/OnionTravel/backup.sh`
+- Restore script: `/root/OnionTravel/restore.sh`
+- Backup docs: `/root/OnionTravel/BACKUP_README.md`
+- Docker Compose: `/root/OnionTravel/docker-compose.yml`
+- Cron: `crontab -l` (daily backups at 3:00 AM)
+
+**Quick commands:**
+```bash
+# Check application status
+docker compose ps
+
+# View logs
+docker compose logs -f
+
+# Run backup manually
+/root/OnionTravel/backup.sh
+
+# List backups
+ls -lh /root/backups/oniontravel/
+
+# Restart application
+docker compose restart
+```
+
 ## Project Overview
 
 OnionTravel is a trip budget tracking application with multi-currency support, multi-user trips, and real-time budget tracking. The codebase is organized as a monorepo with a FastAPI backend and React TypeScript frontend.
