@@ -98,6 +98,7 @@ import type {
   TripUserUpdate,
   TripMemberInfo,
 } from '@/types/trip';
+import type { UserResponse } from '@/types/user';
 
 export const tripApi = {
   // Get all trips for the current user
@@ -157,5 +158,16 @@ export const tripApi = {
   // Remove member from trip
   removeMember: async (tripId: number, userId: number): Promise<void> => {
     await api.delete(`/trips/${tripId}/members/${userId}`);
+  },
+};
+
+// User API functions
+export const userApi = {
+  // Search for users by email or username
+  searchUsers: async (query: string): Promise<UserResponse[]> => {
+    const response = await api.get<UserResponse[]>('/users/search', {
+      params: { q: query },
+    });
+    return response.data;
   },
 };

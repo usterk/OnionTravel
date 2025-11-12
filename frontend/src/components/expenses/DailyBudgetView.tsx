@@ -20,8 +20,13 @@ interface DailyBudgetViewProps {
 export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDate }: DailyBudgetViewProps) {
   const [statistics, setStatistics] = useState<DailyBudgetStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
+
+  // Touch gesture handling for mobile swipe
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     // Set initial date based on trip range
@@ -46,7 +51,13 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   }, [tripId, selectedDate]);
 
   const loadStatistics = async () => {
-    setIsLoading(true);
+    // Only show loading state if we don't have any statistics yet (initial load)
+    // For subsequent loads (day changes), use isRefreshing to show smooth transition
+    if (!statistics) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
 
     try {
@@ -57,6 +68,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       console.error('Failed to load daily statistics:', err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -153,6 +165,38 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     setSelectedDate(tripEndDate);
   };
 
+  // Mobile swipe gesture handlers
+  const minSwipeDistance = 50; // minimum distance for swipe to trigger
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null); // reset
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // Don't process swipes if already refreshing
+    if (isRefreshing) return;
+
+    if (isLeftSwipe && !isAtTripEnd) {
+      // Swipe left = next day
+      changeDay(1);
+    }
+    if (isRightSwipe && !isAtTripStart) {
+      // Swipe right = previous day
+      changeDay(-1);
+    }
+  };
+
   const isAtTripStart = selectedDate <= tripStartDate;
   const isAtTripEnd = selectedDate >= tripEndDate;
 
@@ -229,7 +273,12 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const status = getStatusBadge();
 
   return (
-    <div className="space-y-4">
+    <div
+      className={`space-y-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Header with Date Navigation */}
       <Card>
         <CardHeader>
@@ -240,7 +289,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(-1)}
-                disabled={isAtTripStart}
+                disabled={isAtTripStart || isRefreshing}
                 className="shrink-0"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -290,7 +339,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 variant="outline"
                 size="sm"
                 onClick={() => changeDay(1)}
-                disabled={isAtTripEnd}
+                disabled={isAtTripEnd || isRefreshing}
                 className="shrink-0"
               >
                 <span className="hidden md:inline mr-1">Next</span>
@@ -387,7 +436,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
           <CardContent>
             <div className="space-y-4">
               {statistics.by_category_today
-                .filter(cat => cat.category_daily_budget > 0)  // Only show categories with budget
+                .filter(cat => cat.category_daily_budget > 0 || cat.total_spent > 0)  // Show categories with budget OR spending
                 .sort((a, b) => b.remaining_budget - a.remaining_budget)  // Sort by remaining budget (highest first)
                 .map((category) => {
                   // Progress bar shows how much was spent (visual intuition)

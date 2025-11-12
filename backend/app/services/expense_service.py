@@ -389,7 +389,7 @@ def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
         total_spent=total_spent,
         total_budget=total_budget,
         remaining_budget=remaining_budget,
-        percentage_used=min(percentage_used, 100.0),
+        percentage_used=percentage_used,  # Show exact percentage, even if > 100%
         by_category=by_category,
         by_payment_method=by_payment_method,
         daily_spending=by_date,

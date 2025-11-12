@@ -11,15 +11,30 @@ interface CategoryPieChartProps {
 
 export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryPieChartProps) {
   const chartData = useMemo(() => {
+    // Calculate total spent across all categories to show unbudgeted categories proportionally
+    const totalSpent = categories.reduce((sum, cat) => sum + (cat.total_spent || 0), 0);
+
     return categories
-      .filter((cat) => (cat.budget_percentage || 0) > 0)
-      .map((cat) => ({
-        name: cat.name,
-        value: cat.budget_percentage || 0,
-        color: cat.color,
-        spent: cat.total_spent,
-        allocated: cat.allocated_budget,
-      }))
+      .filter((cat) => (cat.budget_percentage || 0) > 0 || (cat.total_spent || 0) > 0)
+      .map((cat) => {
+        let value = cat.budget_percentage || 0;
+        let isUnbudgeted = false;
+
+        // For categories with spending but no budget, show them proportionally to spending
+        if (value === 0 && (cat.total_spent || 0) > 0 && totalSpent > 0) {
+          value = ((cat.total_spent || 0) / totalSpent) * 100;
+          isUnbudgeted = true;
+        }
+
+        return {
+          name: cat.name,
+          value,
+          color: cat.color,
+          spent: cat.total_spent,
+          allocated: cat.allocated_budget,
+          isUnbudgeted,
+        };
+      })
       .sort((a, b) => b.value - a.value);
   }, [categories]);
 
@@ -33,15 +48,31 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.name}</p>
-          <p className="text-sm text-gray-600 mt-1">
-            Budget: {formatNumber(data.value, 1)}%
-          </p>
-          <p className="text-sm text-gray-600">
-            Allocated: {tripCurrency} {formatNumber(data.allocated)}
-          </p>
-          <p className="text-sm text-gray-600">
-            Spent: {tripCurrency} {formatNumber(data.spent)}
-          </p>
+          {data.isUnbudgeted ? (
+            <>
+              <p className="text-sm text-orange-600 mt-1 font-medium">
+                No budget allocated
+              </p>
+              <p className="text-sm text-gray-600">
+                Spent: {tripCurrency} {formatNumber(data.spent)}
+              </p>
+              <p className="text-sm text-gray-500 italic">
+                ({formatNumber(data.value, 1)}% of total spending)
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600 mt-1">
+                Budget: {formatNumber(data.value, 1)}%
+              </p>
+              <p className="text-sm text-gray-600">
+                Allocated: {tripCurrency} {formatNumber(data.allocated)}
+              </p>
+              <p className="text-sm text-gray-600">
+                Spent: {tripCurrency} {formatNumber(data.spent)}
+              </p>
+            </>
+          )}
         </div>
       );
     }
@@ -138,6 +169,9 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
                 formatter={(value, entry: any) => (
                   <span className="text-xs text-gray-700">
                     {value} ({formatNumber(entry.payload.value, 1)}%)
+                    {entry.payload.isUnbudgeted && (
+                      <span className="text-orange-600 ml-1">*</span>
+                    )}
                   </span>
                 )}
               />
@@ -178,6 +212,9 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
                 formatter={(value, entry: any) => (
                   <span className="text-sm text-gray-700">
                     {value} ({formatNumber(entry.payload.value, 1)}%)
+                    {entry.payload.isUnbudgeted && (
+                      <span className="text-orange-600 ml-1">*</span>
+                    )}
                   </span>
                 )}
               />
@@ -186,8 +223,8 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
         </div>
 
         {/* Summary info */}
-        {totalPercentage !== 100 && (
-          <div className="mt-4 pt-4 border-t">
+        <div className="mt-4 pt-4 border-t space-y-2">
+          {totalPercentage !== 100 && (
             <p className="text-sm text-gray-600 text-center">
               {totalPercentage < 100 ? (
                 <>
@@ -199,8 +236,13 @@ export function CategoryPieChart({ categories, tripCurrency = 'USD' }: CategoryP
                 </span>
               )}
             </p>
-          </div>
-        )}
+          )}
+          {chartData.some(item => item.isUnbudgeted) && (
+            <p className="text-xs text-orange-600 text-center">
+              <span className="font-medium">*</span> Category has spending but no budget allocated
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

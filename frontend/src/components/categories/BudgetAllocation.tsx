@@ -197,9 +197,9 @@ export function BudgetAllocation({
                             <span
                               className={
                                 percentageUsed > 100
-                                  ? 'text-red-600 font-medium'
+                                  ? 'text-red-600 font-bold'
                                   : percentageUsed > 90
-                                  ? 'text-amber-600'
+                                  ? 'text-amber-600 font-medium'
                                   : 'text-gray-600'
                               }
                             >
