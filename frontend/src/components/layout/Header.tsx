@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Menu, Settings } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 
 export function Header() {
   const navigate = useNavigate();
@@ -39,22 +39,16 @@ export function Header() {
           <nav className="flex items-center gap-3 md:gap-6">
             {/* User Menu */}
             <div className="flex items-center gap-2 md:gap-3 md:pl-6 md:border-l md:border-gray-200">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                title="Settings"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors">
                   <User className="h-4 w-4 text-gray-600" />
                 </div>
                 <span className="font-medium hidden md:inline">{user?.username}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/settings')}
-                className="text-gray-600 hover:text-gray-900 h-9 w-9 md:w-auto p-0 md:px-3"
-                title="Settings"
-              >
-                <Settings className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Settings</span>
-              </Button>
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
