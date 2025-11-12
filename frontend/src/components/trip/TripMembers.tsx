@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -12,13 +14,6 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { tripApi, userApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import type { TripMemberInfo, TripRole } from '@/types/trip';
@@ -292,16 +287,17 @@ export function TripMembers({ tripId, members, ownerId, onMembersUpdated }: Trip
           <DialogBody>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Role</label>
-                <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as TripRole)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
-                  </SelectContent>
+                <Label htmlFor="role-select" className="text-sm font-medium mb-2 block">
+                  Role
+                </Label>
+                <Select
+                  id="role-select"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value as TripRole)}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="member">Member</option>
+                  <option value="viewer">Viewer</option>
                 </Select>
               </div>
 
