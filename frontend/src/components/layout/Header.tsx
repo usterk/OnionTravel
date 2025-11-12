@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Menu } from 'lucide-react';
+import { LogOut, User, Menu, Settings } from 'lucide-react';
 
 export function Header() {
   const navigate = useNavigate();
@@ -45,6 +45,16 @@ export function Header() {
                 </div>
                 <span className="font-medium hidden md:inline">{user?.username}</span>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/settings')}
+                className="text-gray-600 hover:text-gray-900 h-9 w-9 md:w-auto p-0 md:px-3"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Settings</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
