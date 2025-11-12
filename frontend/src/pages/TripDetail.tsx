@@ -28,6 +28,7 @@ import type { ExpenseStatistics } from '@/lib/expenses-api';
 import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
+import { getTripStatus } from '@/lib/tripUtils';
 import type { CategoryWithStats, Category } from '@/types/models';
 
 export default function TripDetail() {
@@ -294,7 +295,9 @@ export default function TripDetail() {
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Status</dt>
                       <dd className="mt-1">
-                        <Badge>Active</Badge>
+                        <Badge style={getTripStatus(currentTrip).style}>
+                          {getTripStatus(currentTrip).label}
+                        </Badge>
                       </dd>
                     </div>
                     <div>
