@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CreditCard, Calendar } from 'lucide-react';
+import { Plus, CreditCard, Calendar, ChevronRight } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
 import { APP_VERSION } from '@/version';
 
@@ -223,8 +223,13 @@ export default function Dashboard() {
                 </div>
                 <p className="text-gray-600 mt-1">Budget Dashboard</p>
               </div>
-              <Button onClick={() => navigate(`/trips/${selectedTrip.id}`)}>
-                View Trip Details
+              <Button
+                onClick={() => navigate(`/trips/${selectedTrip.id}`)}
+                size="sm"
+                className="h-9"
+              >
+                <ChevronRight className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">View Trip Details</span>
               </Button>
             </div>
 
