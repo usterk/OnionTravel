@@ -114,11 +114,9 @@ VITE_BASE_PATH=              # Empty = runs at root (/)
 
 ## Deployment
 
-### Production Deployment Scripts
+### Production Deployment
 
-**Three deployment options available:**
-
-#### 1. `deploy-prod.sh` - Unified Release + Deploy (Recommended)
+Use the unified deployment script:
 
 **Deploy only** (no git tag):
 ```bash
@@ -176,25 +174,9 @@ EOF
   - Requires typing 'yes' to confirm (cannot use with --release-notes)
 - `--skip-tests` - Skip all validation checks (use with caution)
 
-#### 2. `deploy.sh` - Quick Deploy (Legacy, Backup)
+### Alternative: Git-based deployment from server
 
-Simple deployment without release creation:
-```bash
-./deploy.sh
-```
-
-Same deployment process as `deploy-prod.sh` but without release/tag functionality.
-
-#### 3. `release.sh` - Create Release Only (No Deploy)
-
-Create release tag without deploying:
-```bash
-./release.sh 1.2.0
-```
-
-Then deploy separately with `deploy.sh` or manually via `update.sh` on server.
-
-**From production server** (for git-based updates):
+If you prefer to deploy from the production server after pushing to git:
 ```bash
 ssh root@jola209.mikrus.xyz -p 10209
 cd /root/OnionTravel
@@ -202,11 +184,11 @@ cd /root/OnionTravel
 ```
 
 **Important**:
-- Use `./deploy-prod.sh` for production releases (recommended workflow)
 - Always create releases from `main` branch
 - Release notes should be in Markdown format (renders nicely on GitHub)
 - Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
 - Edit `nginx/oniontravel.conf.template` for nginx changes
+- Old scripts (`deploy.sh`, `release.sh`) have been removed - use `deploy-prod.sh` only
 
 ## Project Overview
 
