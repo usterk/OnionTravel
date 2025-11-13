@@ -14,6 +14,8 @@ import type { Category } from '@/types/models';
 interface QuickExpenseEntryProps {
   tripId: number;
   tripCurrency: string;
+  tripStartDate: string;
+  tripEndDate: string;
   categories: Category[];
   onExpenseCreated: () => void;
 }
@@ -25,6 +27,8 @@ const COMMON_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'THB', 'VND', 'SGD
 export function QuickExpenseEntry({
   tripId,
   tripCurrency,
+  tripStartDate,
+  tripEndDate,
   categories,
   onExpenseCreated,
 }: QuickExpenseEntryProps) {
@@ -33,6 +37,7 @@ export function QuickExpenseEntry({
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [currency, setCurrency] = useState(tripCurrency);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState('');
   const [title, setTitle] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [notes, setNotes] = useState('');
@@ -81,6 +86,7 @@ export function QuickExpenseEntry({
         currency_code: currency,
         category_id: selectedCategory.id,
         start_date: date,
+        end_date: endDate || undefined,
         payment_method: paymentMethod || undefined,
         notes: notes.trim() || undefined,
       });
@@ -89,6 +95,7 @@ export function QuickExpenseEntry({
       setAmount('');
       setSelectedCategory(null);
       setDate(new Date().toISOString().split('T')[0]);
+      setEndDate('');
       setTitle('');
       setPaymentMethod('');
       setNotes('');
@@ -256,8 +263,9 @@ export function QuickExpenseEntry({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                min={tripStartDate}
+                max={tripEndDate}
                 disabled={isSubmitting}
-                max={new Date().toISOString().split('T')[0]}
               />
             </div>
             <Button
@@ -312,6 +320,27 @@ export function QuickExpenseEntry({
                     </option>
                   ))}
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium">
+                  End Date (Optional - for multi-day expenses)
+                </Label>
+                <Input
+                  id="quick-expense-end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={date || tripStartDate}
+                  max={tripEndDate}
+                  placeholder="Leave empty for single-day expense"
+                  disabled={isSubmitting}
+                />
+                {endDate && endDate < date && (
+                  <p className="text-xs text-red-600 mt-1">
+                    End date must be on or after start date
+                  </p>
+                )}
               </div>
 
               <div>
