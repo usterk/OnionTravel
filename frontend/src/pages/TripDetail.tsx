@@ -25,7 +25,7 @@ import { TripMembers } from '@/components/trip/TripMembers';
 import { getCategoriesWithStats } from '@/lib/categories-api';
 import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
-import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
 import { getTripStatus } from '@/lib/tripUtils';
@@ -232,26 +232,24 @@ export default function TripDetail() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-5 w-full">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
+              <Info className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
-              <span className="sm:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm">
-              <Receipt className="h-4 w-4 sm:mr-2" />
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
+              <Receipt className="h-4 w-4" />
               <span className="hidden sm:inline">Expenses</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm">
-              <Tag className="h-4 w-4 sm:mr-2" />
+            <TabsTrigger value="categories" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
+              <Tag className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
-              <span className="hidden md:inline"> ({categories.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="members" className="text-xs sm:text-sm">
-              <Users className="h-4 w-4 sm:mr-2" />
+            <TabsTrigger value="members" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
+              <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Members</span>
-              <span className="hidden md:inline"> ({currentTrip.members.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">
-              <SettingsIcon className="h-4 w-4 sm:mr-2" />
+            <TabsTrigger value="settings" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
+              <SettingsIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>

@@ -44,8 +44,16 @@ export function Header() {
                 className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                 title="Settings"
               >
-                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors">
-                  <User className="h-4 w-4 text-gray-600" />
+                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors overflow-hidden">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-gray-600" />
+                  )}
                 </div>
                 <span className="font-medium hidden md:inline">{user?.username}</span>
               </button>

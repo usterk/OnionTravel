@@ -30,7 +30,7 @@ interface TabsListProps {
 const TabsList: React.FC<TabsListProps> = ({ children, className }) => {
   return (
     <div
-      className={`inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground ${
+      className={`flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground ${
         className || ''
       }`}
     >
