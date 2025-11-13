@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CreditCard, Calendar } from 'lucide-react';
+import { Plus, CreditCard, Calendar, MapPin } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
 import { APP_VERSION } from '@/version';
 
@@ -214,17 +214,21 @@ export default function Dashboard() {
           <div className="space-y-6">
             {/* Page Header */}
             <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                   <h2 className="text-3xl font-bold text-gray-900">{selectedTrip.name}</h2>
-                  <Badge style={getTripStatusBadge(selectedTrip).style}>
+                  <Badge style={getTripStatusBadge(selectedTrip).style} className="self-start sm:self-center">
                     {getTripStatusBadge(selectedTrip).label}
                   </Badge>
                 </div>
-                <p className="text-gray-600 mt-1">Budget Dashboard</p>
               </div>
-              <Button onClick={() => navigate(`/trips/${selectedTrip.id}`)}>
-                View Trip Details
+              <Button
+                onClick={() => navigate(`/trips/${selectedTrip.id}`)}
+                size="sm"
+                className="h-9"
+              >
+                <MapPin className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">View Trip Details</span>
               </Button>
             </div>
 

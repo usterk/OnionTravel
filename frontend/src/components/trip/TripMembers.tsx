@@ -165,9 +165,9 @@ export function TripMembers({ tripId, members, ownerId, onMembersUpdated }: Trip
               </CardDescription>
             </div>
             {canManageMembers() && (
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Member
+              <Button onClick={() => setIsAddDialogOpen(true)} size="sm" className="h-9">
+                <UserPlus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Member</span>
               </Button>
             )}
           </div>
@@ -186,8 +186,16 @@ export function TripMembers({ tripId, members, ownerId, onMembersUpdated }: Trip
                 className="flex items-center justify-between p-4 border rounded-lg"
               >
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                    {member.username.charAt(0).toUpperCase()}
+                  <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold overflow-hidden">
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt={member.username}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      member.username.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <p className="font-medium">{member.full_name || member.username}</p>

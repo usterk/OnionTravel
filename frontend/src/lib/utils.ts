@@ -11,6 +11,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string with spaces as thousand separators
  * @example formatNumber(1234.56) => "1 234.56"
+ * @example formatNumber(1234.00) => "1 234"
  */
 export function formatNumber(value: number | string | null | undefined, decimals: number = 2): string {
   if (value === null || value === undefined || value === '') {
@@ -23,6 +24,9 @@ export function formatNumber(value: number | string | null | undefined, decimals
     return '0';
   }
 
+  // Check if the number is a whole number
+  const isWholeNumber = num % 1 === 0;
+
   // Format with specified decimals
   const fixed = num.toFixed(decimals);
 
@@ -34,6 +38,14 @@ export function formatNumber(value: number | string | null | undefined, decimals
   // Add space as thousand separator
   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  // Return with decimal part if needed
-  return decimals > 0 ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  // Return without decimals if whole number, otherwise with decimals
+  if (isWholeNumber || decimals === 0) {
+    return formattedInteger;
+  }
+
+  // Remove trailing zeros from decimal part
+  const trimmedDecimal = decimalPart.replace(/0+$/, '');
+
+  // Return with decimal part only if there are non-zero decimals
+  return trimmedDecimal ? `${formattedInteger}.${trimmedDecimal}` : formattedInteger;
 }

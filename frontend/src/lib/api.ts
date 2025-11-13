@@ -163,6 +163,23 @@ export const tripApi = {
 
 // User API functions
 export const userApi = {
+  // Get current user
+  getCurrentUser: async (): Promise<UserResponse> => {
+    const response = await api.get<UserResponse>('/auth/me');
+    return response.data;
+  },
+
+  // Update current user profile
+  updateProfile: async (data: {
+    email?: string;
+    username?: string;
+    full_name?: string;
+    avatar_url?: string;
+  }): Promise<UserResponse> => {
+    const response = await api.put<UserResponse>('/auth/me', data);
+    return response.data;
+  },
+
   // Search for users by email or username
   searchUsers: async (query: string): Promise<UserResponse[]> => {
     const response = await api.get<UserResponse[]>('/users/search', {

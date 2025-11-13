@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getDailyBudgetStatistics } from '@/lib/expenses-api';
 import type { DailyBudgetStatistics } from '@/lib/expenses-api';
 import { formatNumber } from '@/lib/utils';
@@ -24,9 +26,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
 
-  // Touch gesture handling for mobile swipe
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  // Visual hints state - only on mobile/touch devices
+  const [showHints, setShowHints] = useState(() => {
+    // Check if device has touch support
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  });
+
+  // Swipe direction for animation
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   useEffect(() => {
     // Set initial date based on trip range
@@ -43,6 +50,15 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       setSelectedDate(today);
     }
   }, [tripStartDate, tripEndDate]);
+
+  // Hide hints after 3 seconds or on first swipe
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHints(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (selectedDate) {
@@ -138,7 +154,21 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
     // Check if new date is within trip range
     if (newDate >= tripStartDate && newDate <= tripEndDate) {
+      // Set animation direction
+      setSwipeDirection(days > 0 ? 'left' : 'right');
+
+      // Hide hints on first swipe
+      setShowHints(false);
+
+      // Haptic feedback (if supported)
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+
       setSelectedDate(newDate);
+
+      // Reset direction after animation
+      setTimeout(() => setSwipeDirection(null), 300);
     }
   };
 
@@ -165,37 +195,22 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     setSelectedDate(tripEndDate);
   };
 
-  // Mobile swipe gesture handlers
-  const minSwipeDistance = 50; // minimum distance for swipe to trigger
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null); // reset
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    // Don't process swipes if already refreshing
-    if (isRefreshing) return;
-
-    if (isLeftSwipe && !isAtTripEnd) {
-      // Swipe left = next day
-      changeDay(1);
-    }
-    if (isRightSwipe && !isAtTripStart) {
-      // Swipe right = previous day
-      changeDay(-1);
-    }
-  };
+  // Swipe handlers using react-swipeable
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (!isRefreshing && !isAtTripEnd) {
+        changeDay(1); // Next day
+      }
+    },
+    onSwipedRight: () => {
+      if (!isRefreshing && !isAtTripStart) {
+        changeDay(-1); // Previous day
+      }
+    },
+    preventScrollOnSwipe: false, // Allow vertical scrolling
+    trackMouse: false, // Only track touch, not mouse
+    delta: 50, // Minimum distance to trigger swipe
+  });
 
   const isAtTripStart = selectedDate <= tripStartDate;
   const isAtTripEnd = selectedDate >= tripEndDate;
@@ -273,18 +288,46 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const status = getStatusBadge();
 
   return (
-    <div
-      className={`space-y-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* Header with Date Navigation */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3">
-            {/* Compact Navigation Panel */}
-            <div className="flex items-center justify-between gap-4">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={selectedDate}
+        initial={{ x: swipeDirection === 'left' ? 50 : swipeDirection === 'right' ? -50 : 0 }}
+        animate={{ x: 0 }}
+        exit={{ x: swipeDirection === 'left' ? -50 : swipeDirection === 'right' ? 50 : 0 }}
+        transition={{ type: 'spring', stiffness: 250, damping: 28, duration: 0.45 }}
+        className="space-y-4"
+      >
+        {/* Header with Date Navigation */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3">
+              {/* Compact Navigation Panel with Swipe */}
+              <div
+                {...swipeHandlers}
+                className="flex items-center justify-between gap-4 relative touch-pan-y"
+                style={{ touchAction: 'pan-y' }}
+              >
+                {/* Visual Hints - Animated Arrows */}
+                {showHints && !isAtTripStart && (
+                  <motion.div
+                    className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: [0.3, 0.7, 0.3], x: [20, 10, 20] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                  >
+                    <ChevronLeft className="h-6 w-6 text-blue-500" />
+                  </motion.div>
+                )}
+                {showHints && !isAtTripEnd && (
+                  <motion.div
+                    className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: [0.3, 0.7, 0.3], x: [-20, -10, -20] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                  >
+                    <ChevronRight className="h-6 w-6 text-blue-500" />
+                  </motion.div>
+                )}
               <Button
                 variant="outline"
                 size="sm"
@@ -487,16 +530,17 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         </Card>
       )}
 
-      {/* No Expenses Today */}
-      {statistics.expense_count_today === 0 && (
-        <Card>
-          <CardContent className="py-6">
-            <p className="text-center text-gray-600">
-              No expenses recorded for {formatDate(statistics.date)}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {/* No Expenses Today */}
+        {statistics.expense_count_today === 0 && (
+          <Card>
+            <CardContent className="py-6">
+              <p className="text-center text-gray-600">
+                No expenses recorded for {formatDate(statistics.date)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }

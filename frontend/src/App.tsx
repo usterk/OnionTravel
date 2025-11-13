@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Trips = lazy(() => import('./pages/Trips'));
 const CreateTrip = lazy(() => import('./pages/CreateTrip'));
 const TripDetail = lazy(() => import('./pages/TripDetail'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
   return (
@@ -61,6 +62,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <TripDetail />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             }

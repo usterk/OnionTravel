@@ -39,12 +39,24 @@ export function Header() {
           <nav className="flex items-center gap-3 md:gap-6">
             {/* User Menu */}
             <div className="flex items-center gap-2 md:gap-3 md:pl-6 md:border-l md:border-gray-200">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
-                  <User className="h-4 w-4 text-gray-600" />
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                title="Settings"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors overflow-hidden">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-gray-600" />
+                  )}
                 </div>
                 <span className="font-medium hidden md:inline">{user?.username}</span>
-              </div>
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
