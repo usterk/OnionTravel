@@ -106,7 +106,7 @@ export function ExpenseCard({
           <div className="flex flex-col items-end gap-2 shrink-0">
             {/* Amount */}
             <div className="text-right">
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">
                 {formatAmount(expense.amount, expense.currency_code)}
               </div>
               {/* Show converted amount if different currency */}
