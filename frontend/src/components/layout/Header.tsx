@@ -30,7 +30,7 @@ export function Header() {
               <Menu className="h-5 w-5" />
             </Button>
             <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <img src="/images/logo.png" alt="OnionTravel Logo" className="h-10 w-auto" />
+              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="OnionTravel Logo" className="h-10 w-auto" />
               <span className="text-xl font-bold text-gray-900">OnionTravel</span>
             </Link>
           </div>

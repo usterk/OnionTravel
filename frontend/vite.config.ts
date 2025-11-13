@@ -5,13 +5,14 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: process.env.VITE_BASE_PATH ? `${process.env.VITE_BASE_PATH}/` : '/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
-    port: 7003,
+    port: 7010,
   },
   test: {
     globals: true,

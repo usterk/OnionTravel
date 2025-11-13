@@ -13,8 +13,10 @@ const TripDetail = lazy(() => import('./pages/TripDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
+  const basePath = import.meta.env.VITE_BASE_PATH || '';
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basePath}>
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">

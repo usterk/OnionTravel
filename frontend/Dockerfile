@@ -18,10 +18,12 @@ COPY . .
 # Build arguments for Vite environment variables
 ARG VITE_API_BASE_URL
 ARG VITE_APP_NAME=OnionTravel
+ARG VITE_BASE_PATH
 
 # Set environment variables for build
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_APP_NAME=$VITE_APP_NAME
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
 
 # Build application
 RUN npm run build
@@ -31,6 +33,10 @@ FROM nginx:alpine
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Fix permissions for all files (especially images)
+RUN chmod -R 644 /usr/share/nginx/html && \
+    find /usr/share/nginx/html -type d -exec chmod 755 {} \;
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf

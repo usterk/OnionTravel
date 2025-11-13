@@ -1,0 +1,128 @@
+# OnionTravel Nginx Configuration Template
+# System nginx configuration for Mikrus.pl VPS (jola209)
+#
+# This is a template file that uses environment variable substitution.
+# Variables are replaced by envsubst during deployment.
+#
+# Variables:
+#   BASE_PATH - Application base path (e.g., /OnionTravel or /dev-oniontravel)
+#
+# Installation:
+# 1. envsubst < oniontravel.conf.template > oniontravel.conf
+# 2. Copy to server: scp -P 10209 nginx/oniontravel.conf root@jola209.mikrus.xyz:/etc/nginx/sites-available/oniontravel
+# 3. Enable site: ln -sf /etc/nginx/sites-available/oniontravel /etc/nginx/sites-enabled/oniontravel
+# 4. Test config: nginx -t
+# 5. Reload: systemctl reload nginx
+
+# HTTP Server - Port 20209 (Mikrus high port)
+# Redirects all traffic to HTTPS
+server {
+    listen 20209;
+    server_name jola209.mikrus.xyz;
+
+    # Let's Encrypt challenge location
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all HTTP to HTTPS
+    location / {
+        return 301 https://$host:30209$request_uri;
+    }
+}
+
+# HTTPS Server - Port 30209 (Mikrus high port)
+# Main application endpoint
+server {
+    listen 30209 ssl http2;
+    server_name jola209.mikrus.xyz;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/jola209.mikrus.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/jola209.mikrus.xyz/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Client max body size for file uploads
+    client_max_body_size 10M;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Backend API - ${BASE_PATH}/api
+    # Proxies to backend container on localhost:7011
+    # Rewrite: ${BASE_PATH}/api/v1/... → /api/v1/...
+    location ${BASE_PATH}/api/ {
+        rewrite ^${BASE_PATH}/api/(.*)$ /api/$1 break;
+        proxy_pass http://127.0.0.1:7011;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Backend API docs - ${BASE_PATH}/docs
+    location ${BASE_PATH}/docs {
+        proxy_pass http://127.0.0.1:7011/docs;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend ReDoc
+    location ${BASE_PATH}/redoc {
+        proxy_pass http://127.0.0.1:7011/redoc;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend OpenAPI schema
+    location ${BASE_PATH}/openapi.json {
+        proxy_pass http://127.0.0.1:7011/openapi.json;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Frontend - ${BASE_PATH}
+    # Proxies to frontend container on localhost:7010
+    location ${BASE_PATH}/ {
+        proxy_pass http://127.0.0.1:7010/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Frontend without trailing slash - redirect to add slash
+    location = ${BASE_PATH} {
+        return 301 ${BASE_PATH}/;
+    }
+
+    # Root - redirect to ${BASE_PATH}
+    location = / {
+        return 301 ${BASE_PATH}/;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}

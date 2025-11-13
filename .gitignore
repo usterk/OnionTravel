@@ -43,3 +43,6 @@ test-reports/
 *.swp
 *.swo
 *~
+
+# Generated nginx config (generated from template during deployment)
+nginx/oniontravel.conf

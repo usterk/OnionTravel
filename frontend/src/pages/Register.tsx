@@ -86,7 +86,7 @@ export default function Register() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <img src="/images/logo.png" alt="OnionTravel Logo" className="h-32 w-auto" />
+            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="OnionTravel Logo" className="h-32 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Join OnionTravel

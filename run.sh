@@ -6,8 +6,8 @@
 set -e
 
 # Configuration
-BACKEND_PORT=7001
-FRONTEND_PORT=7003
+BACKEND_PORT=7011
+FRONTEND_PORT=7010
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"

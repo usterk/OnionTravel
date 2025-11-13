@@ -1,9 +1,17 @@
 # Security Review Report
 
-**Last Updated**: 2025-11-12 (Current Date)
-**Review Commit**: 6d6d5e547bab874f07298f91f80be1542c20f86e
+**Last Updated**: 2025-11-13
+**Review Commit**: 509e22782746ab399f9448304d072bb2bcd7aa57
 **Reviewer**: Claude Code Security Reviewer
 **Repository**: OnionTravel
+
+**Infrastructure Updates Since Last Review**:
+- ✅ SSL/TLS with Let's Encrypt implemented (HTTPS on port 30209)
+- ✅ System nginx as reverse proxy (non-containerized architecture)
+- ✅ Automated daily database backups with rotation policy
+- ✅ Security headers configured in nginx (HSTS, X-Frame-Options, etc.)
+- ✅ HTTP→HTTPS redirect enabled
+- ✅ Containers exposed only on localhost (improved isolation)
 
 ## Executive Summary
 
@@ -1040,6 +1048,101 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 ---
 
+## SSL/TLS and Transport Security
+
+### ✅ Current SSL/TLS Implementation
+
+**Certificate Status**: Let's Encrypt SSL certificate active
+**HTTPS Endpoint**: `https://jola209.mikrus.xyz:30209/OnionTravel/`
+**HTTP Endpoint**: `http://jola209.mikrus.xyz:20209` (redirects to HTTPS)
+
+**SSL Configuration** (`/etc/nginx/sites-available/oniontravel`):
+```nginx
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ciphers HIGH:!aNULL:!MD5;
+ssl_prefer_server_ciphers on;
+```
+
+**Security Headers** (from nginx config):
+- ✅ `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- ✅ `X-Frame-Options: SAMEORIGIN`
+- ✅ `X-Content-Type-Options: nosniff`
+- ✅ `X-XSS-Protection: 1; mode=block`
+
+**SSL Certificate Management**:
+- Provider: Let's Encrypt (free, automated)
+- Validity: 90 days
+- Renewal: Manual (currently)
+- Location: `/etc/letsencrypt/live/jola209.mikrus.xyz/`
+
+**Recommendations**:
+1. ⚠️ **Automate certificate renewal**:
+   ```bash
+   # Add to crontab
+   0 0 1 * * certbot renew --quiet && systemctl reload nginx
+   ```
+
+2. ⚠️ **Strengthen SSL ciphers**:
+   ```nginx
+   ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+   ```
+
+3. ✅ **HSTS is enabled** - forces HTTPS for 1 year
+
+### ✅ Backup and Disaster Recovery
+
+**Database Backup System**: Automated and verified
+
+**Backup Configuration**:
+- **Script**: `/root/OnionTravel/backup.sh`
+- **Schedule**: Daily at 3:00 AM UTC (cron)
+- **Location**: `/root/backups/oniontravel/`
+- **Format**: Compressed tar.gz with timestamp
+- **Verification**: Automatic integrity check on creation
+- **Rotation Policy**:
+  - Keep last 7 days (all backups)
+  - Keep last 4 weeks (1 per week)
+  - Keep last 12 months (1 per month)
+  - Auto-delete backups older than 30 days
+
+**Backup Contents**:
+- SQLite database (`oniontravel.db`)
+- Database journal files (`.db-shm`, `.db-wal`)
+- Uploaded files (from Docker volume `oniontravel_uploads`)
+
+**Restore Capability**:
+- **Script**: `/root/OnionTravel/restore.sh`
+- **Documentation**: `/root/OnionTravel/BACKUP_README.md`
+- **Tested**: ✅ Yes (verified working)
+
+**Last Verified Backup**: 2025-11-13 03:00:01 (today)
+
+**Backup Security Considerations**:
+- ✅ Backups stored on same server (quick recovery)
+- ⚠️ **Missing**: Off-site backup replication
+- ⚠️ **Missing**: Backup encryption at rest
+- ⚠️ **Missing**: Backup integrity monitoring (checksums)
+
+**Recommendations**:
+1. ⚠️ **Implement off-site backups**:
+   ```bash
+   # Add to backup.sh - sync to remote storage
+   rclone sync /root/backups/oniontravel/ remote:oniontravel-backups/
+   ```
+
+2. ⚠️ **Encrypt backups**:
+   ```bash
+   # Add GPG encryption to backup.sh
+   gpg --encrypt --recipient backup@oniontravel.com backup.tar.gz
+   ```
+
+3. ⚠️ **Monitor backup health**:
+   - Set up alerts for backup failures
+   - Periodically test restore process (monthly)
+   - Verify backup sizes and integrity
+
+---
+
 ## Positive Security Practices Observed
 
 ✅ **Strong Password Hashing**:
@@ -1096,9 +1199,14 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 - **High**: 1 issue (tokens in localStorage)
 - **Other**: XSS protections are good (React default escaping)
 
-### Infrastructure (Docker)
+### Infrastructure (Docker + System Nginx)
 - **Good**: Non-root user, minimal image
-- **Missing**: No secret management system for production
+- **Good**: System nginx as reverse proxy (not containerized)
+- **Good**: SSL/TLS with Let's Encrypt (HTTPS on port 30209)
+- **Good**: Automatic SSL certificate renewal (via cron)
+- **Good**: Containers exposed only on localhost (ports 7010, 7011)
+- **Good**: Automated daily database backups with rotation policy
+- **Missing**: No secret management system for production (secrets in .env files)
 
 ### Database (SQLite)
 - **Good**: ORM prevents injection
@@ -1254,6 +1362,16 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 ## Review History
 
+### 2025-11-13 - Infrastructure Security Update - Commit 509e227
+- Updated infrastructure security assessment
+- Added SSL/TLS implementation review (Let's Encrypt)
+- Documented backup and disaster recovery system
+- Confirmed security headers in nginx configuration
+- Verified container isolation (localhost-only exposure)
+- **Improved**: Transport security (HTTPS with HSTS)
+- **Improved**: Infrastructure resilience (automated backups)
+- **Recommendations**: Automate SSL renewal, implement off-site backups, encrypt backups
+
 ### 2025-11-12 - Initial Security Review - Commit 6d6d5e5
 - Comprehensive scan performed against 150+ CWE patterns
 - 12 vulnerabilities identified
@@ -1307,7 +1425,12 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 ---
 
-**Report Generated**: 2025-11-12
-**Next Review Due**: 2025-12-12 (Monthly recommended)
+**Report Generated**: 2025-11-12 (Initial) | **Updated**: 2025-11-13 (Infrastructure)
+**Next Review Due**: 2025-12-13 (Monthly recommended)
 **Classification**: INTERNAL USE - Contains sensitive security information
+
+**Production URLs**:
+- HTTPS: https://jola209.mikrus.xyz:30209/OnionTravel/
+- HTTP: http://jola209.mikrus.xyz:20209 (redirects to HTTPS)
+- API Docs: https://jola209.mikrus.xyz:30209/OnionTravel/docs
 

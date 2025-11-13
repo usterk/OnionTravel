@@ -15,39 +15,134 @@ ssh root@65.21.32.55 -p 10209
 ```
 
 **Application URLs:**
-- Frontend: http://65.21.32.55:20209
-- Backend API: http://65.21.32.55:30209/api/v1
-- API Docs: http://65.21.32.55:30209/docs
+- Frontend: https://jola209.mikrus.xyz:30209/OnionTravel
+- Backend API: https://jola209.mikrus.xyz:30209/OnionTravel/api/v1
+- API Docs: https://jola209.mikrus.xyz:30209/OnionTravel/docs
+- HTTP (redirects to HTTPS): http://jola209.mikrus.xyz:20209
+
+**Note**: Application uses self-signed SSL certificate. Browsers will show security warning - accept to proceed.
+
+**Server Architecture:**
+```
+Internet → System Nginx (ports 20209 HTTP / 30209 HTTPS)
+         → Frontend Container (localhost:7010)
+         → Backend Container (localhost:7011)
+```
 
 **Server paths:**
 - Application: `/root/OnionTravel/`
+- Nginx config: `/etc/nginx/sites-available/oniontravel`
 - Backups: `/root/backups/oniontravel/`
 - Docker volumes: `/var/lib/docker/volumes/oniontravel_*`
 
 **Important files:**
+- Nginx config: `/etc/nginx/sites-available/oniontravel`
+- Docker Compose: `/root/OnionTravel/docker-compose.yml`
 - Backup script: `/root/OnionTravel/backup.sh`
 - Restore script: `/root/OnionTravel/restore.sh`
 - Backup docs: `/root/OnionTravel/BACKUP_README.md`
-- Docker Compose: `/root/OnionTravel/docker-compose.yml`
 - Cron: `crontab -l` (daily backups at 3:00 AM)
 
 **Quick commands:**
 ```bash
-# Check application status
-docker compose ps
+# Docker containers
+docker compose ps                    # Container status
+docker compose logs -f               # View all logs
+docker compose logs -f backend       # Backend logs only
+docker compose restart               # Restart containers
 
-# View logs
-docker compose logs -f
+# System nginx
+systemctl status nginx               # Nginx status
+systemctl reload nginx               # Reload nginx config
+nginx -t                             # Test nginx config
+cat /etc/nginx/sites-available/oniontravel  # View config
 
-# Run backup manually
-/root/OnionTravel/backup.sh
+# Application
+/root/OnionTravel/check-health.sh    # Quick health check
+curl http://localhost:7010           # Test frontend (internal)
+curl http://localhost:7011/health    # Test backend (internal)
 
-# List backups
-ls -lh /root/backups/oniontravel/
-
-# Restart application
-docker compose restart
+# Backups
+/root/OnionTravel/backup.sh          # Run backup manually
+ls -lh /root/backups/oniontravel/    # List backups
 ```
+
+## Configuration
+
+### BASE_PATH Configuration
+
+The application base path (URL prefix) is **fully configurable** via environment variables. This allows deploying multiple versions (production, dev, staging) on the same server with different paths.
+
+**Configuration Files:**
+- Backend: `backend/.env` → `BASE_PATH` variable
+- Frontend: `frontend/.env` → `VITE_BASE_PATH` variable
+- Production defaults: `backend/.env.example`, `frontend/.env.example`
+
+**Examples:**
+```bash
+# Production (backend/.env.example)
+BASE_PATH=/OnionTravel
+
+# Development version on production server
+BASE_PATH=/dev-oniontravel
+
+# Staging
+BASE_PATH=/staging
+
+# Local development (backend/.env, frontend/.env)
+BASE_PATH=                    # Empty = runs at root (/)
+VITE_BASE_PATH=              # Empty = runs at root (/)
+```
+
+**How it works:**
+1. Backend: `BASE_PATH` sets FastAPI `root_path` → affects OpenAPI docs URLs
+2. Frontend: `VITE_BASE_PATH` sets React Router `basename` and Vite `base` → affects all routes and asset paths
+3. Nginx: Template `nginx/oniontravel.conf.template` uses `${BASE_PATH}` placeholders
+4. Deploy: `deploy.sh` runs `envsubst` to generate final nginx config from template
+
+**Changing BASE_PATH:**
+1. Edit `backend/.env.example` and `frontend/.env.example` with new path
+2. Run `./deploy.sh` (automatically regenerates nginx config and rebuilds containers)
+3. Application will be available at new path (e.g., `/dev-oniontravel`)
+
+**Local Development:**
+- Keep `BASE_PATH=""` (empty) in `backend/.env` and `frontend/.env`
+- Application runs at http://localhost:7010/ (no prefix)
+- Backend at http://localhost:7011/api/v1
+
+**Troubleshooting**: See `nginx/README.md` for detailed troubleshooting, testing guides, and examples.
+
+## Deployment
+
+### Deploy to Production
+
+**From local machine** (recommended):
+```bash
+./deploy.sh
+```
+
+This script:
+1. **Reads BASE_PATH** from `backend/.env.example` (production config)
+2. **Generates nginx config** using `envsubst` on template file
+3. Copies nginx config to `/etc/nginx/sites-available/oniontravel`
+4. Copies application files (backend, frontend, docker-compose.yml)
+5. Enables nginx site and reloads nginx
+6. Rebuilds Docker containers with `--no-cache` flag (passes BASE_PATH to containers)
+7. Waits for containers to become healthy
+8. Tests all endpoints (internal and external)
+9. Shows deployment summary
+
+**From production server** (for git-based updates):
+```bash
+ssh root@jola209.mikrus.xyz -p 10209
+cd /root/OnionTravel
+./update.sh
+```
+
+**Important**:
+- Always use `./deploy.sh` when deploying config changes
+- Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
+- Edit `nginx/oniontravel.conf.template` for nginx changes
 
 ## Project Overview
 
@@ -91,25 +186,26 @@ OnionTravel/
 ```bash
 cd backend
 source venv/bin/activate
-uvicorn app.main:app --reload --port 7001
+uvicorn app.main:app --reload --port 7011
 ```
 
-**Important**: Backend runs on port 7001.
+**Important**: Backend runs on port 7011 (changed from 7001 to match production localhost ports).
 
-- API: http://localhost:7001
-- Swagger Docs: http://localhost:7001/docs
-- ReDoc: http://localhost:7001/redoc
+- API: http://localhost:7011
+- Swagger Docs: http://localhost:7011/docs
+- ReDoc: http://localhost:7011/redoc
 
 ### Frontend Development Server
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --port 7010
 ```
 
-- App: http://localhost:7000
-- Vite uses port 7000 by default
+**Important**: Frontend runs on port 7010 (changed from 7000 to match production localhost ports).
+
+- App: http://localhost:7010
 
 ### After Code Changes
 

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "OnionTravel API"
     VERSION: str = "1.0.0"
+    BASE_PATH: str = ""
 
     # Database
     DATABASE_URL: str = "sqlite:///./oniontravel.db"
