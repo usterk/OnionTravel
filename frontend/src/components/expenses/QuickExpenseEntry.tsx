@@ -186,7 +186,7 @@ export function QuickExpenseEntry({
                 No categories available. Please create categories first.
               </p>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-2">
                 {categories.map((category) => {
                   const IconComponent = getIconComponent(category.icon);
                   const isSelected = selectedCategory?.id === category.id;
@@ -197,28 +197,28 @@ export function QuickExpenseEntry({
                       type="button"
                       onClick={() => setSelectedCategory(category)}
                       className={cn(
-                        'flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all hover:scale-105',
+                        'flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg border-2 transition-all hover:scale-105',
                         isSelected
-                          ? 'border-primary bg-primary/10 ring-2 ring-primary ring-offset-2'
+                          ? 'border-primary bg-primary/10'
                           : 'border-gray-200 hover:border-gray-300'
                       )}
                       title={category.name}
                       disabled={isSubmitting}
                     >
                       <div
-                        className="flex items-center justify-center w-8 h-8 rounded-md"
+                        className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-md"
                         style={{
                           backgroundColor: isSelected ? category.color : category.color + '20',
                         }}
                       >
                         {IconComponent && (
                           <IconComponent
-                            className="h-5 w-5"
+                            className="h-5 w-5 sm:h-6 sm:w-6"
                             style={{ color: isSelected ? '#fff' : category.color }}
                           />
                         )}
                       </div>
-                      <span className="text-xs text-center truncate w-full">
+                      <span className="text-[10px] sm:text-xs text-center w-full leading-tight line-clamp-2">
                         {category.name}
                       </span>
                     </button>
