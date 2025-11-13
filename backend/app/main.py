@@ -17,7 +17,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     description="OnionTravel - Trip Budget Tracker API",
-    root_path="/OnionTravel/api",
+    root_path=f"{settings.BASE_PATH}/api" if settings.BASE_PATH else "/api",
 )
 
 # Configure CORS

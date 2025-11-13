@@ -53,11 +53,11 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    # Backend API - /OnionTravel/api
+    # Backend API - ${BASE_PATH}/api
     # Proxies to backend container on localhost:7011
-    # Rewrite: /OnionTravel/api/v1/... → /api/v1/...
-    location /OnionTravel/api/ {
-        rewrite ^/OnionTravel/api/(.*)$ /api/$1 break;
+    # Rewrite: ${BASE_PATH}/api/v1/... → /api/v1/...
+    location ${BASE_PATH}/api/ {
+        rewrite ^${BASE_PATH}/api/(.*)$ /api/$1 break;
         proxy_pass http://127.0.0.1:7011;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -69,8 +69,8 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Backend API docs - /OnionTravel/docs
-    location /OnionTravel/docs {
+    # Backend API docs - ${BASE_PATH}/docs
+    location ${BASE_PATH}/docs {
         proxy_pass http://127.0.0.1:7011/docs;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -79,7 +79,7 @@ server {
     }
 
     # Backend ReDoc
-    location /OnionTravel/redoc {
+    location ${BASE_PATH}/redoc {
         proxy_pass http://127.0.0.1:7011/redoc;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -88,7 +88,7 @@ server {
     }
 
     # Backend OpenAPI schema
-    location /OnionTravel/openapi.json {
+    location ${BASE_PATH}/openapi.json {
         proxy_pass http://127.0.0.1:7011/openapi.json;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -96,9 +96,9 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Frontend - /OnionTravel
+    # Frontend - ${BASE_PATH}
     # Proxies to frontend container on localhost:7010
-    location /OnionTravel/ {
+    location ${BASE_PATH}/ {
         proxy_pass http://127.0.0.1:7010/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -110,13 +110,13 @@ server {
     }
 
     # Frontend without trailing slash - redirect to add slash
-    location = /OnionTravel {
-        return 301 /OnionTravel/;
+    location = ${BASE_PATH} {
+        return 301 ${BASE_PATH}/;
     }
 
-    # Root - redirect to /OnionTravel
+    # Root - redirect to ${BASE_PATH}
     location = / {
-        return 301 /OnionTravel/;
+        return 301 ${BASE_PATH}/;
     }
 
     # Health check endpoint

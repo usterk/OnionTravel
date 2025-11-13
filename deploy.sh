@@ -15,12 +15,36 @@ SERVER="root@jola209.mikrus.xyz"
 PORT="10209"
 REMOTE_DIR="/root/OnionTravel"
 
+# Load BASE_PATH from backend/.env (production value)
+if [ -f "backend/.env.example" ]; then
+    export BASE_PATH=$(grep "^BASE_PATH=" backend/.env.example | cut -d '=' -f2)
+else
+    echo "⚠️  Warning: backend/.env.example not found, using default BASE_PATH=/OnionTravel"
+    export BASE_PATH="/OnionTravel"
+fi
+
+echo "📋 Configuration:"
+echo "  BASE_PATH: ${BASE_PATH}"
+echo ""
+
 # Check if we're in the right directory
 if [ ! -f "docker-compose.yml" ]; then
     echo "❌ Error: docker-compose.yml not found!"
     echo "Please run this script from the OnionTravel directory"
     exit 1
 fi
+
+# Generate nginx config from template
+echo "🔧 Generating nginx configuration from template..."
+if [ ! -f "nginx/oniontravel.conf.template" ]; then
+    echo "❌ Error: nginx/oniontravel.conf.template not found!"
+    exit 1
+fi
+
+# Use envsubst to replace variables in template
+envsubst '${BASE_PATH}' < nginx/oniontravel.conf.template > nginx/oniontravel.conf
+echo "  ✅ Generated nginx/oniontravel.conf with BASE_PATH=${BASE_PATH}"
+echo ""
 
 echo "📤 Step 1: Copying files to production server..."
 echo ""

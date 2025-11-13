@@ -12,8 +12,10 @@ const CreateTrip = lazy(() => import('./pages/CreateTrip'));
 const TripDetail = lazy(() => import('./pages/TripDetail'));
 
 function App() {
+  const basePath = import.meta.env.VITE_BASE_PATH || '';
+
   return (
-    <BrowserRouter basename="/OnionTravel">
+    <BrowserRouter basename={basePath}>
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">

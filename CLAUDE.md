@@ -67,6 +67,49 @@ curl http://localhost:7011/health    # Test backend (internal)
 ls -lh /root/backups/oniontravel/    # List backups
 ```
 
+## Configuration
+
+### BASE_PATH Configuration
+
+The application base path (URL prefix) is **fully configurable** via environment variables. This allows deploying multiple versions (production, dev, staging) on the same server with different paths.
+
+**Configuration Files:**
+- Backend: `backend/.env` → `BASE_PATH` variable
+- Frontend: `frontend/.env` → `VITE_BASE_PATH` variable
+- Production defaults: `backend/.env.example`, `frontend/.env.example`
+
+**Examples:**
+```bash
+# Production (backend/.env.example)
+BASE_PATH=/OnionTravel
+
+# Development version on production server
+BASE_PATH=/dev-oniontravel
+
+# Staging
+BASE_PATH=/staging
+
+# Local development (backend/.env, frontend/.env)
+BASE_PATH=                    # Empty = runs at root (/)
+VITE_BASE_PATH=              # Empty = runs at root (/)
+```
+
+**How it works:**
+1. Backend: `BASE_PATH` sets FastAPI `root_path` → affects OpenAPI docs URLs
+2. Frontend: `VITE_BASE_PATH` sets React Router `basename` and Vite `base` → affects all routes and asset paths
+3. Nginx: Template `nginx/oniontravel.conf.template` uses `${BASE_PATH}` placeholders
+4. Deploy: `deploy.sh` runs `envsubst` to generate final nginx config from template
+
+**Changing BASE_PATH:**
+1. Edit `backend/.env.example` and `frontend/.env.example` with new path
+2. Run `./deploy.sh` (automatically regenerates nginx config and rebuilds containers)
+3. Application will be available at new path (e.g., `/dev-oniontravel`)
+
+**Local Development:**
+- Keep `BASE_PATH=""` (empty) in `backend/.env` and `frontend/.env`
+- Application runs at http://localhost:7010/ (no prefix)
+- Backend at http://localhost:7011/api/v1
+
 ## Deployment
 
 ### Deploy to Production
@@ -77,13 +120,15 @@ ls -lh /root/backups/oniontravel/    # List backups
 ```
 
 This script:
-1. Copies nginx config to `/etc/nginx/sites-available/oniontravel`
-2. Copies application files (backend, frontend, docker-compose.yml)
-3. Enables nginx site and reloads nginx
-4. Rebuilds Docker containers with `--no-cache` flag
-5. Waits for containers to become healthy
-6. Tests all endpoints (internal and external)
-7. Shows deployment summary
+1. **Reads BASE_PATH** from `backend/.env.example` (production config)
+2. **Generates nginx config** using `envsubst` on template file
+3. Copies nginx config to `/etc/nginx/sites-available/oniontravel`
+4. Copies application files (backend, frontend, docker-compose.yml)
+5. Enables nginx site and reloads nginx
+6. Rebuilds Docker containers with `--no-cache` flag (passes BASE_PATH to containers)
+7. Waits for containers to become healthy
+8. Tests all endpoints (internal and external)
+9. Shows deployment summary
 
 **From production server** (for git-based updates):
 ```bash
@@ -92,7 +137,10 @@ cd /root/OnionTravel
 ./update.sh
 ```
 
-**Important**: Always use `./deploy.sh` when deploying config changes to ensure nginx config is properly updated.
+**Important**:
+- Always use `./deploy.sh` when deploying config changes
+- Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
+- Edit `nginx/oniontravel.conf.template` for nginx changes
 
 ## Project Overview
 

@@ -16,6 +16,7 @@ services:
       - DATABASE_URL=sqlite:////app/data/oniontravel.db
       - SECRET_KEY=${SECRET_KEY:-changeme-generate-with-openssl-rand-hex-32}
       - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY:-changeme}
+      - BASE_PATH=${BASE_PATH:-/OnionTravel}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
       interval: 30s
@@ -28,7 +29,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://jola209.mikrus.xyz:30209/OnionTravel/api/v1}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://jola209.mikrus.xyz:30209${BASE_PATH:-/OnionTravel}/api/v1}
+        - VITE_BASE_PATH=${BASE_PATH:-/OnionTravel}
     container_name: ${COMPOSE_PROJECT_NAME:-OnionTravel}-frontend
     restart: unless-stopped
     ports:
