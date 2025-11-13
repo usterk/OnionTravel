@@ -1,4 +1,4 @@
 // Application version
-// This file is automatically updated by release.sh
-export const APP_VERSION = '1.1.2';
+// This file is automatically updated by deploy-prod.sh
+export const APP_VERSION = '1.2.0';
 export const APP_NAME = 'OnionTravel';
