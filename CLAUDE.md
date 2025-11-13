@@ -110,6 +110,8 @@ VITE_BASE_PATH=              # Empty = runs at root (/)
 - Application runs at http://localhost:7010/ (no prefix)
 - Backend at http://localhost:7011/api/v1
 
+**Troubleshooting**: See `nginx/README.md` for detailed troubleshooting, testing guides, and examples.
+
 ## Deployment
 
 ### Deploy to Production
