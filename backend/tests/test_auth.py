@@ -211,6 +211,121 @@ class TestGetCurrentUser:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+class TestUpdateCurrentUser:
+    """Tests for update current user endpoint (PUT /auth/me)"""
+
+    def test_update_user_profile_success(self, client, auth_headers, test_user_data):
+        """Test successful user profile update"""
+        update_data = {
+            "full_name": "Updated Name",
+            "avatar_url": "https://example.com/avatar.jpg"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["full_name"] == "Updated Name"
+        assert data["avatar_url"] == "https://example.com/avatar.jpg"
+        assert data["email"] == test_user_data["email"]  # Email unchanged
+        assert data["username"] == test_user_data["username"]  # Username unchanged
+
+    def test_update_email_success(self, client, auth_headers, test_user_data):
+        """Test successful email update"""
+        update_data = {
+            "email": "newemail@example.com"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["email"] == "newemail@example.com"
+        assert data["username"] == test_user_data["username"]  # Username unchanged
+
+    def test_update_email_conflict(self, client, auth_headers, auth_headers_user2):
+        """Test email update with email already taken by another user"""
+        # Try to change to email of user2
+        update_data = {
+            "email": "test2@example.com"  # This is user2's email
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Email already registered" in response.json()["detail"]
+
+    def test_update_username_success(self, client, auth_headers, test_user_data):
+        """Test successful username update"""
+        update_data = {
+            "username": "newusername"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["username"] == "newusername"
+        assert data["email"] == test_user_data["email"]  # Email unchanged
+
+    def test_update_username_conflict(self, client, auth_headers, auth_headers_user2):
+        """Test username update with username already taken by another user"""
+        # Try to change to username of user2
+        update_data = {
+            "username": "testuser2"  # This is user2's username
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Username already taken" in response.json()["detail"]
+
+    def test_update_user_no_token(self, client):
+        """Test update without authentication token"""
+        update_data = {
+            "full_name": "New Name"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_update_partial_fields(self, client, auth_headers, test_user_data):
+        """Test updating only some fields (partial update)"""
+        # Update only full_name
+        update_data = {
+            "full_name": "Only Name Changed"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["full_name"] == "Only Name Changed"
+        assert data["email"] == test_user_data["email"]
+        assert data["username"] == test_user_data["username"]
+        # avatar_url should be None or unchanged (depending on default)
+
+    def test_update_same_email_allowed(self, client, auth_headers, test_user_data):
+        """Test that updating to same email (no change) is allowed"""
+        update_data = {
+            "email": test_user_data["email"],  # Same email
+            "full_name": "Changed Name"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["email"] == test_user_data["email"]
+        assert data["full_name"] == "Changed Name"
+
+    def test_update_same_username_allowed(self, client, auth_headers, test_user_data):
+        """Test that updating to same username (no change) is allowed"""
+        update_data = {
+            "username": test_user_data["username"],  # Same username
+            "full_name": "Changed Name"
+        }
+        response = client.put("/api/v1/auth/me", json=update_data, headers=auth_headers)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["username"] == test_user_data["username"]
+        assert data["full_name"] == "Changed Name"
+
+
 class TestPasswordSecurity:
     """Tests for password hashing and security"""
 

@@ -18,6 +18,21 @@ vi.mock('@/components/ui/icon-picker', () => ({
   },
 }));
 
+// Mock react-swipeable
+vi.mock('react-swipeable', () => ({
+  useSwipeable: () => ({}),
+}));
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, initial, animate, exit, transition, ...props }: any) => (
+      <div {...props}>{children}</div>
+    ),
+  },
+  AnimatePresence: ({ children, mode }: any) => <>{children}</>,
+}));
+
 describe('DailyBudgetView', () => {
   const mockTripId = 1;
   const mockCurrencyCode = 'USD';
@@ -139,7 +154,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       // Check main metrics - multiple instances of currency amounts exist
@@ -334,7 +350,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       const nextButton = screen.getByRole('button', { name: /Next/i });
@@ -364,7 +381,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       const prevButton = screen.getByText('Previous');
@@ -397,7 +415,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       // Navigate to trip start by clicking the date picker
@@ -438,7 +457,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       // Navigate to trip end by clicking the date picker
@@ -471,7 +491,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       // Find the date input by its type attribute
@@ -502,7 +523,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Daily Budget Overview')).toBeInTheDocument();
+        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
+        expect(screen.getByText('Previous')).toBeInTheDocument();
       });
 
       const dateInputs = screen.getAllByRole('textbox') as HTMLInputElement[];
