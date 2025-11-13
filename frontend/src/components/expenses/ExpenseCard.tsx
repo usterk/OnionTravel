@@ -47,7 +47,7 @@ export function ExpenseCard({
             {/* Expense Details */}
             <div className="flex-1 min-w-0">
               {/* Title and Category Icon */}
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-start gap-2 mb-1">
                 {category && IconComponent && (
                   <div
                     className="flex items-center justify-center w-6 h-6 rounded shrink-0"
@@ -56,7 +56,7 @@ export function ExpenseCard({
                     <IconComponent className="h-4 w-4" style={{ color: category.color }} />
                   </div>
                 )}
-                <h3 className="font-semibold text-gray-900 truncate">{expense.title}</h3>
+                <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 flex-1">{expense.title}</h3>
               </div>
 
               {/* Description */}
