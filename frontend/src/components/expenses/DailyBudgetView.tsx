@@ -291,10 +291,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     <AnimatePresence mode="wait">
       <motion.div
         key={selectedDate}
-        initial={{ x: swipeDirection === 'left' ? 50 : swipeDirection === 'right' ? -50 : 0 }}
-        animate={{ x: 0 }}
-        exit={{ x: swipeDirection === 'left' ? -50 : swipeDirection === 'right' ? 50 : 0 }}
-        transition={{ type: 'spring', stiffness: 250, damping: 28, duration: 0.45 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="space-y-4"
       >
         {/* Header with Date Navigation */}
