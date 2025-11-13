@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report --port 7002"
+    "test:e2e:report": "playwright show-report --port 7012"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

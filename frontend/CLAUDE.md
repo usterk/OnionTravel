@@ -18,7 +18,7 @@ npm run test:coverage   # With coverage
 **Reports**:
 - Unit tests: `../test-reports/frontend/YYYY-MM-DD_HH-MM-SS_vitest.log`
 - E2E tests: `../test-reports/e2e/YYYY-MM-DD_HH-MM-SS_playwright/`
-- View E2E report: `npm run test:e2e:report` (port 7002)
+- View E2E report: `npm run test:e2e:report` (port 7012)
 
 ### Test Structure
 
@@ -44,7 +44,7 @@ npm run test:e2e:headed   # Playwright headed mode
 
 - Frontend: http://localhost:7010
 - Backend API: http://localhost:7011
-- E2E Report Server: http://localhost:7002
+- E2E Report Server: http://localhost:7012
 
 ### Key Technologies
 
