@@ -80,11 +80,12 @@ class CurrencyService:
     ) -> Optional[Decimal]:
         """
         Get exchange rate. First tries database, then API if not found.
+        For future dates or past dates without data, falls back to today's rate.
         """
         if from_currency == to_currency:
             return Decimal("1.0")
 
-        # Try to get from database first
+        # Try to get from database first for the requested date
         rate = self.get_rate_from_db(from_currency, to_currency, rate_date)
         if rate:
             return rate
@@ -96,6 +97,20 @@ class CurrencyService:
                 # Save to database
                 self.save_rate(from_currency, to_currency, rate)
                 return rate
+
+        # For past/future dates without data, fall back to today's rate
+        # First check if we have today's rate in DB
+        today_rate = self.get_rate_from_db(from_currency, to_currency, date.today())
+        if today_rate:
+            logger.info(f"Using today's rate for {from_currency}/{to_currency} on {rate_date}: {today_rate}")
+            return today_rate
+
+        # If not in DB, fetch from API and save
+        rate = await self.fetch_rate_from_api(from_currency, to_currency)
+        if rate:
+            self.save_rate(from_currency, to_currency, rate)
+            logger.info(f"Fetched and using current rate for {from_currency}/{to_currency} on {rate_date}: {rate}")
+            return rate
 
         return None
 

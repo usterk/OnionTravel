@@ -73,9 +73,15 @@ export function ExpenseList({
     setError(null);
 
     try {
-      const data = await getExpenses(tripId, filters);
-      setExpenses(data);
-      setHasMore(data.length === ITEMS_PER_PAGE);
+      // Fetch one more than we need to check if there are more pages
+      const data = await getExpenses(tripId, { ...filters, limit: ITEMS_PER_PAGE + 1 });
+
+      // If we got more than ITEMS_PER_PAGE, there are more pages
+      const hasMorePages = data.length > ITEMS_PER_PAGE;
+
+      // Only show ITEMS_PER_PAGE items
+      setExpenses(data.slice(0, ITEMS_PER_PAGE));
+      setHasMore(hasMorePages);
     } catch (err: any) {
       console.error('Failed to load expenses:', err);
       setError(err.response?.data?.detail || 'Failed to load expenses');

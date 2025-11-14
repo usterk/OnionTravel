@@ -323,6 +323,8 @@ export default function TripDetail() {
               <QuickExpenseEntry
                 tripId={currentTrip.id}
                 tripCurrency={currentTrip.currency_code}
+                tripStartDate={currentTrip.start_date}
+                tripEndDate={currentTrip.end_date}
                 categories={plainCategories}
                 onExpenseCreated={() => {
                   loadCategories(currentTrip.id);
