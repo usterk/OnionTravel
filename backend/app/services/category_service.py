@@ -118,6 +118,7 @@ def get_categories_with_stats(db: Session, trip_id: int, trip_budget: float) -> 
             icon=category.icon,
             budget_percentage=budget_percentage,
             is_default=category.is_default,
+            display_order=category.display_order,
             created_at=category.created_at,
             total_spent=total_spent,
             allocated_budget=allocated_budget,
