@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 class CategoryBase(BaseModel):
@@ -43,6 +43,7 @@ class CategoryResponse(CategoryBase):
     id: int
     trip_id: int
     is_default: bool
+    display_order: int
     created_at: datetime
 
     class Config:
@@ -58,3 +59,8 @@ class CategoryWithStats(CategoryResponse):
 
     class Config:
         from_attributes = True
+
+
+class CategoryReorder(BaseModel):
+    """Schema for reordering categories"""
+    category_ids: List[int] = Field(..., min_length=1, description="List of category IDs in desired order")

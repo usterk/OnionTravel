@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDailyBudgetStatistics } from '@/lib/expenses-api';
+import { getDailyBudgetStatistics, getExpenses } from '@/lib/expenses-api';
 import type { DailyBudgetStatistics } from '@/lib/expenses-api';
+import type { Expense } from '@/types/models';
 import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
@@ -26,6 +27,16 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
+
+  // Category breakdown collapse state (default: collapsed)
+  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
+
+  // Expenses collapse state (default: expanded)
+  const [showExpenses, setShowExpenses] = useState(true);
+
+  // Expenses for the selected day
+  const [dayExpenses, setDayExpenses] = useState<Expense[]>([]);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
 
   // Visual hints state - only on mobile/touch devices
   const [showHints, setShowHints] = useState(() => {
@@ -64,6 +75,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   useEffect(() => {
     if (selectedDate) {
       loadStatistics();
+      loadDayExpenses();
     }
   }, [tripId, selectedDate]);
 
@@ -86,6 +98,22 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const loadDayExpenses = async () => {
+    setIsLoadingExpenses(true);
+    try {
+      const expenses = await getExpenses(tripId, {
+        start_date: selectedDate,
+        end_date: selectedDate,
+      });
+      setDayExpenses(expenses);
+    } catch (err: any) {
+      console.error('Failed to load day expenses:', err);
+      setDayExpenses([]);
+    } finally {
+      setIsLoadingExpenses(false);
     }
   };
 
@@ -402,9 +430,75 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             {/* YOU CAN STILL SPEND - Main focus */}
             <div className="text-center pb-4 border-b border-gray-200">
               <p className="text-sm md:text-base text-gray-600 mb-2">💰 Remaining Today</p>
-              <p className={`text-4xl md:text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
-              </p>
+              {/* Mobile: column layout */}
+              <div className="flex flex-col md:hidden items-center gap-2">
+                <p className={`text-4xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
+                </p>
+                {statistics.cumulative_savings_past !== null &&
+                 statistics.cumulative_savings_past !== undefined &&
+                 selectedDate <= new Date().toISOString().split('T')[0] && (
+                  <div className="relative group">
+                    <div className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold cursor-help ${
+                      statistics.cumulative_savings_past >= 0
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-red-100 text-red-700 border border-red-300'
+                    }`}>
+                      {statistics.cumulative_savings_past >= 0 ? '+' : ''}{formatCurrency(statistics.cumulative_savings_past)}
+                    </div>
+                    {/* Tooltip - bottom on mobile */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                      <div className="font-semibold mb-1">Cumulative {statistics.cumulative_savings_past >= 0 ? 'Savings' : 'Overspend'}</div>
+                      <div className="text-gray-300">
+                        {statistics.cumulative_savings_past >= 0
+                          ? 'Total saved from previous days'
+                          : 'Total overspent from previous days'}
+                      </div>
+                      {/* Tooltip arrow - top */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop: 3-column flex layout for perfect centering */}
+              <div className="hidden md:flex items-center">
+                {/* Left spacer - flex-1 pushes main amount to center */}
+                <div className="flex-1"></div>
+
+                {/* Main amount - centered */}
+                <p className={`text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
+                </p>
+
+                {/* Right section - badge or spacer */}
+                <div className="flex-1 flex justify-start pl-3">
+                  {statistics.cumulative_savings_past !== null &&
+                   statistics.cumulative_savings_past !== undefined &&
+                   selectedDate <= new Date().toISOString().split('T')[0] && (
+                    <div className="relative group">
+                      <div className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold cursor-help ${
+                        statistics.cumulative_savings_past >= 0
+                          ? 'bg-green-100 text-green-700 border border-green-300'
+                          : 'bg-red-100 text-red-700 border border-red-300'
+                      }`}>
+                        {statistics.cumulative_savings_past >= 0 ? '+' : ''}{formatCurrency(statistics.cumulative_savings_past)}
+                      </div>
+                      {/* Tooltip - right on desktop */}
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                        <div className="font-semibold mb-1">Cumulative {statistics.cumulative_savings_past >= 0 ? 'Savings' : 'Overspend'}</div>
+                        <div className="text-gray-300">
+                          {statistics.cumulative_savings_past >= 0
+                            ? 'Total saved from previous days'
+                            : 'Total overspent from previous days'}
+                        </div>
+                        {/* Tooltip arrow - left */}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center justify-center mt-2 text-xs md:text-sm">
                 {statistics.is_over_budget ? (
                   <>
@@ -418,9 +512,81 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   </>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Daily budget: {formatCurrency(statistics.daily_budget)}
-              </p>
+
+              {/* Daily Budget - Mobile: column, Desktop: 3-column */}
+              {/* Mobile layout */}
+              <div className="flex flex-col items-center gap-2 mt-1 md:hidden">
+                <div className="text-xs text-gray-500">
+                  Daily budget: {formatCurrency(statistics.daily_budget)}
+                </div>
+                {statistics.adjusted_daily_budget !== null &&
+                 statistics.adjusted_daily_budget !== undefined &&
+                 statistics.daily_budget &&
+                 Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
+                 selectedDate <= new Date().toISOString().split('T')[0] && (
+                  <div className="relative group">
+                    <div className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold cursor-help ${
+                      statistics.adjusted_daily_budget > statistics.daily_budget
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-red-100 text-red-700 border border-red-300'
+                    }`}>
+                      {formatCurrency(statistics.adjusted_daily_budget)}
+                    </div>
+                    {/* Tooltip - bottom on mobile */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                      <div className="font-semibold mb-1">Adjusted Daily Budget</div>
+                      <div className="text-gray-300">
+                        {statistics.adjusted_daily_budget > statistics.daily_budget
+                          ? 'Recommended budget increased (you saved money)'
+                          : 'Recommended budget decreased (you overspent)'}
+                      </div>
+                      {/* Tooltip arrow - top */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop layout - 3-column */}
+              <div className="hidden md:flex items-center mt-1">
+                {/* Left spacer */}
+                <div className="flex-1"></div>
+
+                {/* Centered daily budget */}
+                <div className="text-xs text-gray-500">
+                  Daily budget: {formatCurrency(statistics.daily_budget)}
+                </div>
+
+                {/* Right section - adjusted budget badge or spacer */}
+                <div className="flex-1 flex justify-start pl-3">
+                  {statistics.adjusted_daily_budget !== null &&
+                   statistics.adjusted_daily_budget !== undefined &&
+                   statistics.daily_budget &&
+                   Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
+                   selectedDate <= new Date().toISOString().split('T')[0] && (
+                    <div className="relative group">
+                      <div className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold cursor-help ${
+                        statistics.adjusted_daily_budget > statistics.daily_budget
+                          ? 'bg-green-100 text-green-700 border border-green-300'
+                          : 'bg-red-100 text-red-700 border border-red-300'
+                      }`}>
+                        {formatCurrency(statistics.adjusted_daily_budget)}
+                      </div>
+                      {/* Tooltip - right on desktop */}
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                        <div className="font-semibold mb-1">Adjusted Daily Budget</div>
+                        <div className="text-gray-300">
+                          {statistics.adjusted_daily_budget > statistics.daily_budget
+                            ? 'Recommended budget increased (you saved money)'
+                            : 'Recommended budget decreased (you overspent)'}
+                        </div>
+                        {/* Tooltip arrow - left */}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Already Spent / Budget Used - Combined */}
@@ -466,23 +632,160 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         </CardContent>
       </Card>
 
+      {/* Expenses for the Day */}
+        <Card>
+          <CardHeader
+            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setShowExpenses(!showExpenses)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="flex items-center text-lg md:text-xl">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Expenses for {getDateTitle()}
+                </CardTitle>
+                <CardDescription>
+                  {statistics.expense_count_today} expense{statistics.expense_count_today !== 1 ? 's' : ''} on {formatDate(statistics.date)}
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExpenses(!showExpenses);
+                }}
+              >
+                {showExpenses ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          {showExpenses && (
+            <CardContent>
+            {isLoadingExpenses ? (
+              <div className="py-6 text-center text-gray-600">
+                Loading expenses...
+              </div>
+            ) : dayExpenses.length === 0 ? (
+              <div className="py-6 text-center text-gray-600">
+                No expenses recorded for {formatDate(statistics.date)}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {dayExpenses.map((expense) => {
+                  // Find category info from statistics
+                  const categoryInfo = statistics.by_category_today?.find(
+                    (cat) => cat.category_id === expense.category_id
+                  );
+                  const CategoryIcon = categoryInfo ? getIconComponent(categoryInfo.category_icon) : null;
+
+                  return (
+                    <div
+                      key={expense.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Category Icon */}
+                        {categoryInfo && (
+                          <div
+                            className="flex items-center justify-center w-10 h-10 rounded-md shrink-0"
+                            style={{ backgroundColor: categoryInfo.category_color + '20' }}
+                          >
+                            {CategoryIcon && (
+                              <CategoryIcon
+                                className="h-5 w-5"
+                                style={{ color: categoryInfo.category_color }}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Expense Details */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 truncate">{expense.title}</h4>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                            <span>{categoryInfo?.category_name || 'Unknown'}</span>
+                            {expense.payment_method && (
+                              <>
+                                <span>•</span>
+                                <span>{expense.payment_method}</span>
+                              </>
+                            )}
+                            {expense.notes && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[200px]">{expense.notes}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="text-right shrink-0">
+                          <div className="font-bold text-gray-900">
+                            {formatCurrency(expense.amount_in_trip_currency)}
+                          </div>
+                          {expense.currency_code !== currencyCode && (
+                            <div className="text-xs text-gray-500">
+                              {formatNumber(expense.amount)} {expense.currency_code}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            </CardContent>
+          )}
+        </Card>
+
       {/* Category Breakdown - Remaining Budget */}
       {statistics.by_category_today && statistics.by_category_today.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg md:text-xl">
-              <Tag className="h-5 w-5 mr-2" />
-              Remaining by Category
-            </CardTitle>
-            <CardDescription>
-              Remaining budget by category for {formatDate(statistics.date)}
-            </CardDescription>
+          <CardHeader
+            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setShowCategoryBreakdown(!showCategoryBreakdown)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="flex items-center text-lg md:text-xl">
+                  <Tag className="h-5 w-5 mr-2" />
+                  Remaining by Category
+                </CardTitle>
+                <CardDescription>
+                  Remaining budget by category for {formatDate(statistics.date)}
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCategoryBreakdown(!showCategoryBreakdown);
+                }}
+              >
+                {showCategoryBreakdown ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          {showCategoryBreakdown && (
+            <CardContent>
             <div className="space-y-4">
               {statistics.by_category_today
                 .filter(cat => cat.category_daily_budget > 0 || cat.total_spent > 0)  // Show categories with budget OR spending
-                .sort((a, b) => b.remaining_budget - a.remaining_budget)  // Sort by remaining budget (highest first)
+                // Categories are already sorted by display_order from backend - respect user's custom order
                 .map((category) => {
                   // Progress bar shows how much was spent (visual intuition)
                   const spentPercentage = category.category_daily_budget > 0
@@ -528,20 +831,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   );
               })}
             </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
       )}
-
-        {/* No Expenses Today */}
-        {statistics.expense_count_today === 0 && (
-          <Card>
-            <CardContent className="py-6">
-              <p className="text-center text-gray-600">
-                No expenses recorded for {formatDate(statistics.date)}
-              </p>
-            </CardContent>
-          </Card>
-        )}
       </motion.div>
     </AnimatePresence>
 

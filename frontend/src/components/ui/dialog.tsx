@@ -52,6 +52,7 @@ const DialogContent: React.FC<DialogContentProps> = ({ children, className }) =>
       className={`relative bg-white rounded-lg shadow-lg w-full max-h-[90vh] overflow-y-auto ${
         className || ''
       }`}
+      onClick={(e) => e.stopPropagation()}
     >
       {children}
     </div>

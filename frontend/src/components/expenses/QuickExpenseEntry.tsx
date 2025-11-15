@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense } from '@/lib/expenses-api';
 import { Zap, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -44,6 +45,7 @@ export function QuickExpenseEntry({
 
   // UI state
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isMultiDay, setIsMultiDay] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -100,6 +102,7 @@ export function QuickExpenseEntry({
       setPaymentMethod('');
       setNotes('');
       setShowAdvanced(false);
+      setIsMultiDay(false);
       setSuccessMessage('Expense added successfully!');
       onExpenseCreated();
 
@@ -154,6 +157,7 @@ export function QuickExpenseEntry({
               <Input
                 id="quick-expense-amount"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0"
                 value={amount}
@@ -238,7 +242,7 @@ export function QuickExpenseEntry({
           {/* Title Input */}
           <div>
             <Label htmlFor="quick-expense-title" className="text-sm font-medium">
-              Title (Optional)
+              Title
             </Label>
             <Input
               id="quick-expense-title"
@@ -252,31 +256,71 @@ export function QuickExpenseEntry({
             />
           </div>
 
+          {/* Multi-day Toggle */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="quick-multi-day"
+              checked={isMultiDay}
+              onChange={(e) => {
+                setIsMultiDay(e.target.checked);
+                if (!e.target.checked) {
+                  setEndDate('');
+                }
+              }}
+              disabled={isSubmitting}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="quick-multi-day" className="cursor-pointer text-sm font-medium">
+              Multi-day expense
+            </Label>
+          </div>
+
           {/* Date Input */}
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label htmlFor="quick-expense-date" className="text-sm font-medium">
-                Date *
+          {isMultiDay ? (
+            <div className="flex gap-4 flex-wrap items-start">
+              <div className="space-y-3">
+                <Label htmlFor="quick-expense-date" className="text-sm font-medium block">
+                  Start Date
+                </Label>
+                <DatePickerInput
+                  id="quick-expense-date"
+                  value={date}
+                  onChange={setDate}
+                  min={tripStartDate}
+                  max={tripEndDate}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium block">
+                  End Date
+                </Label>
+                <DatePickerInput
+                  id="quick-expense-end-date"
+                  value={endDate}
+                  onChange={setEndDate}
+                  min={date || tripStartDate}
+                  max={tripEndDate}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Label htmlFor="quick-expense-date" className="text-sm font-medium block">
+                Date
               </Label>
-              <Input
+              <DatePickerInput
                 id="quick-expense-date"
-                type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={setDate}
                 min={tripStartDate}
                 max={tripEndDate}
                 disabled={isSubmitting}
               />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDate(new Date().toISOString().split('T')[0])}
-              disabled={isSubmitting}
-            >
-              Today
-            </Button>
-          </div>
+          )}
 
           {/* Advanced Options Toggle */}
           <Button
@@ -295,7 +339,7 @@ export function QuickExpenseEntry({
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                Add Details (Optional)
+                Add Details
               </>
             )}
           </Button>
@@ -305,7 +349,7 @@ export function QuickExpenseEntry({
             <div className="space-y-4 pt-2 border-t">
               <div>
                 <Label htmlFor="quick-expense-payment" className="text-sm font-medium">
-                  Payment Method (Optional)
+                  Payment Method
                 </Label>
                 <Select
                   id="quick-expense-payment"
@@ -323,29 +367,8 @@ export function QuickExpenseEntry({
               </div>
 
               <div>
-                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium">
-                  End Date (Optional - for multi-day expenses)
-                </Label>
-                <Input
-                  id="quick-expense-end-date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={date || tripStartDate}
-                  max={tripEndDate}
-                  placeholder="Leave empty for single-day expense"
-                  disabled={isSubmitting}
-                />
-                {endDate && endDate < date && (
-                  <p className="text-xs text-red-600 mt-1">
-                    End date must be on or after start date
-                  </p>
-                )}
-              </div>
-
-              <div>
                 <Label htmlFor="quick-expense-notes" className="text-sm font-medium">
-                  Notes (Optional)
+                  Notes
                 </Label>
                 <Input
                   id="quick-expense-notes"

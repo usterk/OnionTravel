@@ -14,6 +14,7 @@ class Category(Base):
     icon = Column(String(50), nullable=True)  # Icon name (lucide-react)
     budget_percentage = Column(Numeric(5, 2), nullable=True)  # 0-100%
     is_default = Column(Boolean, default=False, nullable=False)
+    display_order = Column(Integer, nullable=False, default=0)  # Order for display/sorting
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships

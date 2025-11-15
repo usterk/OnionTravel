@@ -112,7 +112,7 @@ export function TripForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="start_date">Start Date *</Label>
+          <Label htmlFor="start_date">Start Date</Label>
           <Input
             id="start_date"
             type="date"
@@ -122,7 +122,7 @@ export function TripForm({
           />
         </div>
         <div>
-          <Label htmlFor="end_date">End Date *</Label>
+          <Label htmlFor="end_date">End Date</Label>
           <Input
             id="end_date"
             type="date"

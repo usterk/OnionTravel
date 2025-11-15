@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.models.trip import Trip
-from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse, CategoryWithStats
+from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse, CategoryWithStats, CategoryReorder
 from app.services import category_service
 from app.api.deps import get_current_user
 
@@ -233,3 +233,23 @@ def delete_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found"
         )
+
+
+@router.post("/trips/{trip_id}/categories/reorder", response_model=List[CategoryResponse])
+def reorder_categories(
+    trip_id: int,
+    reorder_data: CategoryReorder,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Reorder categories for a trip.
+
+    Provide a list of all category IDs in the desired order.
+    The display_order will be updated accordingly.
+    """
+    # Verify trip access
+    get_trip_or_404(db, trip_id, current_user)
+
+    categories = category_service.reorder_categories(db, trip_id, reorder_data.category_ids)
+    return categories

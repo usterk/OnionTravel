@@ -111,3 +111,9 @@ class DailyBudgetStatistics(BaseModel):
     is_over_budget: bool
     days_into_trip: int
     total_days: int
+    # Cumulative statistics for past completed days only (before target_date)
+    cumulative_budget_past: Optional[float] = None
+    cumulative_spent_past: Optional[float] = None
+    cumulative_savings_past: Optional[float] = None  # Positive = saved, Negative = overspent
+    # Adjusted daily budget based on remaining budget and days
+    adjusted_daily_budget: Optional[float] = None  # Recommended daily budget for remaining days

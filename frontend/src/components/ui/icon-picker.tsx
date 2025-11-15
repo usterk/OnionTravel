@@ -38,6 +38,7 @@ import {
   HeartPulse,
   MoreHorizontal,
   Leaf,
+  Wifi,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -89,6 +90,7 @@ export const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Tag,
   MoreHorizontal,
   Leaf,
+  Wifi,
 };
 
 // Map kebab-case names (from backend) to PascalCase (Lucide React)
@@ -131,6 +133,7 @@ const KEBAB_TO_PASCAL: Record<string, string> = {
   'tag': 'Tag',
   'more-horizontal': 'MoreHorizontal',
   'leaf': 'Leaf',
+  'wifi': 'Wifi',
 };
 
 // Reverse map: PascalCase to kebab-case (for saving to backend)
@@ -197,7 +200,7 @@ const IconPicker = React.forwardRef<HTMLDivElement, IconPickerProps>(
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full"
         />
-        <div className="grid grid-cols-8 gap-2 max-h-64 overflow-y-auto p-1">
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-64 overflow-y-auto p-1">
           {filteredIcons.map((iconName) => {
             const IconComponent = ICON_MAP[iconName];
             const selected = isSelected(iconName);
@@ -207,10 +210,10 @@ const IconPicker = React.forwardRef<HTMLDivElement, IconPickerProps>(
                 type="button"
                 onClick={() => onChange(iconName)}
                 className={cn(
-                  'relative flex items-center justify-center h-10 w-10 rounded-md border-2 transition-all hover:scale-110 hover:border-gray-400',
+                  'relative flex items-center justify-center h-10 w-10 rounded-md border-2 transition-all hover:scale-110',
                   selected
-                    ? 'border-primary bg-primary/10 ring-2 ring-primary ring-offset-2'
-                    : 'border-gray-200 bg-white'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
                 )}
                 title={iconName}
               >

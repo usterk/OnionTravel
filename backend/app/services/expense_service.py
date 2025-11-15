@@ -449,10 +449,13 @@ def get_daily_budget_statistics(
         )
     ).all()
 
-    # Get all categories for this trip with their budget percentages
-    all_categories = db.query(Category).filter(Category.trip_id == trip_id).all()
+    # Get all categories for this trip with their budget percentages, sorted by display_order
+    all_categories = db.query(Category).filter(
+        Category.trip_id == trip_id
+    ).order_by(Category.display_order, Category.created_at).all()
 
     # Initialize category spending with budgets
+    # Use a dict for easy lookups during expense processing, but maintain insertion order (Python 3.7+)
     category_spending = {}
     for cat in all_categories:
         category_daily_budget = 0.0
@@ -503,6 +506,71 @@ def get_daily_budget_statistics(
     remaining_today = daily_budget - total_spent_today
     percentage_used = (total_spent_today / daily_budget * 100) if daily_budget > 0 else 0
 
+    # Calculate cumulative statistics for PAST completed days only (before target_date)
+    cumulative_budget_past = None
+    cumulative_spent_past = None
+    cumulative_savings_past = None
+
+    if target_date > trip.start_date and daily_budget > 0:
+        # Days completed before target_date (not including today)
+        days_completed = (target_date - trip.start_date).days
+        cumulative_budget_past = daily_budget * days_completed
+
+        # Query all expenses that occurred before target_date
+        # We need to fetch all expenses and calculate their allocation
+        all_expenses = db.query(Expense).filter(
+            Expense.trip_id == trip_id,
+            # Include expenses that started before today OR multi-day expenses that span into the past
+            or_(
+                Expense.start_date < target_date,
+                and_(
+                    Expense.end_date.isnot(None),
+                    Expense.start_date < target_date,
+                    Expense.end_date >= trip.start_date
+                )
+            )
+        ).all()
+
+        # Calculate total spent in past days (before target_date)
+        cumulative_spent_past = 0.0
+        for expense in all_expenses:
+            if expense.end_date is None or expense.start_date == expense.end_date:
+                # Single-day expense - count only if it was before today
+                if expense.start_date < target_date:
+                    cumulative_spent_past += float(expense.amount_in_trip_currency)
+            else:
+                # Multi-day expense - allocate proportionally for days before target_date
+                days_span = (expense.end_date - expense.start_date).days + 1
+                daily_amount = float(expense.amount_in_trip_currency) / days_span
+
+                # Calculate how many days of this expense fall before target_date
+                expense_start = max(expense.start_date, trip.start_date)
+                expense_end = expense.end_date
+
+                # Only count days that are strictly before target_date
+                if expense_start < target_date:
+                    # Last day to count is either end of expense or day before target_date
+                    last_day_to_count = min(expense_end, target_date - timedelta(days=1))
+
+                    if last_day_to_count >= expense_start:
+                        days_in_past = (last_day_to_count - expense_start).days + 1
+                        cumulative_spent_past += daily_amount * days_in_past
+
+        cumulative_savings_past = cumulative_budget_past - cumulative_spent_past
+
+    # Calculate adjusted daily budget based on remaining budget and days
+    adjusted_daily_budget = None
+    if daily_budget > 0 and cumulative_spent_past is not None:
+        # Total budget for entire trip
+        total_budget = daily_budget * total_days
+        # Remaining budget = total budget - what was spent in past completed days
+        remaining_budget = total_budget - cumulative_spent_past
+        # Remaining days = days from today to end of trip (inclusive)
+        remaining_days = total_days - (days_into_trip - 1)
+
+        if remaining_days > 0:
+            adjusted_daily_budget = remaining_budget / remaining_days
+
     return DailyBudgetStatistics(
         date=target_date,
         daily_budget=daily_budget if daily_budget > 0 else None,
@@ -513,5 +581,9 @@ def get_daily_budget_statistics(
         by_category_today=list(category_spending.values()),
         is_over_budget=total_spent_today > daily_budget if daily_budget > 0 else False,
         days_into_trip=days_into_trip,
-        total_days=total_days
+        total_days=total_days,
+        cumulative_budget_past=cumulative_budget_past,
+        cumulative_spent_past=cumulative_spent_past,
+        cumulative_savings_past=cumulative_savings_past,
+        adjusted_daily_budget=adjusted_daily_budget
     )
