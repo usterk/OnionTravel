@@ -157,6 +157,7 @@ export function QuickExpenseEntry({
               <Input
                 id="quick-expense-amount"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0"
                 value={amount}

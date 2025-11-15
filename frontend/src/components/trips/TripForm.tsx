@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import type { TripCreate, TripUpdate } from '@/types/trip';
 
 interface TripFormProps {
@@ -112,21 +111,23 @@ export function TripForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-3">
-          <Label htmlFor="start_date" className="block">Start Date</Label>
-          <DatePickerInput
+        <div>
+          <Label htmlFor="start_date">Start Date</Label>
+          <Input
             id="start_date"
+            type="date"
             value={formData.start_date}
-            onChange={(value) => setFormData({ ...formData, start_date: value })}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             required
           />
         </div>
-        <div className="space-y-3">
-          <Label htmlFor="end_date" className="block">End Date</Label>
-          <DatePickerInput
+        <div>
+          <Label htmlFor="end_date">End Date</Label>
+          <Input
             id="end_date"
+            type="date"
             value={formData.end_date}
-            onChange={(value) => setFormData({ ...formData, end_date: value })}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             required
             min={formData.start_date}
           />
