@@ -420,10 +420,10 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 Daily budget: {formatCurrency(statistics.daily_budget)}
               </p>
 
-              {/* Cumulative savings from past days - only show for past days, not today */}
+              {/* Cumulative savings from past days - show for today and past, but not future days */}
               {statistics.cumulative_savings_past !== null &&
                statistics.cumulative_savings_past !== undefined &&
-               selectedDate !== new Date().toISOString().split('T')[0] && (
+               selectedDate <= new Date().toISOString().split('T')[0] && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-1">
                     From previous {statistics.days_into_trip - 1} {statistics.days_into_trip - 1 === 1 ? 'day' : 'days'}:
