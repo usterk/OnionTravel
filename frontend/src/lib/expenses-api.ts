@@ -80,6 +80,10 @@ export interface DailyBudgetStatistics {
   is_over_budget: boolean;
   days_into_trip: number;
   total_days: number;
+  // Cumulative statistics for past completed days only (before target_date)
+  cumulative_budget_past?: number | null;
+  cumulative_spent_past?: number | null;
+  cumulative_savings_past?: number | null; // Positive = saved, Negative = overspent
 }
 
 /**

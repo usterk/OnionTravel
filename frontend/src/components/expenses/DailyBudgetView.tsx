@@ -419,6 +419,30 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               <p className="text-xs text-gray-500 mt-1">
                 Daily budget: {formatCurrency(statistics.daily_budget)}
               </p>
+
+              {/* Cumulative savings from past days */}
+              {statistics.cumulative_savings_past !== null && statistics.cumulative_savings_past !== undefined && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-1">
+                    From previous {statistics.days_into_trip - 1} {statistics.days_into_trip - 1 === 1 ? 'day' : 'days'}:
+                  </p>
+                  <div className={`text-lg md:text-xl font-semibold flex items-center justify-center gap-2 ${
+                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {statistics.cumulative_savings_past >= 0 ? (
+                      <>
+                        <span>+{formatCurrency(statistics.cumulative_savings_past)}</span>
+                        <span className="text-xs font-normal">saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>{formatCurrency(statistics.cumulative_savings_past)}</span>
+                        <span className="text-xs font-normal">over budget</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Already Spent / Budget Used - Combined */}
