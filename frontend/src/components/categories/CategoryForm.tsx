@@ -151,7 +151,7 @@ export function CategoryForm({ tripId, category, onSuccess, onCancel }: Category
             <Input
               id="budget_percentage"
               type="number"
-              step="1.0"
+              step="0.1"
               min="0"
               max="100"
               value={formData.budget_percentage}
