@@ -240,7 +240,7 @@ export function QuickExpenseEntry({
           {/* Title Input */}
           <div>
             <Label htmlFor="quick-expense-title" className="text-sm font-medium">
-              Title (Optional)
+              Title
             </Label>
             <Input
               id="quick-expense-title"
@@ -270,7 +270,7 @@ export function QuickExpenseEntry({
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <Label htmlFor="quick-multi-day" className="cursor-pointer text-sm font-medium">
-              Multi-day expense (e.g., hotel booking)
+              Multi-day expense
             </Label>
           </div>
 
@@ -335,7 +335,7 @@ export function QuickExpenseEntry({
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                Add Details (Optional)
+                Add Details
               </>
             )}
           </Button>
@@ -345,7 +345,7 @@ export function QuickExpenseEntry({
             <div className="space-y-4 pt-2 border-t">
               <div>
                 <Label htmlFor="quick-expense-payment" className="text-sm font-medium">
-                  Payment Method (Optional)
+                  Payment Method
                 </Label>
                 <Select
                   id="quick-expense-payment"
@@ -364,7 +364,7 @@ export function QuickExpenseEntry({
 
               <div>
                 <Label htmlFor="quick-expense-notes" className="text-sm font-medium">
-                  Notes (Optional)
+                  Notes
                 </Label>
                 <Input
                   id="quick-expense-notes"
