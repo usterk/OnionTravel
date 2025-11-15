@@ -11,6 +11,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
+import { VoiceExpenseButton } from './VoiceExpenseButton';
 
 interface DailyBudgetViewProps {
   tripId: number;
@@ -288,6 +289,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const status = getStatusBadge();
 
   return (
+    <>
     <AnimatePresence mode="wait">
       <motion.div
         key={selectedDate}
@@ -542,5 +544,13 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         )}
       </motion.div>
     </AnimatePresence>
+
+    {/* Voice Expense Button (Floating Action Button) */}
+    <VoiceExpenseButton
+      tripId={tripId}
+      currentDate={selectedDate}
+      onExpenseAdded={loadStatistics}
+    />
+    </>
   );
 }
