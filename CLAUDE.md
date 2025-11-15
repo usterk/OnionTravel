@@ -13,30 +13,23 @@ ssh root@jola209.mikrus.xyz -p 10209
 
 **Application URLs:**
 
-**Production (Primary Domain):**
+**Production:**
 - Frontend: https://oniontravel.bieda.it/OnionTravel
 - Backend API: https://oniontravel.bieda.it/OnionTravel/api/v1
 - API Docs: https://oniontravel.bieda.it/OnionTravel/docs
 
-**Alternative Access (Mikrus direct):**
-- Frontend: https://jola209.mikrus.xyz:30209/OnionTravel
-- Backend API: https://jola209.mikrus.xyz:30209/OnionTravel/api/v1
-- API Docs: https://jola209.mikrus.xyz:30209/OnionTravel/docs
-- HTTP (redirects to HTTPS): http://jola209.mikrus.xyz:20209
-
 **Server Architecture:**
 ```
-Production Domain (oniontravel.bieda.it):
-Internet → Cloudflare (IPv6) → System Nginx (ports 443 HTTPS / 80 HTTP*)
-                              → Frontend Container (localhost:7010)
-                              → Backend Container (localhost:7011)
+Production (oniontravel.bieda.it):
+Internet → Cloudflare CDN → System Nginx (port 443 HTTPS)
+                          → Frontend Container (localhost:7010)
+                          → Backend Container (localhost:7011)
 
-Direct Access (jola209.mikrus.xyz):
-Internet → System Nginx (ports 30209 HTTPS / 20209 HTTP)
-         → Frontend Container (localhost:7010)
-         → Backend Container (localhost:7011)
-
-* Port 80 redirects to 443
+Features:
+- Cloudflare CDN provides DDoS protection and caching
+- SSL/TLS certificates from Let's Encrypt
+- Single standard HTTPS port (443)
+- No direct IP access (Cloudflare proxied)
 ```
 
 **Server paths:**
