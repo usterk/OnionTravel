@@ -558,6 +558,19 @@ def get_daily_budget_statistics(
 
         cumulative_savings_past = cumulative_budget_past - cumulative_spent_past
 
+    # Calculate adjusted daily budget based on remaining budget and days
+    adjusted_daily_budget = None
+    if daily_budget > 0 and cumulative_spent_past is not None:
+        # Total budget for entire trip
+        total_budget = daily_budget * total_days
+        # Remaining budget = total budget - what was spent in past completed days
+        remaining_budget = total_budget - cumulative_spent_past
+        # Remaining days = days from today to end of trip (inclusive)
+        remaining_days = total_days - (days_into_trip - 1)
+
+        if remaining_days > 0:
+            adjusted_daily_budget = remaining_budget / remaining_days
+
     return DailyBudgetStatistics(
         date=target_date,
         daily_budget=daily_budget if daily_budget > 0 else None,
@@ -571,5 +584,6 @@ def get_daily_budget_statistics(
         total_days=total_days,
         cumulative_budget_past=cumulative_budget_past,
         cumulative_spent_past=cumulative_spent_past,
-        cumulative_savings_past=cumulative_savings_past
+        cumulative_savings_past=cumulative_savings_past,
+        adjusted_daily_budget=adjusted_daily_budget
     )

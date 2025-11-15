@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense } from '@/lib/expenses-api';
 import { Zap, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -275,48 +276,50 @@ export function QuickExpenseEntry({
           </div>
 
           {/* Date Input */}
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label htmlFor="quick-expense-date" className="text-sm font-medium">
-                {isMultiDay ? 'Start Date *' : 'Date *'}
-              </Label>
-              <Input
-                id="quick-expense-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                min={tripStartDate}
-                max={tripEndDate}
-                disabled={isSubmitting}
-              />
-            </div>
-            {isMultiDay && (
-              <div className="flex-1">
-                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium">
+          {isMultiDay ? (
+            <div className="flex gap-4 flex-wrap items-start">
+              <div className="space-y-3">
+                <Label htmlFor="quick-expense-date" className="text-sm font-medium block">
+                  Start Date
+                </Label>
+                <DatePickerInput
+                  id="quick-expense-date"
+                  value={date}
+                  onChange={setDate}
+                  min={tripStartDate}
+                  max={tripEndDate}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium block">
                   End Date
                 </Label>
-                <Input
+                <DatePickerInput
                   id="quick-expense-end-date"
-                  type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={setEndDate}
                   min={date || tripStartDate}
                   max={tripEndDate}
                   disabled={isSubmitting}
                 />
               </div>
-            )}
-            {!isMultiDay && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDate(new Date().toISOString().split('T')[0])}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Label htmlFor="quick-expense-date" className="text-sm font-medium block">
+                Date
+              </Label>
+              <DatePickerInput
+                id="quick-expense-date"
+                value={date}
+                onChange={setDate}
+                min={tripStartDate}
+                max={tripEndDate}
                 disabled={isSubmitting}
-              >
-                Today
-              </Button>
-            )}
-          </div>
+              />
+            </div>
+          )}
 
           {/* Advanced Options Toggle */}
           <Button

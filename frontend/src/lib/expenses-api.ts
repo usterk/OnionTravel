@@ -84,6 +84,8 @@ export interface DailyBudgetStatistics {
   cumulative_budget_past?: number | null;
   cumulative_spent_past?: number | null;
   cumulative_savings_past?: number | null; // Positive = saved, Negative = overspent
+  // Adjusted daily budget based on remaining budget and days
+  adjusted_daily_budget?: number | null; // Recommended daily budget for remaining days
 }
 
 /**

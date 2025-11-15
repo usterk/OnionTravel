@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from './button';
 import 'react-day-picker/style.css';
+import './date-picker.css';
 
 interface DatePickerProps {
   value: Date;
@@ -19,11 +21,27 @@ interface DatePickerProps {
 export function DatePicker({ value, onChange, min, max, onTodayClick, onStartClick, onEndClick, todayDisabled }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
+
+  // Update button position when opening
+  const handleToggle = () => {
+    if (!isOpen && containerRef.current) {
+      setButtonRect(containerRef.current.getBoundingClientRect());
+    }
+    setIsOpen(!isOpen);
+  };
 
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        calendarRef.current &&
+        !calendarRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -65,31 +83,53 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
     }
   };
 
-  return (
-    <div className="relative inline-block" ref={containerRef}>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="h-8 font-normal"
-      >
-        <CalendarIcon className="mr-2 h-4 w-4" />
-        {format(value, 'MMM d, yyyy')}
-      </Button>
+  const calendarContent = isOpen && (
+    <>
+      {/* Backdrop - tylko na mobilce */}
+      <div
+        className="fixed inset-0 bg-black/30 z-[100] sm:hidden"
+        onClick={() => setIsOpen(false)}
+      />
 
-      {isOpen && (
-        <div className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 rounded-md border bg-white p-3 shadow-lg">
+      {/* Calendar */}
+      <div
+        ref={calendarRef}
+        className="fixed bottom-0 inset-x-4 sm:inset-x-auto sm:bottom-auto z-[110] bg-white rounded-t-2xl sm:rounded-md border-t sm:border p-4 sm:p-3 shadow-2xl sm:shadow-lg animate-in slide-in-from-bottom sm:slide-in-from-top duration-200 max-w-md mx-auto sm:mx-0 sm:max-w-none"
+        style={
+          buttonRect
+            ? {
+                // Desktop positioning
+                left: window.innerWidth >= 640 ? `${buttonRect.left}px` : undefined,
+                top: window.innerWidth >= 640 ? `${buttonRect.bottom + 8}px` : undefined,
+              }
+            : {}
+        }
+      >
           <DayPicker
             mode="single"
             selected={value}
             onSelect={handleSelect}
             disabled={(date) => {
-              if (min && date < min) return true;
-              if (max && date > max) return true;
+              // Normalize to start of day for accurate comparison
+              const checkDate = new Date(date);
+              checkDate.setHours(0, 0, 0, 0);
+
+              if (min) {
+                const minDate = new Date(min);
+                minDate.setHours(0, 0, 0, 0);
+                if (checkDate < minDate) return true;
+              }
+
+              if (max) {
+                const maxDate = new Date(max);
+                maxDate.setHours(0, 0, 0, 0);
+                if (checkDate > maxDate) return true;
+              }
+
               return false;
             }}
             defaultMonth={value}
-            className="rdp-custom"
+            className="rdp-custom w-full"
           />
           {(onStartClick || onTodayClick || onEndClick) && (
             <div className="mt-2 pt-2 border-t flex gap-2">
@@ -126,8 +166,27 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
               )}
             </div>
           )}
-        </div>
-      )}
-    </div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <div className="relative inline-block" ref={containerRef}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggle();
+          }}
+          className="h-8 font-normal"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {format(value, 'MMM d, yyyy')}
+        </Button>
+      </div>
+      {isOpen && createPortal(calendarContent, document.body)}
+    </>
   );
 }

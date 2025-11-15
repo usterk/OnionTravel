@@ -276,7 +276,7 @@ export function ExpenseForm({
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="start_date">{isMultiDay ? 'Start Date *' : 'Date *'}</Label>
+          <Label htmlFor="start_date">{isMultiDay ? 'Start Date' : 'Date'}</Label>
           <Input
             id="start_date"
             type="date"

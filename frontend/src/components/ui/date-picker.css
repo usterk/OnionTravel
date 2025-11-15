@@ -1,0 +1,19 @@
+/* Force DayPicker elements to take full width on mobile */
+@media (max-width: 640px) {
+  .rdp-custom .rdp-root,
+  .rdp-custom .rdp-months,
+  .rdp-custom .rdp-month {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .rdp-custom .rdp-month_caption,
+  .rdp-custom .rdp-weekdays,
+  .rdp-custom .rdp-month_grid {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

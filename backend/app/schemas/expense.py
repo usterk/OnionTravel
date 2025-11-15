@@ -115,3 +115,5 @@ class DailyBudgetStatistics(BaseModel):
     cumulative_budget_past: Optional[float] = None
     cumulative_spent_past: Optional[float] = None
     cumulative_savings_past: Optional[float] = None  # Positive = saved, Negative = overspent
+    # Adjusted daily budget based on remaining budget and days
+    adjusted_daily_budget: Optional[float] = None  # Recommended daily budget for remaining days

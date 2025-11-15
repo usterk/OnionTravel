@@ -482,9 +482,36 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   </>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Daily budget: {formatCurrency(statistics.daily_budget)}
-              </p>
+              <div className="flex items-center justify-center gap-2 mt-1 text-xs text-gray-500">
+                <span>Daily budget: {formatCurrency(statistics.daily_budget)}</span>
+                {/* Adjusted daily budget badge */}
+                {statistics.adjusted_daily_budget !== null &&
+                 statistics.adjusted_daily_budget !== undefined &&
+                 statistics.daily_budget &&
+                 Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
+                 selectedDate <= new Date().toISOString().split('T')[0] && (
+                  <div className="relative group">
+                    <div className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold cursor-help ${
+                      statistics.adjusted_daily_budget > statistics.daily_budget
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-red-100 text-red-700 border border-red-300'
+                    }`}>
+                      {formatCurrency(statistics.adjusted_daily_budget)}
+                    </div>
+                    {/* Tooltip */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                      <div className="font-semibold mb-1">Adjusted Daily Budget</div>
+                      <div className="text-gray-300">
+                        {statistics.adjusted_daily_budget > statistics.daily_budget
+                          ? 'Recommended budget increased (you saved money)'
+                          : 'Recommended budget decreased (you overspent)'}
+                      </div>
+                      {/* Tooltip arrow */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Already Spent / Budget Used - Combined */}

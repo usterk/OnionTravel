@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import {
   Dialog,
   DialogContent,
@@ -218,24 +219,26 @@ export function ExpenseList({
                 </div>
 
                 {/* Start Date Filter */}
-                <div>
-                  <Label htmlFor="start-date-filter">From Date</Label>
-                  <Input
+                <div className="space-y-3">
+                  <Label htmlFor="start-date-filter" className="block">From Date</Label>
+                  <DatePickerInput
                     id="start-date-filter"
-                    type="date"
                     value={startDateFilter}
-                    onChange={(e) => setStartDateFilter(e.target.value)}
+                    onChange={setStartDateFilter}
+                    min={tripStartDate}
+                    max={tripEndDate}
                   />
                 </div>
 
                 {/* End Date Filter */}
-                <div>
-                  <Label htmlFor="end-date-filter">To Date</Label>
-                  <Input
+                <div className="space-y-3">
+                  <Label htmlFor="end-date-filter" className="block">To Date</Label>
+                  <DatePickerInput
                     id="end-date-filter"
-                    type="date"
                     value={endDateFilter}
-                    onChange={(e) => setEndDateFilter(e.target.value)}
+                    onChange={setEndDateFilter}
+                    min={startDateFilter || tripStartDate}
+                    max={tripEndDate}
                   />
                 </div>
               </div>
