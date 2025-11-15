@@ -37,14 +37,9 @@ export function BudgetAllocation({
     };
   }, [categories]);
 
-  // Sort categories by budget percentage for better visualization
-  const sortedCategories = useMemo(() => {
-    return [...categories].sort((a, b) => {
-      const aPercentage = a.budget_percentage || 0;
-      const bPercentage = b.budget_percentage || 0;
-      return bPercentage - aPercentage;
-    });
-  }, [categories]);
+  // Categories are already sorted by display_order from the backend
+  // No need to re-sort them here - maintain user's custom order
+  const sortedCategories = categories;
 
   return (
     <Card>
