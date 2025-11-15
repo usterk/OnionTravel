@@ -210,10 +210,10 @@ const IconPicker = React.forwardRef<HTMLDivElement, IconPickerProps>(
                 type="button"
                 onClick={() => onChange(iconName)}
                 className={cn(
-                  'relative flex items-center justify-center h-10 w-10 rounded-md border-2 transition-all hover:scale-110 hover:border-gray-400',
+                  'relative flex items-center justify-center h-10 w-10 rounded-md border-2 transition-all hover:scale-110',
                   selected
-                    ? 'border-primary bg-primary/10 ring-2 ring-primary ring-offset-2'
-                    : 'border-gray-200 bg-white'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
                 )}
                 title={iconName}
               >

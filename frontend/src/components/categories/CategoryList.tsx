@@ -132,7 +132,7 @@ export function CategoryList({
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
-                    className={`flex items-start justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all gap-3 ${
+                    className={`flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all gap-3 ${
                       isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
                     } ${isReordering ? 'pointer-events-none opacity-70' : ''}`}
                   >
@@ -141,7 +141,7 @@ export function CategoryList({
                       <GripVertical className="h-5 w-5" />
                     </div>
 
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       {/* Icon */}
                       <div
                         className="flex items-center justify-center w-10 h-10 rounded-md shrink-0"
