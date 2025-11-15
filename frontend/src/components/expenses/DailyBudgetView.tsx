@@ -400,9 +400,23 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             {/* YOU CAN STILL SPEND - Main focus */}
             <div className="text-center pb-4 border-b border-gray-200">
               <p className="text-sm md:text-base text-gray-600 mb-2">💰 Remaining Today</p>
-              <p className={`text-4xl md:text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
-              </p>
+              <div className="flex items-center justify-center gap-3">
+                <p className={`text-4xl md:text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
+                </p>
+                {/* Cumulative savings badge - show inline */}
+                {statistics.cumulative_savings_past !== null &&
+                 statistics.cumulative_savings_past !== undefined &&
+                 selectedDate <= new Date().toISOString().split('T')[0] && (
+                  <div className={`inline-flex rounded-full px-3 py-1.5 text-sm font-semibold ${
+                    statistics.cumulative_savings_past >= 0
+                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      : 'bg-red-100 text-red-700 border border-red-300'
+                  }`}>
+                    {statistics.cumulative_savings_past >= 0 ? '+' : ''}{formatCurrency(statistics.cumulative_savings_past)}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center justify-center mt-2 text-xs md:text-sm">
                 {statistics.is_over_budget ? (
                   <>
@@ -419,40 +433,6 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               <p className="text-xs text-gray-500 mt-1">
                 Daily budget: {formatCurrency(statistics.daily_budget)}
               </p>
-
-              {/* Cumulative savings from past days - show for today and past, but not future days */}
-              {statistics.cumulative_savings_past !== null &&
-               statistics.cumulative_savings_past !== undefined &&
-               selectedDate <= new Date().toISOString().split('T')[0] && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 mb-2">
-                    From previous {statistics.days_into_trip - 1} {statistics.days_into_trip - 1 === 1 ? 'day' : 'days'}:
-                  </p>
-                  <div className="flex justify-center">
-                    <div className={`inline-flex rounded-2xl px-4 py-3 ${
-                      statistics.cumulative_savings_past >= 0
-                        ? 'bg-green-50 border-2 border-green-200'
-                        : 'bg-red-50 border-2 border-red-200'
-                    }`}>
-                      <div className={`text-lg md:text-xl font-bold flex items-center gap-2 ${
-                        statistics.cumulative_savings_past >= 0 ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {statistics.cumulative_savings_past >= 0 ? (
-                          <>
-                            <span>+{formatCurrency(statistics.cumulative_savings_past)}</span>
-                            <span className="text-xs font-normal">saved</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>{formatCurrency(statistics.cumulative_savings_past)}</span>
-                            <span className="text-xs font-normal">over budget</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Already Spent / Budget Used - Combined */}
