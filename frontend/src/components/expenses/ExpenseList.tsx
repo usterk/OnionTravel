@@ -24,6 +24,8 @@ import type { ExpenseFilters } from '@/lib/expenses-api';
 interface ExpenseListProps {
   tripId: number;
   tripCurrency: string;
+  tripStartDate: string;
+  tripEndDate: string;
   categories: Category[];
   onExpenseUpdated?: () => void;
   autoRefresh?: boolean;
@@ -35,6 +37,8 @@ const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Mobile Payment', 
 export function ExpenseList({
   tripId,
   tripCurrency,
+  tripStartDate,
+  tripEndDate,
   categories,
   onExpenseUpdated,
   autoRefresh = false,
@@ -333,6 +337,8 @@ export function ExpenseList({
               <ExpenseForm
                 tripId={tripId}
                 tripCurrency={tripCurrency}
+                tripStartDate={tripStartDate}
+                tripEndDate={tripEndDate}
                 categories={categories}
                 expense={editingExpense}
                 onSuccess={handleExpenseUpdated}

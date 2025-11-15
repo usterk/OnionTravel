@@ -10,6 +10,8 @@ import type { ExpenseCreate, ExpenseUpdate } from '@/lib/expenses-api';
 interface ExpenseFormProps {
   tripId: number;
   tripCurrency: string;
+  tripStartDate: string;
+  tripEndDate: string;
   categories: Category[];
   expense?: Expense;
   onSuccess: () => void;
@@ -22,6 +24,8 @@ const COMMON_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'THB', 'VND', 'SGD
 export function ExpenseForm({
   tripId,
   tripCurrency,
+  tripStartDate,
+  tripEndDate,
   categories,
   expense,
   onSuccess,
@@ -89,12 +93,24 @@ export function ExpenseForm({
       return;
     }
 
+    // Validate dates are within trip range
+    if (formData.start_date < tripStartDate || formData.start_date > tripEndDate) {
+      setError('Start date must be within the trip dates');
+      return;
+    }
+
     // Validate date range for multi-day expenses
     if (isMultiDay && formData.end_date) {
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
+
       if (endDate < startDate) {
         setError('End date must be on or after start date');
+        return;
+      }
+
+      if (formData.end_date > tripEndDate) {
+        setError('End date must be within the trip dates');
         return;
       }
     }
@@ -266,6 +282,8 @@ export function ExpenseForm({
             type="date"
             value={formData.start_date}
             onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            min={tripStartDate}
+            max={tripEndDate}
             required
             disabled={isLoading}
           />
@@ -278,7 +296,8 @@ export function ExpenseForm({
               type="date"
               value={formData.end_date}
               onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              min={formData.start_date}
+              min={formData.start_date || tripStartDate}
+              max={tripEndDate}
               disabled={isLoading}
             />
           </div>

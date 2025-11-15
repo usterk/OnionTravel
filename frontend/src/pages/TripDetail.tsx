@@ -337,6 +337,8 @@ export default function TripDetail() {
                 key={expensesRefreshKey}
                 tripId={currentTrip.id}
                 tripCurrency={currentTrip.currency_code}
+                tripStartDate={currentTrip.start_date}
+                tripEndDate={currentTrip.end_date}
                 categories={plainCategories}
                 onExpenseUpdated={() => {
                   loadCategories(currentTrip.id);
