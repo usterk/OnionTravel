@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     EXCHANGE_RATE_API_KEY: str
     EXCHANGE_RATE_API_URL: str = "https://v6.exchangerate-api.com/v6"
 
+    # OpenAI API
+    OPENAI_API_KEY: str = ""  # Optional - required for AI voice expense feature
+
     # File Storage
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB
