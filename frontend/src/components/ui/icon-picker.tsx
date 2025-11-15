@@ -200,7 +200,7 @@ const IconPicker = React.forwardRef<HTMLDivElement, IconPickerProps>(
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full"
         />
-        <div className="grid grid-cols-8 gap-2 max-h-64 overflow-y-auto p-1">
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-64 overflow-y-auto p-1">
           {filteredIcons.map((iconName) => {
             const IconComponent = ICON_MAP[iconName];
             const selected = isSelected(iconName);
