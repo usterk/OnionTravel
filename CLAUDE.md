@@ -9,24 +9,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # SSH access
 ssh root@jola209.mikrus.xyz -p 10209
-
-# Or using IP
-ssh root@65.21.32.55 -p 10209
 ```
 
 **Application URLs:**
+
+**Production (Primary Domain):**
+- Frontend: https://oniontravel.bieda.it/OnionTravel
+- Backend API: https://oniontravel.bieda.it/OnionTravel/api/v1
+- API Docs: https://oniontravel.bieda.it/OnionTravel/docs
+
+**Alternative Access (Mikrus direct):**
 - Frontend: https://jola209.mikrus.xyz:30209/OnionTravel
 - Backend API: https://jola209.mikrus.xyz:30209/OnionTravel/api/v1
 - API Docs: https://jola209.mikrus.xyz:30209/OnionTravel/docs
 - HTTP (redirects to HTTPS): http://jola209.mikrus.xyz:20209
 
-**Note**: Application uses self-signed SSL certificate. Browsers will show security warning - accept to proceed.
-
 **Server Architecture:**
 ```
-Internet → System Nginx (ports 20209 HTTP / 30209 HTTPS)
+Production Domain (oniontravel.bieda.it):
+Internet → Cloudflare (IPv6) → System Nginx (ports 443 HTTPS / 80 HTTP*)
+                              → Frontend Container (localhost:7010)
+                              → Backend Container (localhost:7011)
+
+Direct Access (jola209.mikrus.xyz):
+Internet → System Nginx (ports 30209 HTTPS / 20209 HTTP)
          → Frontend Container (localhost:7010)
          → Backend Container (localhost:7011)
+
+* Port 80 redirects to 443
 ```
 
 **Server paths:**
@@ -54,8 +64,6 @@ docker compose restart               # Restart containers
 # System nginx
 systemctl status nginx               # Nginx status
 systemctl reload nginx               # Reload nginx config
-nginx -t                             # Test nginx config
-cat /etc/nginx/sites-available/oniontravel  # View config
 
 # Application
 /root/OnionTravel/check-health.sh    # Quick health check
@@ -82,12 +90,6 @@ The application base path (URL prefix) is **fully configurable** via environment
 ```bash
 # Production (backend/.env.example)
 BASE_PATH=/OnionTravel
-
-# Development version on production server
-BASE_PATH=/dev-oniontravel
-
-# Staging
-BASE_PATH=/staging
 
 # Local development (backend/.env, frontend/.env)
 BASE_PATH=                    # Empty = runs at root (/)
@@ -118,9 +120,9 @@ VITE_BASE_PATH=              # Empty = runs at root (/)
 
 Use the unified deployment script:
 
-**Deploy only** (no git tag):
+**Deploy script**
 ```bash
-./deploy-prod.sh --yes-deploy-current-state-to-production
+./deploy-prod.sh --help
 ```
 
 **Deploy + Create Release** (with git tag):
@@ -163,32 +165,11 @@ EOF
 7. Tests all endpoints (internal + external)
 8. Shows deployment summary
 
-**Flags:**
-- `--yes-deploy-current-state-to-production` - Required safety confirmation
-- `--version X.Y.Z` - Semantic version (required with --release-notes)
-- `--release-notes FILE` - Markdown file with release notes
-- `--force` - Force deployment (against best practices!) in these cases:
-  - From non-main branch
-  - With uncommitted changes
-  - With unpushed commits
-  - Requires typing 'yes' to confirm (cannot use with --release-notes)
-- `--skip-tests` - Skip all validation checks (use with caution)
-
-### Alternative: Git-based deployment from server
-
-If you prefer to deploy from the production server after pushing to git:
-```bash
-ssh root@jola209.mikrus.xyz -p 10209
-cd /root/OnionTravel
-./update.sh
-```
-
 **Important**:
 - Always create releases from `main` branch
 - Release notes should be in Markdown format (renders nicely on GitHub)
 - Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
 - Edit `nginx/oniontravel.conf.template` for nginx changes
-- Old scripts (`deploy.sh`, `release.sh`) have been removed - use `deploy-prod.sh` only
 
 ## Project Overview
 
@@ -540,12 +521,6 @@ def login(credentials: LoginRequest):
 - Define foreign keys with `ondelete` behavior
 - Add `created_at`/`updated_at` timestamps to all tables
 - Use descriptive table and column names
-
-### Query Optimization
-
-- Use `.filter()` instead of `.filter_by()` for complex queries
-- Use `.first()` instead of `.all()[0]`
-- Avoid N+1 queries - use `.joinedload()` or `.selectinload()`
 
 ### Session Management
 

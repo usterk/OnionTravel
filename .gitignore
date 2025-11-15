@@ -46,3 +46,4 @@ test-reports/
 
 # Generated nginx config (generated from template during deployment)
 nginx/oniontravel.conf
+nginx/oniontravel.conf
