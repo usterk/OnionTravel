@@ -44,6 +44,7 @@ export function QuickExpenseEntry({
 
   // UI state
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isMultiDay, setIsMultiDay] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export function QuickExpenseEntry({
       setPaymentMethod('');
       setNotes('');
       setShowAdvanced(false);
+      setIsMultiDay(false);
       setSuccessMessage('Expense added successfully!');
       onExpenseCreated();
 
@@ -252,11 +254,31 @@ export function QuickExpenseEntry({
             />
           </div>
 
+          {/* Multi-day Toggle */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="quick-multi-day"
+              checked={isMultiDay}
+              onChange={(e) => {
+                setIsMultiDay(e.target.checked);
+                if (!e.target.checked) {
+                  setEndDate('');
+                }
+              }}
+              disabled={isSubmitting}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="quick-multi-day" className="cursor-pointer text-sm font-medium">
+              Multi-day expense (e.g., hotel booking)
+            </Label>
+          </div>
+
           {/* Date Input */}
           <div className="flex gap-2 items-end">
             <div className="flex-1">
               <Label htmlFor="quick-expense-date" className="text-sm font-medium">
-                Date *
+                {isMultiDay ? 'Start Date *' : 'Date *'}
               </Label>
               <Input
                 id="quick-expense-date"
@@ -268,14 +290,32 @@ export function QuickExpenseEntry({
                 disabled={isSubmitting}
               />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDate(new Date().toISOString().split('T')[0])}
-              disabled={isSubmitting}
-            >
-              Today
-            </Button>
+            {isMultiDay && (
+              <div className="flex-1">
+                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium">
+                  End Date
+                </Label>
+                <Input
+                  id="quick-expense-end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={date || tripStartDate}
+                  max={tripEndDate}
+                  disabled={isSubmitting}
+                />
+              </div>
+            )}
+            {!isMultiDay && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDate(new Date().toISOString().split('T')[0])}
+                disabled={isSubmitting}
+              >
+                Today
+              </Button>
+            )}
           </div>
 
           {/* Advanced Options Toggle */}
@@ -320,27 +360,6 @@ export function QuickExpenseEntry({
                     </option>
                   ))}
                 </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="quick-expense-end-date" className="text-sm font-medium">
-                  End Date (Optional - for multi-day expenses)
-                </Label>
-                <Input
-                  id="quick-expense-end-date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={date || tripStartDate}
-                  max={tripEndDate}
-                  placeholder="Leave empty for single-day expense"
-                  disabled={isSubmitting}
-                />
-                {endDate && endDate < date && (
-                  <p className="text-xs text-red-600 mt-1">
-                    End date must be on or after start date
-                  </p>
-                )}
               </div>
 
               <div>
