@@ -425,23 +425,29 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                statistics.cumulative_savings_past !== undefined &&
                selectedDate <= new Date().toISOString().split('T')[0] && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 mb-1">
+                  <p className="text-xs text-gray-500 mb-2">
                     From previous {statistics.days_into_trip - 1} {statistics.days_into_trip - 1 === 1 ? 'day' : 'days'}:
                   </p>
-                  <div className={`text-lg md:text-xl font-semibold flex items-center justify-center gap-2 ${
-                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
+                  <div className={`rounded-2xl px-4 py-3 ${
+                    statistics.cumulative_savings_past >= 0
+                      ? 'bg-green-50 border-2 border-green-200'
+                      : 'bg-red-50 border-2 border-red-200'
                   }`}>
-                    {statistics.cumulative_savings_past >= 0 ? (
-                      <>
-                        <span>+{formatCurrency(statistics.cumulative_savings_past)}</span>
-                        <span className="text-xs font-normal">saved</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{formatCurrency(statistics.cumulative_savings_past)}</span>
-                        <span className="text-xs font-normal">over budget</span>
-                      </>
-                    )}
+                    <div className={`text-lg md:text-xl font-bold flex items-center justify-center gap-2 ${
+                      statistics.cumulative_savings_past >= 0 ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      {statistics.cumulative_savings_past >= 0 ? (
+                        <>
+                          <span>+{formatCurrency(statistics.cumulative_savings_past)}</span>
+                          <span className="text-xs font-normal">saved</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{formatCurrency(statistics.cumulative_savings_past)}</span>
+                          <span className="text-xs font-normal">over budget</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
