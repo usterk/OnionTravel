@@ -449,10 +449,13 @@ def get_daily_budget_statistics(
         )
     ).all()
 
-    # Get all categories for this trip with their budget percentages
-    all_categories = db.query(Category).filter(Category.trip_id == trip_id).all()
+    # Get all categories for this trip with their budget percentages, sorted by display_order
+    all_categories = db.query(Category).filter(
+        Category.trip_id == trip_id
+    ).order_by(Category.display_order, Category.created_at).all()
 
     # Initialize category spending with budgets
+    # Use a dict for easy lookups during expense processing, but maintain insertion order (Python 3.7+)
     category_spending = {}
     for cat in all_categories:
         category_daily_budget = 0.0
