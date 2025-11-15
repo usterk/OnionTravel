@@ -18,7 +18,8 @@
 # Redirects all traffic to HTTPS
 server {
     listen 20209;
-    server_name jola209.mikrus.xyz;
+    listen [::]:20209;
+    server_name jola209.mikrus.xyz oniontravel.bieda.it;
 
     # Let's Encrypt challenge location
     location /.well-known/acme-challenge/ {
@@ -31,11 +32,14 @@ server {
     }
 }
 
-# HTTPS Server - Port 30209 (Mikrus high port)
+# HTTPS Server - Port 30209 (Mikrus high port) + Standard 443
 # Main application endpoint
 server {
     listen 30209 ssl http2;
-    server_name jola209.mikrus.xyz;
+    listen [::]:30209 ssl http2;
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name jola209.mikrus.xyz oniontravel.bieda.it;
 
     # SSL Configuration
     ssl_certificate /etc/letsencrypt/live/jola209.mikrus.xyz/fullchain.pem;
