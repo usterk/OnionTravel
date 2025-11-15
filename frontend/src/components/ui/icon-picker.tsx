@@ -38,6 +38,7 @@ import {
   HeartPulse,
   MoreHorizontal,
   Leaf,
+  Wifi,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -89,6 +90,7 @@ export const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Tag,
   MoreHorizontal,
   Leaf,
+  Wifi,
 };
 
 // Map kebab-case names (from backend) to PascalCase (Lucide React)
@@ -131,6 +133,7 @@ const KEBAB_TO_PASCAL: Record<string, string> = {
   'tag': 'Tag',
   'more-horizontal': 'MoreHorizontal',
   'leaf': 'Leaf',
+  'wifi': 'Wifi',
 };
 
 // Reverse map: PascalCase to kebab-case (for saving to backend)
