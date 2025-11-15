@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit2, Trash2, Plus } from 'lucide-react';
+import { Edit2, Trash2, Plus, GripVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { CategoryForm } from './CategoryForm';
-import { deleteCategory } from '@/lib/categories-api';
+import { deleteCategory, reorderCategories } from '@/lib/categories-api';
 import { formatNumber } from '@/lib/utils';
 import type { Category, CategoryWithStats } from '@/types/models';
 
@@ -35,6 +35,8 @@ export function CategoryList({
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
 
   const handleDelete = async () => {
     if (!deletingCategory) return;
@@ -49,6 +51,48 @@ export function CategoryList({
       alert('Failed to delete category. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    setIsReordering(true);
+    try {
+      // Reorder the categories array
+      const reorderedCategories = [...categories];
+      const [movedItem] = reorderedCategories.splice(draggedIndex, 1);
+      reorderedCategories.splice(dropIndex, 0, movedItem);
+
+      // Extract category IDs in new order
+      const categoryIds = reorderedCategories.map(cat => cat.id);
+
+      // Call API to update order
+      await reorderCategories(tripId, categoryIds);
+
+      // Refresh categories list
+      onCategoryUpdated();
+    } catch (error) {
+      console.error('Failed to reorder categories:', error);
+      alert('Failed to reorder categories. Please try again.');
+    } finally {
+      setDraggedIndex(null);
+      setIsReordering(false);
     }
   };
 
@@ -76,15 +120,27 @@ export function CategoryList({
             </div>
           ) : (
             <div className="space-y-2">
-              {categories.map((category) => {
+              {categories.map((category, index) => {
                 const IconComponent = getIconComponent(category.icon);
                 const categoryWithStats = isWithStats(category) ? category : null;
+                const isDragging = draggedIndex === index;
 
                 return (
                   <div
                     key={category.id}
-                    className="flex items-start justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors gap-3"
+                    draggable={!isReordering}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={`flex items-start justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all gap-3 ${
+                      isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
+                    } ${isReordering ? 'pointer-events-none opacity-70' : ''}`}
                   >
+                    {/* Drag handle */}
+                    <div className="flex items-center justify-center shrink-0 text-gray-400 hover:text-gray-600">
+                      <GripVertical className="h-5 w-5" />
+                    </div>
+
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Icon */}
                       <div

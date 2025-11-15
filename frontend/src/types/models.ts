@@ -42,6 +42,7 @@ export interface Category {
   icon?: string;
   budget_percentage?: number;
   is_default: boolean;
+  display_order: number;
   created_at: string;
 }
 

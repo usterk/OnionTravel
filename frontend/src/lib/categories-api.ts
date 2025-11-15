@@ -73,3 +73,13 @@ export const updateCategory = async (
 export const deleteCategory = async (tripId: number, categoryId: number): Promise<void> => {
   await api.delete(`/trips/${tripId}/categories/${categoryId}`);
 };
+
+/**
+ * Reorder categories
+ */
+export const reorderCategories = async (tripId: number, categoryIds: number[]): Promise<Category[]> => {
+  const response = await api.post<Category[]>(`/trips/${tripId}/categories/reorder`, {
+    category_ids: categoryIds,
+  });
+  return response.data;
+};
