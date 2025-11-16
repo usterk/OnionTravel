@@ -420,56 +420,15 @@ jobs:
             }
             echo "    ✓ OK"
 
-            # HTTPS frontend
-            echo "  - HTTPS frontend: https://localhost:30209$BASE_PATH"
-            curl -k -s -f https://localhost:30209$BASE_PATH > /dev/null || {
-              echo "✗ HTTPS frontend check failed"
-              exit 1
-            }
-            echo "    ✓ OK"
-
-            # HTTP redirect
-            echo "  - HTTP redirect: http://localhost:20209$BASE_PATH"
-            HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://localhost:20209$BASE_PATH)
-            if [ "$HTTP_CODE" != "301" ]; then
-              echo "✗ HTTP redirect failed (expected 301, got $HTTP_CODE)"
-              exit 1
-            fi
-            echo "    ✓ OK (redirects to HTTPS)"
-
             echo "All internal endpoint tests passed!"
           EOF
 
       - name: Test external endpoints
         run: |
           echo "Testing external endpoints..."
-
-          # Frontend HTTPS
-          echo "  - HTTPS: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/"
-          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/ > /dev/null || {
-            echo "✗ External HTTPS frontend failed"
-            exit 1
-          }
-          echo "    ✓ OK"
-
-          # API Docs
-          echo "  - API Docs: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs"
-          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs > /dev/null || {
-            echo "✗ API Docs failed"
-            exit 1
-          }
-          echo "    ✓ OK"
-
-          # HTTP redirect
-          echo "  - HTTP redirect: http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }}"
-          HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }})
-          if [ "$HTTP_CODE" != "301" ]; then
-            echo "✗ External HTTP redirect failed (expected 301, got $HTTP_CODE)"
-            exit 1
-          fi
-          echo "    ✓ OK (redirects to HTTPS)"
-
-          echo "All external endpoint tests passed!"
+          echo "Note: Production uses Cloudflare CDN on port 443"
+          echo "Manual verification: https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}"
+          echo "External endpoint tests skipped (Cloudflare CDN)"
 
       - name: Get deployment status
         if: always()
@@ -550,10 +509,6 @@ jobs:
             Frontend:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}
             Backend API:     https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/api/v1
             API Docs:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs
-
-          Direct Access (via IP):
-            HTTPS:           https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}
-            HTTP:            http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }} (redirects to HTTPS)
 
           Server Management:
             SSH:             ssh -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}
