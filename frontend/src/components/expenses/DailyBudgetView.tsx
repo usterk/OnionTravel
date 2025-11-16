@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2 } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
@@ -56,6 +56,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
   // Categories for ExpenseForm
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Quick Add expense dialog
+  const [isQuickAddDialogOpen, setIsQuickAddDialogOpen] = useState(false);
 
   // Visual hints state - only on mobile/touch devices
   const [showHints, setShowHints] = useState(() => {
@@ -211,6 +214,18 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   const handleDeleteCancel = () => {
     setIsDeleteDialogOpen(false);
     setDeletingExpense(null);
+  };
+
+  const handleQuickAddSuccess = () => {
+    setIsQuickAddDialogOpen(false);
+    // Reload data
+    loadStatistics();
+    loadDayExpenses();
+    loadTripStatistics();
+  };
+
+  const handleQuickAddCancel = () => {
+    setIsQuickAddDialogOpen(false);
   };
 
   const formatCurrency = (amount: number | string | undefined | null) => {
@@ -965,6 +980,17 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       </motion.div>
     </AnimatePresence>
 
+    {/* Quick Add Button (Floating Action Button) */}
+    <button
+      onClick={() => setIsQuickAddDialogOpen(true)}
+      className="fixed bottom-16 md:bottom-20 right-4 z-50 m-0 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-full p-3 md:p-4 shadow-lg transition-colors duration-200 focus:outline-none"
+      style={{ touchAction: 'manipulation', margin: 0 }}
+      aria-label="Quick add expense"
+      title="Dodaj wydatek"
+    >
+      <Plus className="h-5 w-5 md:h-6 md:w-6" />
+    </button>
+
     {/* Voice Expense Button (Floating Action Button) */}
     <VoiceExpenseButton
       tripId={tripId}
@@ -1040,6 +1066,26 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             {isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Quick Add Expense Dialog */}
+    <Dialog open={isQuickAddDialogOpen} onOpenChange={setIsQuickAddDialogOpen}>
+      <DialogContent>
+        <DialogHeader onClose={handleQuickAddCancel}>
+          <DialogTitle>Add Expense</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <ExpenseForm
+            tripId={tripId}
+            tripCurrency={currencyCode}
+            tripStartDate={tripStartDate}
+            tripEndDate={tripEndDate}
+            categories={categories}
+            onSuccess={handleQuickAddSuccess}
+            onCancel={handleQuickAddCancel}
+          />
+        </DialogBody>
       </DialogContent>
     </Dialog>
     </>
