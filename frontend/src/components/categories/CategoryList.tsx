@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Edit2, Trash2, Plus, GripVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,8 @@ export function CategoryList({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
 
   const handleDelete = async () => {
     if (!deletingCategory) return;
@@ -96,6 +98,75 @@ export function CategoryList({
     }
   };
 
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    if (isReordering) return;
+    setDraggedIndex(index);
+    setTouchStartY(e.touches[0].clientY);
+    setTouchCurrentY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (draggedIndex === null || touchStartY === null) return;
+    // Don't preventDefault here - it's a passive event listener
+    setTouchCurrentY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent, currentIndex: number) => {
+    if (draggedIndex === null || touchStartY === null || touchCurrentY === null) {
+      setDraggedIndex(null);
+      setTouchStartY(null);
+      setTouchCurrentY(null);
+      return;
+    }
+
+    // Calculate movement direction and distance
+    const deltaY = touchCurrentY - touchStartY;
+    const itemHeight = 80; // Approximate height of each category item
+    const moveDistance = Math.round(deltaY / itemHeight);
+
+    if (moveDistance === 0) {
+      setDraggedIndex(null);
+      setTouchStartY(null);
+      setTouchCurrentY(null);
+      return;
+    }
+
+    const dropIndex = Math.max(0, Math.min(categories.length - 1, draggedIndex + moveDistance));
+
+    if (dropIndex === draggedIndex) {
+      setDraggedIndex(null);
+      setTouchStartY(null);
+      setTouchCurrentY(null);
+      return;
+    }
+
+    setIsReordering(true);
+    try {
+      // Reorder the categories array
+      const reorderedCategories = [...categories];
+      const [movedItem] = reorderedCategories.splice(draggedIndex, 1);
+      reorderedCategories.splice(dropIndex, 0, movedItem);
+
+      // Extract category IDs in new order
+      const categoryIds = reorderedCategories.map(cat => cat.id);
+
+      // Call API to update order
+      await reorderCategories(tripId, categoryIds);
+
+      // Refresh categories list
+      onCategoryUpdated();
+    } catch (error) {
+      console.error('Failed to reorder categories:', error);
+      alert('Failed to reorder categories. Please try again.');
+    } finally {
+      setDraggedIndex(null);
+      setTouchStartY(null);
+      setTouchCurrentY(null);
+      setIsReordering(false);
+    }
+  };
+
   const isWithStats = (
     category: Category | CategoryWithStats
   ): category is CategoryWithStats => {
@@ -132,9 +203,20 @@ export function CategoryList({
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={(e) => handleTouchEnd(e, index)}
                     className={`flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all gap-3 ${
                       isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
                     } ${isReordering ? 'pointer-events-none opacity-70' : ''}`}
+                    style={
+                      isDragging && touchCurrentY !== null && touchStartY !== null
+                        ? {
+                            transform: `translateY(${touchCurrentY - touchStartY}px)`,
+                            touchAction: 'none'
+                          }
+                        : { touchAction: 'pan-y' }
+                    }
                   >
                     {/* Drag handle */}
                     <div className="flex items-center justify-center shrink-0 text-gray-400 hover:text-gray-600">
