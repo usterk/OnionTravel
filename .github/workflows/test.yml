@@ -101,7 +101,7 @@ jobs:
       - name: Run tests with coverage
         working-directory: frontend
         run: |
-          npm run test -- --run --coverage --coverage.reporter=json --coverage.reporter=text
+          npm run test -- --run --coverage
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
