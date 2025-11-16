@@ -41,5 +41,19 @@ export default defineConfig({
       }
     },
     silent: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/e2e/**',
+        '**/*.config.*',
+        '**/test/**',
+        '**/*.test.*',
+        '**/*.spec.*',
+      ],
+    },
   },
 })
