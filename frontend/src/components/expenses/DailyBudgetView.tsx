@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDailyBudgetStatistics, getExpenses } from '@/lib/expenses-api';
-import type { DailyBudgetStatistics } from '@/lib/expenses-api';
-import type { Expense } from '@/types/models';
+import { getDailyBudgetStatistics, getExpenses, getExpenseStatistics, deleteExpense } from '@/lib/expenses-api';
+import type { DailyBudgetStatistics, ExpenseStatistics } from '@/lib/expenses-api';
+import { getCategories } from '@/lib/categories-api';
+import type { Expense, Category } from '@/types/models';
 import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
+import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
+import { ExpenseForm } from './ExpenseForm';
 
 interface DailyBudgetViewProps {
   tripId: number;
@@ -23,6 +26,7 @@ interface DailyBudgetViewProps {
 
 export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDate }: DailyBudgetViewProps) {
   const [statistics, setStatistics] = useState<DailyBudgetStatistics | null>(null);
+  const [tripStatistics, setTripStatistics] = useState<ExpenseStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,21 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
   // Expenses for the selected day
   const [dayExpenses, setDayExpenses] = useState<Expense[]>([]);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+
+  // Expanded expense IDs
+  const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
+
+  // Edit expense dialog
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Delete expense confirmation
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Categories for ExpenseForm
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // Visual hints state - only on mobile/touch devices
   const [showHints, setShowHints] = useState(() => {
@@ -72,12 +91,27 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     return () => clearTimeout(timer);
   }, []);
 
+  // Load trip-level statistics once on mount
+  useEffect(() => {
+    loadTripStatistics();
+    loadCategories();
+  }, [tripId]);
+
   useEffect(() => {
     if (selectedDate) {
       loadStatistics();
       loadDayExpenses();
     }
   }, [tripId, selectedDate]);
+
+  const loadTripStatistics = async () => {
+    try {
+      const stats = await getExpenseStatistics(tripId);
+      setTripStatistics(stats);
+    } catch (err: any) {
+      console.error('Failed to load trip statistics:', err);
+    }
+  };
 
   const loadStatistics = async () => {
     // Only show loading state if we don't have any statistics yet (initial load)
@@ -115,6 +149,68 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     } finally {
       setIsLoadingExpenses(false);
     }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const cats = await getCategories(tripId);
+      setCategories(cats);
+    } catch (err: any) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    setEditingExpense(null);
+    // Reload data
+    loadStatistics();
+    loadDayExpenses();
+    loadTripStatistics();
+  };
+
+  const handleEditCancel = () => {
+    setIsEditDialogOpen(false);
+    setEditingExpense(null);
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    setDeletingExpense(expense);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingExpense) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteExpense(tripId, deletingExpense.id);
+      // Close dialog and reload data
+      setIsDeleteDialogOpen(false);
+      setDeletingExpense(null);
+      loadStatistics();
+      loadDayExpenses();
+      loadTripStatistics();
+      // Close the expanded view if this expense was expanded
+      if (expandedExpenseId === deletingExpense.id) {
+        setExpandedExpenseId(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to delete expense:', err);
+      alert('Failed to delete expense. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false);
+    setDeletingExpense(null);
   };
 
   const formatCurrency = (amount: number | string | undefined | null) => {
@@ -513,80 +609,6 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 )}
               </div>
 
-              {/* Daily Budget - Mobile: column, Desktop: 3-column */}
-              {/* Mobile layout */}
-              <div className="flex flex-col items-center gap-2 mt-1 md:hidden">
-                <div className="text-xs text-gray-500">
-                  Daily budget: {formatCurrency(statistics.daily_budget)}
-                </div>
-                {statistics.adjusted_daily_budget !== null &&
-                 statistics.adjusted_daily_budget !== undefined &&
-                 statistics.daily_budget &&
-                 Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
-                 selectedDate <= new Date().toISOString().split('T')[0] && (
-                  <div className="relative group">
-                    <div className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold cursor-help ${
-                      statistics.adjusted_daily_budget > statistics.daily_budget
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-red-100 text-red-700 border border-red-300'
-                    }`}>
-                      {formatCurrency(statistics.adjusted_daily_budget)}
-                    </div>
-                    {/* Tooltip - bottom on mobile */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                      <div className="font-semibold mb-1">Adjusted Daily Budget</div>
-                      <div className="text-gray-300">
-                        {statistics.adjusted_daily_budget > statistics.daily_budget
-                          ? 'Recommended budget increased (you saved money)'
-                          : 'Recommended budget decreased (you overspent)'}
-                      </div>
-                      {/* Tooltip arrow - top */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Desktop layout - 3-column */}
-              <div className="hidden md:flex items-center mt-1">
-                {/* Left spacer */}
-                <div className="flex-1"></div>
-
-                {/* Centered daily budget */}
-                <div className="text-xs text-gray-500">
-                  Daily budget: {formatCurrency(statistics.daily_budget)}
-                </div>
-
-                {/* Right section - adjusted budget badge or spacer */}
-                <div className="flex-1 flex justify-start pl-3">
-                  {statistics.adjusted_daily_budget !== null &&
-                   statistics.adjusted_daily_budget !== undefined &&
-                   statistics.daily_budget &&
-                   Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
-                   selectedDate <= new Date().toISOString().split('T')[0] && (
-                    <div className="relative group">
-                      <div className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold cursor-help ${
-                        statistics.adjusted_daily_budget > statistics.daily_budget
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-red-100 text-red-700 border border-red-300'
-                      }`}>
-                        {formatCurrency(statistics.adjusted_daily_budget)}
-                      </div>
-                      {/* Tooltip - right on desktop */}
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                        <div className="font-semibold mb-1">Adjusted Daily Budget</div>
-                        <div className="text-gray-300">
-                          {statistics.adjusted_daily_budget > statistics.daily_budget
-                            ? 'Recommended budget increased (you saved money)'
-                            : 'Recommended budget decreased (you overspent)'}
-                        </div>
-                        {/* Tooltip arrow - left */}
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Already Spent / Budget Used - Combined */}
@@ -684,45 +706,36 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   );
                   const CategoryIcon = categoryInfo ? getIconComponent(categoryInfo.category_icon) : null;
 
+                  const isExpanded = expandedExpenseId === expense.id;
+
                   return (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                      className="rounded-lg border border-gray-200 overflow-hidden"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {/* Main row - clickable */}
+                      <div
+                        className="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
+                      >
                         {/* Category Icon */}
                         {categoryInfo && (
                           <div
-                            className="flex items-center justify-center w-10 h-10 rounded-md shrink-0"
+                            className="flex items-center justify-center w-8 h-8 rounded-md shrink-0"
                             style={{ backgroundColor: categoryInfo.category_color + '20' }}
                           >
                             {CategoryIcon && (
                               <CategoryIcon
-                                className="h-5 w-5"
+                                className="h-4 w-4"
                                 style={{ color: categoryInfo.category_color }}
                               />
                             )}
                           </div>
                         )}
 
-                        {/* Expense Details */}
+                        {/* Expense Title */}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-gray-900 truncate">{expense.title}</h4>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                            <span>{categoryInfo?.category_name || 'Unknown'}</span>
-                            {expense.payment_method && (
-                              <>
-                                <span>•</span>
-                                <span>{expense.payment_method}</span>
-                              </>
-                            )}
-                            {expense.notes && (
-                              <>
-                                <span>•</span>
-                                <span className="truncate max-w-[200px]">{expense.notes}</span>
-                              </>
-                            )}
-                          </div>
                         </div>
 
                         {/* Amount */}
@@ -730,13 +743,75 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                           <div className="font-bold text-gray-900">
                             {formatCurrency(expense.amount_in_trip_currency)}
                           </div>
-                          {expense.currency_code !== currencyCode && (
-                            <div className="text-xs text-gray-500">
-                              {formatNumber(expense.amount)} {expense.currency_code}
-                            </div>
-                          )}
                         </div>
                       </div>
+
+                      {/* Expanded details */}
+                      {isExpanded && (
+                        <div className="px-2 pb-2 pt-1 border-t border-gray-100 bg-gray-50">
+                          <div className="space-y-2 text-sm">
+                            {/* Category */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 w-20">Category:</span>
+                              <span className="text-gray-900">{categoryInfo?.category_name || 'Unknown'}</span>
+                            </div>
+
+                            {/* Payment method */}
+                            {expense.payment_method && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 w-20">Payment:</span>
+                                <span className="text-gray-900">{expense.payment_method}</span>
+                              </div>
+                            )}
+
+                            {/* Original currency */}
+                            {expense.currency_code !== currencyCode && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 w-20">Original:</span>
+                                <span className="text-gray-900">
+                                  {formatNumber(expense.amount)} {expense.currency_code}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Notes */}
+                            {expense.notes && (
+                              <div className="flex gap-2">
+                                <span className="text-gray-500 w-20 shrink-0">Notes:</span>
+                                <span className="text-gray-900">{expense.notes}</span>
+                              </div>
+                            )}
+
+                            {/* Action buttons */}
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditExpense(expense);
+                                }}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteExpense(expense);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -835,6 +910,58 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
           )}
         </Card>
       )}
+
+      {/* Budget Details - Compact */}
+      <Card className="bg-gray-50">
+        <CardContent className="py-3 md:py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 divide-y md:divide-y-0 md:divide-x divide-gray-300">
+            {/* Daily Budget */}
+            <div className="flex items-center justify-between pb-3 md:pb-0 md:pr-4">
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 mb-1">Daily Budget</p>
+                <p className="text-lg md:text-xl font-bold text-gray-900">{formatCurrency(statistics.daily_budget)}</p>
+              </div>
+              <Calendar className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
+            </div>
+
+            {/* Adjusted Daily Budget */}
+            {statistics.adjusted_daily_budget !== null &&
+             statistics.adjusted_daily_budget !== undefined &&
+             statistics.daily_budget &&
+             Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
+             selectedDate <= new Date().toISOString().split('T')[0] && (
+              <div className="flex items-center justify-between py-3 md:py-0 md:px-4">
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Adjusted Budget</p>
+                  <p className={`text-lg md:text-xl font-bold ${
+                    statistics.adjusted_daily_budget > statistics.daily_budget ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {formatCurrency(statistics.adjusted_daily_budget)}
+                  </p>
+                </div>
+                <CircleDollarSign className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
+              </div>
+            )}
+
+            {/* Average Daily Spending */}
+            {tripStatistics && tripStatistics.average_daily_spending > 0 && (
+              <div className="flex items-center justify-between pt-3 md:pt-0 md:pl-4">
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Avg. Daily</p>
+                  <p className={`text-lg md:text-xl font-bold ${
+                    statistics.daily_budget && tripStatistics.average_daily_spending > statistics.daily_budget
+                      ? 'text-amber-600'
+                      : 'text-blue-600'
+                  }`}>
+                    {formatCurrency(tripStatistics.average_daily_spending)}
+                  </p>
+                </div>
+                <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       </motion.div>
     </AnimatePresence>
 
@@ -842,8 +969,79 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     <VoiceExpenseButton
       tripId={tripId}
       currentDate={selectedDate}
-      onExpenseAdded={loadStatistics}
+      onExpenseAdded={() => {
+        loadStatistics();
+        loadDayExpenses();
+        loadTripStatistics();
+      }}
     />
+
+    {/* Edit Expense Dialog */}
+    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <DialogContent>
+        <DialogHeader onClose={handleEditCancel}>
+          <DialogTitle>Edit Expense</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          {editingExpense && (
+            <ExpenseForm
+              tripId={tripId}
+              tripCurrency={currencyCode}
+              tripStartDate={tripStartDate}
+              tripEndDate={tripEndDate}
+              categories={categories}
+              expense={editingExpense}
+              onSuccess={handleEditSuccess}
+              onCancel={handleEditCancel}
+            />
+          )}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
+
+    {/* Delete Confirmation Dialog */}
+    <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <DialogContent className="max-w-md mx-auto">
+        <DialogHeader onClose={handleDeleteCancel}>
+          <DialogTitle>Delete Expense</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              Are you sure you want to delete this expense?
+            </p>
+            {deletingExpense && (
+              <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                <p className="font-medium text-gray-900">{deletingExpense.title}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {formatCurrency(deletingExpense.amount_in_trip_currency)}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-red-600">
+              This action cannot be undone.
+            </p>
+          </div>
+        </DialogBody>
+        <DialogFooter className="justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleDeleteCancel}
+            disabled={isDeleting}
+            className="min-w-[120px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            className="min-w-[120px] bg-red-600 hover:bg-red-700 text-white"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
