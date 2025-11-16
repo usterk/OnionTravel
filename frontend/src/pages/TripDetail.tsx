@@ -204,13 +204,12 @@ export default function TripDetail() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-2 text-sm"
+            className="mb-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 -ml-2"
           >
-            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="flex-1 min-w-0">
