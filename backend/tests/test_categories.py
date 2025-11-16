@@ -532,3 +532,152 @@ class TestCategoryAccessControl:
             headers=auth_headers_user2
         )
         assert response.status_code == 403
+
+
+class TestCategoryDeletionWithExpenses:
+    """Test deleting categories that have expenses"""
+
+    def test_cannot_delete_category_with_expenses(
+        self, client, auth_headers, created_trip
+    ):
+        """Test that categories with expenses cannot be deleted"""
+        from unittest.mock import patch, AsyncMock
+        from decimal import Decimal
+
+        trip_id = created_trip['id']
+
+        # Get categories
+        categories_response = client.get(
+            f"/api/v1/trips/{trip_id}/categories",
+            headers=auth_headers
+        )
+        categories = categories_response.json()
+        category_id = categories[0]['id']
+
+        # Create expense in this category
+        with patch('app.services.expense_service.CurrencyService') as mock_currency:
+            mock_service_instance = mock_currency.return_value
+            mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+
+            expense_data = {
+                "title": "Test Expense",
+                "amount": 100.00,
+                "currency_code": "USD",
+                "category_id": category_id,
+                "start_date": "2024-01-15"
+            }
+            client.post(
+                f"/api/v1/trips/{trip_id}/expenses",
+                json=expense_data,
+                headers=auth_headers
+            )
+
+        # Try to delete category with expense
+        response = client.delete(
+            f"/api/v1/trips/{trip_id}/categories/{category_id}",
+            headers=auth_headers
+        )
+
+        assert response.status_code == 400
+        assert "Cannot delete category with" in response.json()['detail']
+        assert "expenses" in response.json()['detail']
+
+
+class TestCategoryReordering:
+    """Test category reordering functionality"""
+
+    def test_reorder_categories_success(
+        self, client, auth_headers, created_trip
+    ):
+        """Test successfully reordering categories"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        categories_response = client.get(
+            f"/api/v1/trips/{trip_id}/categories",
+            headers=auth_headers
+        )
+        categories = categories_response.json()
+        assert len(categories) == 8
+
+        # Reverse the order
+        category_ids = [cat['id'] for cat in categories]
+        reversed_ids = list(reversed(category_ids))
+
+        # Reorder categories
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": reversed_ids},
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        reordered = response.json()
+        assert len(reordered) == 8
+        # Verify the order changed
+        assert [cat['id'] for cat in reordered] == reversed_ids
+
+    def test_reorder_categories_invalid_ids(
+        self, client, auth_headers, created_trip
+    ):
+        """Test reordering with invalid category IDs"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        categories_response = client.get(
+            f"/api/v1/trips/{trip_id}/categories",
+            headers=auth_headers
+        )
+        categories = categories_response.json()
+
+        # Try to reorder with missing IDs
+        incomplete_ids = [categories[0]['id'], categories[1]['id']]
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": incomplete_ids},
+            headers=auth_headers
+        )
+
+        assert response.status_code == 400
+        assert "must match exactly" in response.json()['detail']
+
+    def test_reorder_categories_with_extra_ids(
+        self, client, auth_headers, created_trip
+    ):
+        """Test reordering with extra invalid IDs"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        categories_response = client.get(
+            f"/api/v1/trips/{trip_id}/categories",
+            headers=auth_headers
+        )
+        categories = categories_response.json()
+
+        # Add an invalid ID
+        category_ids = [cat['id'] for cat in categories]
+        category_ids.append(99999)  # Non-existent ID
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": category_ids},
+            headers=auth_headers
+        )
+
+        assert response.status_code == 400
+        assert "must match exactly" in response.json()['detail']
+
+    def test_reorder_categories_unauthorized(
+        self, client, auth_headers_user2, created_trip
+    ):
+        """Test that unauthorized users cannot reorder categories"""
+        trip_id = created_trip['id']
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": [1, 2, 3]},
+            headers=auth_headers_user2
+        )
+
+        assert response.status_code == 403

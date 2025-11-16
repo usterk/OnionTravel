@@ -1,8 +1,12 @@
 [run]
 source = app
 omit =
-    # Exclude modules not part of Phases 1-3 (Authentication)
+    # Exclude optional AI features (require OpenAI API key)
+    app/api/v1/ai_expenses.py
+    app/services/ai_expense_parser.py
+    # Exclude currency service (external API dependency)
     app/services/currency.py
+    # Exclude scheduler (background tasks)
     app/tasks/scheduler.py
     # Exclude test files
     */tests/*
