@@ -26,11 +26,12 @@ export const VoiceExpenseButton: React.FC<VoiceExpenseButtonProps> = ({
       {/* Floating Action Button (FAB) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300"
+        className="fixed bottom-4 right-4 z-50 m-0 bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white rounded-full p-3 md:p-4 shadow-lg transition-colors duration-200 focus:outline-none"
+        style={{ touchAction: 'manipulation', margin: 0 }}
         aria-label="Add expense with voice"
         title="Dodaj wydatek głosowo"
       >
-        <Mic className="h-6 w-6" />
+        <Mic className="h-5 w-5 md:h-6 md:w-6" />
       </button>
 
       {/* Voice Expense Modal */}

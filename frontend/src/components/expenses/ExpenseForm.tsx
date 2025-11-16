@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense, updateExpense } from '@/lib/expenses-api';
 import type { Expense, Category } from '@/types/models';
 import type { ExpenseCreate, ExpenseUpdate } from '@/lib/expenses-api';
@@ -236,21 +237,49 @@ export function ExpenseForm({
 
       {/* Category */}
       <div>
-        <Label htmlFor="category_id">Category *</Label>
-        <Select
-          id="category_id"
-          value={formData.category_id}
-          onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-          required
-          disabled={isLoading}
-        >
-          <option value="">Select a category...</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id.toString()}>
-              {cat.name}
-            </option>
-          ))}
-        </Select>
+        <Label>Category *</Label>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-2 mt-2">
+          {categories.map((cat) => {
+            const IconComponent = getIconComponent(cat.icon);
+            const isSelected = formData.category_id === cat.id.toString();
+
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setFormData({ ...formData, category_id: cat.id.toString() })}
+                disabled={isLoading}
+                className={`
+                  flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg border-2 transition-all hover:scale-105
+                  ${isSelected
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                  }
+                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+                title={cat.name}
+              >
+                {IconComponent && (
+                  <div
+                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-md"
+                    style={{
+                      backgroundColor: isSelected ? cat.color : cat.color + '20',
+                    }}
+                  >
+                    <IconComponent
+                      className="h-5 w-5 sm:h-6 sm:w-6"
+                      style={{ color: isSelected ? '#fff' : cat.color }}
+                    />
+                  </div>
+                )}
+                <span className="text-[10px] sm:text-xs text-center leading-tight line-clamp-2 w-full">{cat.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        {!formData.category_id && (
+          <p className="text-sm text-red-600 mt-1">Please select a category</p>
+        )}
       </div>
 
       {/* Multi-day Toggle */}

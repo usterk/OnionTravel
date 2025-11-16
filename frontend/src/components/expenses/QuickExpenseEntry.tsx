@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { getIconComponent } from '@/components/ui/icon-picker';
-import { createExpense } from '@/lib/expenses-api';
-import { Zap, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { createExpense, updateExpense } from '@/lib/expenses-api';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Category } from '@/types/models';
+import type { Category, Expense } from '@/types/models';
 
 interface QuickExpenseEntryProps {
   tripId: number;
@@ -18,7 +17,9 @@ interface QuickExpenseEntryProps {
   tripStartDate: string;
   tripEndDate: string;
   categories: Category[];
+  expense?: Expense;
   onExpenseCreated: () => void;
+  onCancel?: () => void;
 }
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Mobile Payment', 'Other'];
@@ -31,7 +32,9 @@ export function QuickExpenseEntry({
   tripStartDate,
   tripEndDate,
   categories,
+  expense,
   onExpenseCreated,
+  onCancel,
 }: QuickExpenseEntryProps) {
   // Form state
   const [amount, setAmount] = useState('');
@@ -50,10 +53,28 @@ export function QuickExpenseEntry({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Initialize form with expense data when editing
+  useEffect(() => {
+    if (expense) {
+      setAmount(expense.amount.toString());
+      setSelectedCategory(categories.find(c => c.id === expense.category_id) || null);
+      setCurrency(expense.currency_code);
+      setDate(expense.start_date);
+      setEndDate(expense.end_date || '');
+      setTitle(expense.title);
+      setPaymentMethod(expense.payment_method || '');
+      setNotes(expense.notes || '');
+      setIsMultiDay(!!expense.end_date);
+      setShowAdvanced(!!(expense.payment_method || expense.notes));
+    }
+  }, [expense, categories]);
+
   // Reset currency when trip currency changes
   useEffect(() => {
-    setCurrency(tripCurrency);
-  }, [tripCurrency]);
+    if (!expense) {
+      setCurrency(tripCurrency);
+    }
+  }, [tripCurrency, expense]);
 
   // Auto-clear success message after 3 seconds
   useEffect(() => {
@@ -82,35 +103,44 @@ export function QuickExpenseEntry({
     setIsSubmitting(true);
 
     try {
-      await createExpense(tripId, {
+      const expenseData = {
         title: title.trim() || `${selectedCategory.name} expense`,
         amount: amountValue,
         currency_code: currency,
         category_id: selectedCategory.id,
         start_date: date,
-        end_date: endDate || undefined,
+        end_date: (isMultiDay && endDate) ? endDate : undefined,
         payment_method: paymentMethod || undefined,
         notes: notes.trim() || undefined,
-      });
+      };
 
-      // Success! Reset form
-      setAmount('');
-      setSelectedCategory(null);
-      setDate(new Date().toISOString().split('T')[0]);
-      setEndDate('');
-      setTitle('');
-      setPaymentMethod('');
-      setNotes('');
-      setShowAdvanced(false);
-      setIsMultiDay(false);
-      setSuccessMessage('Expense added successfully!');
+      if (expense) {
+        // Update existing expense
+        await updateExpense(tripId, expense.id, expenseData);
+        setSuccessMessage('Expense updated successfully!');
+      } else {
+        // Create new expense
+        await createExpense(tripId, expenseData);
+        // Success! Reset form for new entry
+        setAmount('');
+        setSelectedCategory(null);
+        setDate(new Date().toISOString().split('T')[0]);
+        setEndDate('');
+        setTitle('');
+        setPaymentMethod('');
+        setNotes('');
+        setShowAdvanced(false);
+        setIsMultiDay(false);
+        setSuccessMessage('Expense added successfully!');
+
+        // Focus back on amount input
+        document.getElementById('quick-expense-amount')?.focus();
+      }
+
       onExpenseCreated();
-
-      // Focus back on amount input
-      document.getElementById('quick-expense-amount')?.focus();
     } catch (err: any) {
-      console.error('Failed to create expense:', err);
-      setError(err.response?.data?.detail || 'Failed to add expense. Please try again.');
+      console.error('Failed to save expense:', err);
+      setError(err.response?.data?.detail || `Failed to ${expense ? 'update' : 'add'} expense. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -124,15 +154,7 @@ export function QuickExpenseEntry({
   };
 
   return (
-    <Card className="border-2 border-primary/20">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Zap className="h-5 w-5 text-primary" />
-          Quick Add Expense
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
           {/* Error Message */}
           {error && (
             <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-800 text-sm">
@@ -197,7 +219,7 @@ export function QuickExpenseEntry({
                 No categories available. Please create categories first.
               </p>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-2">
                 {categories.map((category) => {
                   const IconComponent = getIconComponent(category.icon);
                   const isSelected = selectedCategory?.id === category.id;
@@ -382,23 +404,34 @@ export function QuickExpenseEntry({
             </div>
           )}
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full h-12 text-lg font-semibold"
-            disabled={isSubmitting || !amount || !selectedCategory}
-          >
-            {isSubmitting ? 'Adding...' : 'Add Expense'}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {expense && onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                className="flex-1 h-12 text-lg font-semibold"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              className={`h-12 text-lg font-semibold ${expense ? 'flex-1' : 'w-full'}`}
+              disabled={isSubmitting || !amount || !selectedCategory}
+            >
+              {isSubmitting ? (expense ? 'Updating...' : 'Adding...') : (expense ? 'Update Expense' : 'Add Expense')}
+            </Button>
+          </div>
 
           {/* Keyboard Hint */}
-          {amount && selectedCategory && !showAdvanced && (
+          {!expense && amount && selectedCategory && !showAdvanced && (
             <p className="text-xs text-center text-gray-500">
               Press Enter to add expense quickly
             </p>
           )}
         </form>
-      </CardContent>
-    </Card>
   );
 }

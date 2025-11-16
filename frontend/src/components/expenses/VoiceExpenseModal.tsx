@@ -136,7 +136,7 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
       }, 1000);
     } catch (err) {
       console.error('Failed to start recording:', err);
-      setError('Nie można uzyskać dostępu do mikrofonu');
+      setError('Nie można uzyskać dostępu do mikrofonu. Upewnij się, że przeglądarka ma uprawnienia do mikrofonu i że mikrofon jest podłączony.');
       setStep('error');
     }
   };
@@ -240,7 +240,7 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm mx-auto">
         <DialogHeader onClose={handleCancel}>
           <DialogTitle>Nagrywanie wydatku</DialogTitle>
         </DialogHeader>

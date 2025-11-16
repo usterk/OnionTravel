@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CreditCard, Calendar, MapPin } from 'lucide-react';
+import { Plus, MapPin } from 'lucide-react';
 import { DailyBudgetView } from '@/components/expenses/DailyBudgetView';
 import { APP_VERSION } from '@/version';
 
@@ -239,68 +239,6 @@ export default function Dashboard() {
               tripStartDate={selectedTrip.start_date}
               tripEndDate={selectedTrip.end_date}
             />
-
-            {/* Payment Method Breakdown */}
-            {statistics && statistics.by_payment_method && statistics.by_payment_method.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CreditCard className="h-5 w-5 mr-2" />
-                    Spending by Payment Method
-                  </CardTitle>
-                  <CardDescription>
-                    How you've been paying for expenses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {statistics.by_payment_method.map((method, index) => (
-                      <div
-                        key={index}
-                        className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="text-sm text-gray-600 mb-1">
-                          {method.payment_method || 'Unknown'}
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {formatCurrency(method.total_spent)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Daily Average */}
-            {statistics && statistics.average_daily_spending > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Daily Average
-                  </CardTitle>
-                  <CardDescription>
-                    Average spending per day
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {formatCurrency(statistics.average_daily_spending)}
-                  </div>
-                  {selectedTrip.daily_budget && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Daily budget: {formatCurrency(selectedTrip.daily_budget)}
-                      {statistics.average_daily_spending > selectedTrip.daily_budget && (
-                        <span className="text-red-600 ml-2">
-                          (Over by {formatCurrency(statistics.average_daily_spending - selectedTrip.daily_budget)})
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </div>
         )}
 

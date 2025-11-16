@@ -135,6 +135,7 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
             <div className="mt-2 pt-2 border-t flex gap-2">
               {onStartClick && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleStartClick}
@@ -145,6 +146,7 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
               )}
               {onTodayClick && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleTodayClick}
@@ -156,6 +158,7 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
               )}
               {onEndClick && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleEndClick}
@@ -174,6 +177,7 @@ export function DatePicker({ value, onChange, min, max, onTodayClick, onStartCli
     <>
       <div className="relative inline-block" ref={containerRef}>
         <Button
+          type="button"
           variant="outline"
           size="sm"
           onClick={(e) => {
