@@ -56,14 +56,32 @@ class AIExpenseParser:
         try:
             # Decode base64 audio
             # Handle data URL format: "data:audio/webm;base64,..."
+            mime_type = "audio/webm"  # default
             if "," in audio_base64:
+                # Extract MIME type from data URL
+                header = audio_base64.split(",")[0]
+                if ":" in header and ";" in header:
+                    mime_type = header.split(":")[1].split(";")[0]
                 audio_base64 = audio_base64.split(",")[1]
 
             audio_bytes = base64.b64decode(audio_base64)
 
+            # Determine file extension from MIME type
+            extension_map = {
+                "audio/webm": ".webm",
+                "audio/mp4": ".mp4",
+                "audio/m4a": ".m4a",
+                "audio/ogg": ".ogg",
+                "audio/mpeg": ".mp3",
+                "audio/wav": ".wav",
+            }
+
+            # Get extension, fallback to .webm
+            file_extension = extension_map.get(mime_type, ".webm")
+
             # Save temporarily to file (OpenAI API requires file-like object)
             import tempfile
-            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as temp_audio:
+            with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False) as temp_audio:
                 temp_audio.write(audio_bytes)
                 temp_audio_path = temp_audio.name
 

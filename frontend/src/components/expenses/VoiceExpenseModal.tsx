@@ -77,7 +77,29 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+
+      // Try to use a compatible audio format
+      // Prefer webm with opus, but fallback to browser default
+      let mediaRecorder: MediaRecorder;
+      let mimeType = 'audio/webm;codecs=opus';
+
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        // Try other common formats
+        const formats = [
+          'audio/webm',
+          'audio/mp4',
+          'audio/ogg;codecs=opus',
+          'audio/ogg',
+        ];
+
+        mimeType = formats.find(fmt => MediaRecorder.isTypeSupported(fmt)) || '';
+        console.log('Using MIME type:', mimeType);
+      }
+
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -88,7 +110,11 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Use the actual MIME type from the recorder
+        const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
+        console.log('Recording finished with MIME type:', actualMimeType);
+
+        const blob = new Blob(audioChunksRef.current, { type: actualMimeType });
         audioBlobRef.current = blob;
         stream.getTracks().forEach((track) => track.stop());
 
