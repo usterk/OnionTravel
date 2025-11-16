@@ -148,3 +148,49 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+  notify-failure:
+    name: Notify Test Failure
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: failure() && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Send Discord notification
+        if: ${{ vars.DISCORD_WEBHOOK_URL }}
+        run: |
+          # Determine which tests failed
+          BACKEND_STATUS="${{ needs.backend-tests.result }}"
+          FRONTEND_STATUS="${{ needs.frontend-tests.result }}"
+
+          FAILED_TESTS=""
+          if [ "$BACKEND_STATUS" = "failure" ]; then
+            FAILED_TESTS="Backend"
+          fi
+          if [ "$FRONTEND_STATUS" = "failure" ]; then
+            if [ -n "$FAILED_TESTS" ]; then
+              FAILED_TESTS="$FAILED_TESTS, Frontend"
+            else
+              FAILED_TESTS="Frontend"
+            fi
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Tests Failed\",
+                \"description\": \"OnionTravel tests failed on main branch\",
+                \"color\": 15158332,
+                \"fields\": [
+                  {\"name\": \"Failed Tests\", \"value\": \"$FAILED_TESTS\", \"inline\": false},
+                  {\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"inline\": true},
+                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
+                  {\"name\": \"Author\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                  {\"name\": \"Workflow Run\", \"value\": \"[View Logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)\", \"inline\": false},
+                  {\"name\": \"Backend Status\", \"value\": \"$BACKEND_STATUS\", \"inline\": true},
+                  {\"name\": \"Frontend Status\", \"value\": \"$FRONTEND_STATUS\", \"inline\": true}
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "${{ vars.DISCORD_WEBHOOK_URL }}"
