@@ -11,6 +11,8 @@ from app.schemas.currency import (
     SupportedCurrenciesResponse
 )
 from app.services.currency import CurrencyService
+from app.api.deps import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -20,7 +22,8 @@ async def get_exchange_rate(
     from_currency: str = Query(..., description="Source currency code (e.g., USD)"),
     to_currency: str = Query(..., description="Target currency code (e.g., EUR)"),
     date_param: Optional[date] = Query(None, alias="date", description="Date for historical rate (defaults to today)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get exchange rate between two currencies.
@@ -59,7 +62,8 @@ async def convert_currency(
     amount: float = Query(..., gt=0, description="Amount to convert"),
     from_currency: str = Query(..., description="Source currency code (e.g., USD)"),
     to_currency: str = Query(..., description="Target currency code (e.g., EUR)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Convert an amount from one currency to another.
@@ -101,7 +105,10 @@ async def convert_currency(
 
 
 @router.get("/supported", response_model=SupportedCurrenciesResponse)
-def get_supported_currencies(db: Session = Depends(get_db)):
+def get_supported_currencies(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
     Get list of supported currency codes.
 
