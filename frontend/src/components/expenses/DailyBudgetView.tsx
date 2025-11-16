@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
 import { ExpenseForm } from './ExpenseForm';
+import { QuickExpenseEntry } from './QuickExpenseEntry';
 
 interface DailyBudgetViewProps {
   tripId: number;
@@ -1072,18 +1073,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     {/* Quick Add Expense Dialog */}
     <Dialog open={isQuickAddDialogOpen} onOpenChange={setIsQuickAddDialogOpen}>
       <DialogContent>
-        <DialogHeader onClose={handleQuickAddCancel}>
-          <DialogTitle>Add Expense</DialogTitle>
-        </DialogHeader>
         <DialogBody>
-          <ExpenseForm
+          <QuickExpenseEntry
             tripId={tripId}
             tripCurrency={currencyCode}
             tripStartDate={tripStartDate}
             tripEndDate={tripEndDate}
             categories={categories}
-            onSuccess={handleQuickAddSuccess}
-            onCancel={handleQuickAddCancel}
+            onExpenseCreated={handleQuickAddSuccess}
           />
         </DialogBody>
       </DialogContent>
