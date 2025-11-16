@@ -2,6 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-OnionTravel}
 
 services:
   backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/usterk/oniontravel-backend:latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -27,6 +28,7 @@ services:
       start_period: 40s
 
   frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/usterk/oniontravel-frontend:latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
