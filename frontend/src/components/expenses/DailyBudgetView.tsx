@@ -941,7 +941,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
              selectedDate <= new Date().toISOString().split('T')[0] && (
               <div className="flex items-center justify-between py-3 md:py-0 md:px-4">
                 <div className="flex-1">
-                  <p className="text-xs text-gray-500 mb-1">Adjusted Budget</p>
+                  <p className="text-xs text-gray-500 mb-1">Adjusted Daily Budget</p>
                   <p className={`text-lg md:text-xl font-bold ${
                     statistics.adjusted_daily_budget > statistics.daily_budget ? 'text-green-600' : 'text-red-600'
                   }`}>
