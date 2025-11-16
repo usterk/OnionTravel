@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDailyBudgetStatistics, getExpenses, getExpenseStatistics, deleteExpense } from '@/lib/expenses-api';
@@ -69,6 +69,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
   // Swipe direction for animation
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+
+  // Ref for scrolling to "Remaining Today" section
+  const remainingTodayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Set initial date based on trip range
@@ -227,6 +230,26 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
   const handleQuickAddCancel = () => {
     setIsQuickAddDialogOpen(false);
+  };
+
+  /**
+   * Refresh all data and scroll to "Remaining Today" section
+   * Called after creating expense via voice input
+   */
+  const handleExpenseAdded = async () => {
+    // Reload statistics and expenses
+    await Promise.all([
+      loadStatistics(),
+      loadDayExpenses()
+    ]);
+
+    // Scroll to "Remaining Today" section
+    if (remainingTodayRef.current) {
+      remainingTodayRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   };
 
   const formatCurrency = (amount: number | string | undefined | null) => {
@@ -536,7 +559,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       </Card>
 
       {/* Main Metrics - Single Row */}
-      <Card className="border-2 border-green-500">
+      <Card className="border-2 border-green-500" ref={remainingTodayRef}>
         <CardContent className="py-6">
           <div className="flex flex-col gap-4">
             {/* YOU CAN STILL SPEND - Main focus */}
@@ -965,11 +988,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     <VoiceExpenseButton
       tripId={tripId}
       currentDate={selectedDate}
-      onExpenseAdded={() => {
-        loadStatistics();
-        loadDayExpenses();
-        loadTripStatistics();
-      }}
+      onExpenseAdded={handleExpenseAdded}
     />
 
     {/* Edit Expense Dialog */}
