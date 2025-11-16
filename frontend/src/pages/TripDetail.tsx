@@ -231,26 +231,26 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Info className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
+          <TabsList className="grid grid-cols-5 w-full gap-1">
+            <TabsTrigger value="overview" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Info className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Receipt className="h-4 w-4" />
-              <span className="hidden sm:inline">Expenses</span>
+            <TabsTrigger value="expenses" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Receipt className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Expenses</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Categories</span>
+            <TabsTrigger value="categories" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Tag className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Categories</span>
             </TabsTrigger>
-            <TabsTrigger value="members" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Members</span>
+            <TabsTrigger value="members" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Users className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Members</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
+            <TabsTrigger value="settings" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <SettingsIcon className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Settings</span>
             </TabsTrigger>
           </TabsList>
 
