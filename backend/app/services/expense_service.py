@@ -377,10 +377,17 @@ def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
         for stat in daily_stats
     ]
 
-    # Calculate average daily spending
+    # Calculate average daily spending (only for elapsed days)
     if trip.start_date and trip.end_date:
-        trip_days = (trip.end_date - trip.start_date).days + 1
-        average_daily = total_spent / trip_days if trip_days > 0 else 0
+        today = datetime.now().date()
+        # Calculate days that have elapsed (from start to today, or to end if trip ended)
+        last_day = min(today, trip.end_date)
+        if last_day >= trip.start_date:
+            elapsed_days = (last_day - trip.start_date).days + 1
+            average_daily = total_spent / elapsed_days if elapsed_days > 0 else 0
+        else:
+            # Trip hasn't started yet
+            average_daily = 0
     else:
         average_daily = 0
 
