@@ -1071,6 +1071,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             tripStartDate={tripStartDate}
             tripEndDate={tripEndDate}
             categories={categories}
+            initialDate={selectedDate}
             onExpenseCreated={handleQuickAddSuccess}
           />
         </DialogBody>
