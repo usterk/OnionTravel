@@ -39,6 +39,7 @@ jobs:
           cat > .env << EOF
           SECRET_KEY=test-secret-key-for-github-actions
           EXCHANGE_RATE_API_KEY=test-api-key
+          OPENAI_API_KEY=test-openai-api-key
           DATABASE_URL=sqlite:///./test.db
           ALLOWED_ORIGINS=http://localhost:7000
           ALGORITHM=HS256
