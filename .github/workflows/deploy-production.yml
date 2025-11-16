@@ -177,15 +177,15 @@ jobs:
           echo "Pushed commit and tag v$NEW_VERSION"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.bump_version.outputs.new_version }}
-          release_name: Release v${{ steps.bump_version.outputs.new_version }}
-          body: ${{ steps.generate_notes.outputs.notes }}
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          # Create release using gh CLI
+          gh release create "v$NEW_VERSION" \
+            --title "Release v$NEW_VERSION" \
+            --notes-file /tmp/release_notes.md
 
   deploy:
     name: Deploy to Production Server
