@@ -1004,14 +1004,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         </DialogHeader>
         <DialogBody>
           {editingExpense && (
-            <ExpenseForm
+            <QuickExpenseEntry
               tripId={tripId}
               tripCurrency={currencyCode}
               tripStartDate={tripStartDate}
               tripEndDate={tripEndDate}
               categories={categories}
               expense={editingExpense}
-              onSuccess={handleEditSuccess}
+              onExpenseCreated={handleEditSuccess}
               onCancel={handleEditCancel}
             />
           )}
@@ -1066,6 +1066,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     {/* Quick Add Expense Dialog */}
     <Dialog open={isQuickAddDialogOpen} onOpenChange={setIsQuickAddDialogOpen}>
       <DialogContent className="max-w-2xl">
+        <DialogHeader onClose={handleQuickAddCancel}>
+          <DialogTitle>Quick Add Expense</DialogTitle>
+        </DialogHeader>
         <DialogBody>
           <QuickExpenseEntry
             tripId={tripId}
