@@ -711,12 +711,12 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                     >
                       {/* Main row - clickable */}
                       <div
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 transition-colors min-h-[44px]"
                       >
                         {/* Category Icon */}
                         {categoryInfo && (
                           <div
-                            className="flex items-center justify-center w-8 h-8 rounded-md shrink-0 cursor-pointer"
+                            className="flex items-center justify-center w-6 h-6 rounded-md shrink-0 cursor-pointer"
                             style={{ backgroundColor: categoryInfo.category_color + '20' }}
                             onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
                           >
