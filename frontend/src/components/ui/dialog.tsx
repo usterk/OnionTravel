@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface DialogProps {
   open: boolean;
@@ -8,6 +9,9 @@ interface DialogProps {
 }
 
 const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
+  // Use iOS-safe scroll locking
+  useScrollLock(open);
+
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -17,14 +21,17 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
 
     if (open) {
       document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
     };
   }, [open, onOpenChange]);
+
+  // Prevent touch scrolling on backdrop (iOS fix)
+  const handleTouchMove = React.useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+  }, []);
 
   if (!open) return null;
 
@@ -34,6 +41,8 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
       <div
         className="fixed inset-0 bg-black/50"
         onClick={() => onOpenChange(false)}
+        onTouchMove={handleTouchMove}
+        style={{ touchAction: 'none' }}
       />
       {/* Dialog content */}
       <div className="relative z-50 w-full max-w-2xl">{children}</div>
@@ -47,12 +56,22 @@ interface DialogContentProps {
 }
 
 const DialogContent: React.FC<DialogContentProps> = ({ children, className }) => {
+  // Prevent touch events from propagating to backdrop
+  const handleTouchMove = React.useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <div
-      className={`relative bg-white rounded-lg shadow-lg w-full max-h-[90vh] overflow-y-auto ${
+      className={`relative bg-white rounded-lg shadow-lg w-full overflow-y-auto ${
         className || ''
       }`}
+      style={{
+        maxHeight: 'calc(100vh - 2rem)',
+        touchAction: 'pan-y'
+      }}
       onClick={(e) => e.stopPropagation()}
+      onTouchMove={handleTouchMove}
     >
       {children}
     </div>
