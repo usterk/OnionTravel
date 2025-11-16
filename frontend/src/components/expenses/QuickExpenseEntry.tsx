@@ -197,7 +197,7 @@ export function QuickExpenseEntry({
                 No categories available. Please create categories first.
               </p>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-2">
                 {categories.map((category) => {
                   const IconComponent = getIconComponent(category.icon);
                   const isSelected = selectedCategory?.id === category.id;

@@ -238,7 +238,7 @@ export function ExpenseForm({
       {/* Category */}
       <div>
         <Label>Category *</Label>
-        <div className="grid grid-cols-4 gap-2 mt-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-2 mt-2">
           {categories.map((cat) => {
             const IconComponent = getIconComponent(cat.icon);
             const isSelected = formData.category_id === cat.id.toString();
@@ -250,7 +250,7 @@ export function ExpenseForm({
                 onClick={() => setFormData({ ...formData, category_id: cat.id.toString() })}
                 disabled={isLoading}
                 className={`
-                  flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
+                  flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg border-2 transition-all hover:scale-105
                   ${isSelected
                     ? 'border-blue-600 bg-blue-50 text-blue-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
@@ -259,8 +259,20 @@ export function ExpenseForm({
                 `}
                 title={cat.name}
               >
-                {IconComponent && <IconComponent className="h-6 w-6 mb-1" />}
-                <span className="text-xs text-center line-clamp-1">{cat.name}</span>
+                {IconComponent && (
+                  <div
+                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-md"
+                    style={{
+                      backgroundColor: isSelected ? cat.color : cat.color + '20',
+                    }}
+                  >
+                    <IconComponent
+                      className="h-5 w-5 sm:h-6 sm:w-6"
+                      style={{ color: isSelected ? '#fff' : cat.color }}
+                    />
+                  </div>
+                )}
+                <span className="text-[10px] sm:text-xs text-center leading-tight line-clamp-2 w-full">{cat.name}</span>
               </button>
             );
           })}

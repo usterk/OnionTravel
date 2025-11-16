@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2, Plus } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2, Plus, ArrowLeftRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
@@ -715,7 +715,16 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               </div>
             ) : (
               <div className="space-y-3">
-                {dayExpenses.map((expense) => {
+                {dayExpenses
+                  .sort((a, b) => {
+                    // Multi-day expenses (with end_date) go to the bottom
+                    const aIsMultiDay = !!a.end_date;
+                    const bIsMultiDay = !!b.end_date;
+                    if (aIsMultiDay && !bIsMultiDay) return 1;
+                    if (!aIsMultiDay && bIsMultiDay) return -1;
+                    return 0; // Keep original order for same type
+                  })
+                  .map((expense) => {
                   // Find category info from statistics
                   const categoryInfo = statistics.by_category_today?.find(
                     (cat) => cat.category_id === expense.category_id
@@ -723,6 +732,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   const CategoryIcon = categoryInfo ? getIconComponent(categoryInfo.category_icon) : null;
 
                   const isExpanded = expandedExpenseId === expense.id;
+                  const isMultiDay = !!expense.end_date;
 
                   return (
                     <div
@@ -731,14 +741,14 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                     >
                       {/* Main row - clickable */}
                       <div
-                        className="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 transition-colors"
-                        onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 transition-colors"
                       >
                         {/* Category Icon */}
                         {categoryInfo && (
                           <div
-                            className="flex items-center justify-center w-8 h-8 rounded-md shrink-0"
+                            className="flex items-center justify-center w-8 h-8 rounded-md shrink-0 cursor-pointer"
                             style={{ backgroundColor: categoryInfo.category_color + '20' }}
+                            onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
                           >
                             {CategoryIcon && (
                               <CategoryIcon
@@ -750,14 +760,31 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                         )}
 
                         {/* Expense Title */}
-                        <div className="flex-1 min-w-0">
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
+                        >
                           <h4 className="font-medium text-gray-900 truncate">{expense.title}</h4>
                         </div>
 
                         {/* Amount */}
-                        <div className="text-right shrink-0">
+                        <div
+                          className="text-right shrink-0 cursor-pointer flex items-center gap-1.5"
+                          onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
+                        >
+                          {isMultiDay && (
+                            <ArrowLeftRight className="h-3.5 w-3.5 text-gray-500" title="Multi-day expense - showing daily amount" />
+                          )}
                           <div className="font-bold text-gray-900">
-                            {formatCurrency(expense.amount_in_trip_currency)}
+                            {isMultiDay && expense.start_date && expense.end_date ? (
+                              (() => {
+                                const daysDiff = Math.ceil((new Date(expense.end_date).getTime() - new Date(expense.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                                const dailyAmount = expense.amount_in_trip_currency / daysDiff;
+                                return formatCurrency(dailyAmount);
+                              })()
+                            ) : (
+                              formatCurrency(expense.amount_in_trip_currency)
+                            )}
                           </div>
                         </div>
                       </div>
@@ -799,31 +826,27 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                             )}
 
                             {/* Action buttons */}
-                            <div className="flex gap-2 pt-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
+                            <div className="flex gap-2 pt-2 justify-end">
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEditExpense(expense);
                                 }}
+                                className="p-2 hover:bg-blue-50 rounded-md transition-colors text-gray-600 hover:text-blue-600"
+                                title="Edit expense"
                               >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteExpense(expense);
                                 }}
+                                className="p-2 hover:bg-red-50 rounded-md transition-colors text-gray-600 hover:text-red-600"
+                                title="Delete expense"
                               >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Delete
-                              </Button>
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1005,7 +1028,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
     {/* Edit Expense Dialog */}
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader onClose={handleEditCancel}>
           <DialogTitle>Edit Expense</DialogTitle>
         </DialogHeader>
@@ -1072,7 +1095,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
     {/* Quick Add Expense Dialog */}
     <Dialog open={isQuickAddDialogOpen} onOpenChange={setIsQuickAddDialogOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogBody>
           <QuickExpenseEntry
             tripId={tripId}
