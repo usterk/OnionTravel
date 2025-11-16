@@ -963,22 +963,20 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               <Calendar className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
             </div>
 
-            {/* Adjusted Daily Budget */}
+            {/* Adjusted Daily Budget - Savings */}
             {statistics.adjusted_daily_budget !== null &&
              statistics.adjusted_daily_budget !== undefined &&
              statistics.daily_budget &&
              Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
              selectedDate <= new Date().toISOString().split('T')[0] && (
-              <div className="flex items-center justify-between py-3 md:py-0 md:px-4">
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 mb-1">Adjusted Budget</p>
-                  <p className={`text-lg md:text-xl font-bold ${
+              <div className="flex items-center justify-center py-3 md:py-0 md:px-4">
+                <div className="text-center">
+                  <p className={`text-sm font-medium ${
                     statistics.adjusted_daily_budget > statistics.daily_budget ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {formatCurrency(statistics.adjusted_daily_budget)}
+                    {formatCurrency(Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget))} {statistics.adjusted_daily_budget > statistics.daily_budget ? 'saved' : 'over'}
                   </p>
                 </div>
-                <CircleDollarSign className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
               </div>
             )}
 
