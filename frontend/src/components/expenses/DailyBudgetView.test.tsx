@@ -577,7 +577,8 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('150.0% of daily budget used')).toBeInTheDocument();
+        // formatNumber returns whole numbers without decimals
+        expect(screen.getByText('150% of daily budget used')).toBeInTheDocument();
       });
     });
   });

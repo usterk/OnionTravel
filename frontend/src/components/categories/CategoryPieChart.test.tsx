@@ -75,22 +75,24 @@ describe('CategoryPieChart', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
       expect(screen.getByText('Budget Distribution')).toBeInTheDocument();
-      expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
-      expect(screen.getByTestId('legend')).toBeInTheDocument();
+      // Component renders two charts (mobile + desktop), so use getAllByTestId
+      expect(screen.getAllByTestId('pie-chart')).toHaveLength(2);
+      expect(screen.getAllByTestId('legend')).toHaveLength(2);
     });
 
     it('should display card description with total percentage and category count', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
-      // Total: 35 + 25 + 40 = 100%
-      expect(screen.getByText(/100\.0% of budget allocated across 3 categories/)).toBeInTheDocument();
+      // Total: 35 + 25 + 40 = 100% (formatNumber returns whole numbers without decimals)
+      expect(screen.getByText(/100% of budget allocated across 3 categories/)).toBeInTheDocument();
     });
 
     it('should show singular "category" when only one category', () => {
       const singleCategory = [mockCategories[0]];
       render(<CategoryPieChart categories={singleCategory} tripCurrency="EUR" />);
 
-      expect(screen.getByText(/35\.0% of budget allocated across 1 category/)).toBeInTheDocument();
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getByText(/35% of budget allocated across 1 category/)).toBeInTheDocument();
     });
   });
 
@@ -108,6 +110,7 @@ describe('CategoryPieChart', () => {
         {
           ...mockCategories[0],
           budget_percentage: 0,
+          total_spent: 0, // Also set spending to 0
         },
       ];
 
@@ -141,14 +144,15 @@ describe('CategoryPieChart', () => {
       render(<CategoryPieChart categories={categoriesWithZero} tripCurrency="USD" />);
 
       // Should still show only 3 categories (Shopping filtered out)
-      expect(screen.getByText(/100\.0% of budget allocated across 3 categories/)).toBeInTheDocument();
+      expect(screen.getByText(/100% of budget allocated across 3 categories/)).toBeInTheDocument();
     });
 
     it('should sort categories by budget percentage descending', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
-      const pieElement = screen.getByTestId('pie');
-      const cells = pieElement.querySelectorAll('[data-testid^="pie-cell-"]');
+      // Component renders two charts (mobile + desktop), check first one
+      const pieElements = screen.getAllByTestId('pie');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
 
       // First should be Accommodation (40%), then Food (35%), then Transport (25%)
       expect(cells[0].textContent).toContain('Accommodation: 40%');
@@ -172,7 +176,7 @@ describe('CategoryPieChart', () => {
 
       render(<CategoryPieChart categories={underallocatedCategories} tripCurrency="USD" />);
 
-      expect(screen.getByText(/50\.0% unallocated/)).toBeInTheDocument();
+      expect(screen.getByText(/50% unallocated/)).toBeInTheDocument();
     });
 
     it('should show over-allocated warning when total > 100%', () => {
@@ -189,7 +193,7 @@ describe('CategoryPieChart', () => {
 
       render(<CategoryPieChart categories={overallocatedCategories} tripCurrency="USD" />);
 
-      expect(screen.getByText(/Over-allocated by 10\.0%/)).toBeInTheDocument();
+      expect(screen.getByText(/Over-allocated by 10%/)).toBeInTheDocument();
     });
 
     it('should not show allocation message when exactly 100%', () => {
@@ -253,7 +257,7 @@ describe('CategoryPieChart', () => {
 
       render(<CategoryPieChart categories={decimalCategories} tripCurrency="USD" />);
 
-      expect(screen.getByText(/100\.0% of budget allocated/)).toBeInTheDocument();
+      expect(screen.getByText(/100% of budget allocated/)).toBeInTheDocument();
     });
 
     it('should handle large number of categories', () => {
@@ -266,7 +270,7 @@ describe('CategoryPieChart', () => {
 
       render(<CategoryPieChart categories={manyCategories} tripCurrency="USD" />);
 
-      expect(screen.getByText(/100\.0% of budget allocated across 10 categories/)).toBeInTheDocument();
+      expect(screen.getByText(/100% of budget allocated across 10 categories/)).toBeInTheDocument();
     });
   });
 
@@ -274,23 +278,26 @@ describe('CategoryPieChart', () => {
     it('should render tooltip component', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
-      expect(screen.getByTestId('tooltip')).toBeInTheDocument();
+      // Component renders two charts (mobile + desktop)
+      expect(screen.getAllByTestId('tooltip')).toHaveLength(2);
     });
 
     it('should render legend component', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
-      expect(screen.getByTestId('legend')).toBeInTheDocument();
+      // Component renders two charts (mobile + desktop)
+      expect(screen.getAllByTestId('legend')).toHaveLength(2);
     });
 
     it('should render pie component with data', () => {
       render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
 
-      const pieElement = screen.getByTestId('pie');
-      expect(pieElement).toBeInTheDocument();
+      // Component renders two charts (mobile + desktop), check first one
+      const pieElements = screen.getAllByTestId('pie');
+      expect(pieElements[0]).toBeInTheDocument();
 
       // Should have 3 cells for 3 categories
-      const cells = pieElement.querySelectorAll('[data-testid^="pie-cell-"]');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
       expect(cells).toHaveLength(3);
     });
   });

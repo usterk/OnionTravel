@@ -571,6 +571,11 @@ def get_daily_budget_statistics(
         if remaining_days > 0:
             adjusted_daily_budget = remaining_budget / remaining_days
 
+    # Filter categories to only include those with expenses today
+    categories_with_expenses = [
+        cat for cat in category_spending.values() if cat["total_spent"] > 0
+    ]
+
     return DailyBudgetStatistics(
         date=target_date,
         daily_budget=daily_budget if daily_budget > 0 else None,
@@ -578,7 +583,7 @@ def get_daily_budget_statistics(
         remaining_today=remaining_today,
         percentage_used_today=min(percentage_used, 999.9),
         expense_count_today=expense_count,
-        by_category_today=list(category_spending.values()),
+        by_category_today=categories_with_expenses,
         is_over_budget=total_spent_today > daily_budget if daily_budget > 0 else False,
         days_into_trip=days_into_trip,
         total_days=total_days,

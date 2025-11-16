@@ -40,10 +40,11 @@ describe('BudgetOverviewCards', () => {
         />
       );
 
-      expect(screen.getByText('1 000.00 USD')).toBeInTheDocument(); // Total Budget
-      expect(screen.getByText('750.00 USD')).toBeInTheDocument(); // Total Spent
-      expect(screen.getByText('250.00 USD')).toBeInTheDocument(); // Remaining
-      expect(screen.getByText('75.0%')).toBeInTheDocument(); // Percentage Used
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getByText('1 000 USD')).toBeInTheDocument(); // Total Budget
+      expect(screen.getByText('750 USD')).toBeInTheDocument(); // Total Spent
+      expect(screen.getByText('250 USD')).toBeInTheDocument(); // Remaining
+      expect(screen.getByText('75%')).toBeInTheDocument(); // Percentage Used
     });
 
     it('should display expense count', () => {
@@ -70,8 +71,9 @@ describe('BudgetOverviewCards', () => {
       );
 
       expect(screen.getByText('Total Budget')).toBeInTheDocument();
-      expect(screen.getAllByText('1 000.00 EUR').length).toBeGreaterThan(0); // Falls back to totalBudget
-      expect(screen.getByText('0.00 EUR')).toBeInTheDocument(); // Total Spent defaults to 0
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getAllByText('1 000 EUR').length).toBeGreaterThan(0); // Falls back to totalBudget
+      expect(screen.getByText('0 EUR')).toBeInTheDocument(); // Total Spent defaults to 0
       expect(screen.getByText('0 expenses')).toBeInTheDocument();
     });
   });
@@ -138,9 +140,10 @@ describe('BudgetOverviewCards', () => {
         />
       );
 
-      expect(screen.getByText('1 000.00 EUR')).toBeInTheDocument();
-      expect(screen.getByText('750.00 EUR')).toBeInTheDocument();
-      expect(screen.getByText('250.00 EUR')).toBeInTheDocument();
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getByText('1 000 EUR')).toBeInTheDocument();
+      expect(screen.getByText('750 EUR')).toBeInTheDocument();
+      expect(screen.getByText('250 EUR')).toBeInTheDocument();
     });
 
     it('should handle different currency codes correctly', () => {
@@ -152,8 +155,9 @@ describe('BudgetOverviewCards', () => {
         />
       );
 
-      expect(screen.getByText('1 000.00 GBP')).toBeInTheDocument();
-      expect(screen.getByText('750.00 GBP')).toBeInTheDocument();
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getByText('1 000 GBP')).toBeInTheDocument();
+      expect(screen.getByText('750 GBP')).toBeInTheDocument();
     });
   });
 
@@ -178,8 +182,9 @@ describe('BudgetOverviewCards', () => {
         />
       );
 
-      expect(screen.getAllByText('0.00 USD').length).toBeGreaterThan(0);
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getAllByText('0 USD').length).toBeGreaterThan(0);
+      expect(screen.getByText('0%')).toBeInTheDocument();
       expect(screen.getByText('0 expenses')).toBeInTheDocument();
     });
 
@@ -200,8 +205,9 @@ describe('BudgetOverviewCards', () => {
         />
       );
 
-      expect(screen.getByText('1 234 567.00 USD')).toBeInTheDocument();
-      expect(screen.getByText('987 654.00 USD')).toBeInTheDocument();
+      // formatNumber returns whole numbers without decimals
+      expect(screen.getByText('1 234 567 USD')).toBeInTheDocument();
+      expect(screen.getByText('987 654 USD')).toBeInTheDocument();
     });
 
     it('should handle decimal percentages correctly', () => {
