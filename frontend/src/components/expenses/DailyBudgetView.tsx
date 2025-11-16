@@ -421,7 +421,9 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="space-y-4"
+        className="space-y-4 touch-pan-y"
+        style={{ touchAction: 'pan-y' }}
+        {...swipeHandlers}
       >
         {/* Header with Date Navigation */}
         <Card>
@@ -429,9 +431,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
             <div className="flex flex-col gap-3">
               {/* Compact Navigation Panel with Swipe */}
               <div
-                {...swipeHandlers}
-                className="flex items-center justify-between gap-4 relative touch-pan-y"
-                style={{ touchAction: 'pan-y' }}
+                className="flex items-center justify-between gap-4 relative"
               >
                 {/* Visual Hints - Animated Arrows */}
                 {showHints && !isAtTripStart && (
