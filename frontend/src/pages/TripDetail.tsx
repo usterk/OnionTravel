@@ -206,7 +206,7 @@ export default function TripDetail() {
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 -ml-2"
+            className="mb-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 sm:border-0 -ml-2"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             <span className="hidden sm:inline">Back</span>

@@ -226,7 +226,7 @@ export default function Dashboard() {
                 onClick={() => navigate(`/trips/${selectedTrip.id}`)}
                 variant="ghost"
                 size="sm"
-                className="h-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 sm:border-0"
               >
                 <MapPin className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline">Details</span>
