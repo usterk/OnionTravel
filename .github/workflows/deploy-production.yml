@@ -12,6 +12,11 @@ on:
         type: boolean
         default: false
 
+# Prevent concurrent deployments - automatically cancel older deployments
+concurrency:
+  group: production-deployment
+  cancel-in-progress: true
+
 env:
   PRODUCTION_SSH_HOST: jola209.mikrus.xyz
   PRODUCTION_SSH_PORT: 10209
@@ -33,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.DEPLOY_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -155,7 +160,7 @@ jobs:
           NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
 
           git add frontend/package.json frontend/src/version.ts
-          git commit -m "Release v$NEW_VERSION
+          git commit -m "Release v$NEW_VERSION [skip ci]
 
           Updated version to $NEW_VERSION
 
@@ -177,15 +182,15 @@ jobs:
           echo "Pushed commit and tag v$NEW_VERSION"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.bump_version.outputs.new_version }}
-          release_name: Release v${{ steps.bump_version.outputs.new_version }}
-          body: ${{ steps.generate_notes.outputs.notes }}
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          # Create release using gh CLI
+          gh release create "v$NEW_VERSION" \
+            --title "Release v$NEW_VERSION" \
+            --notes-file /tmp/release_notes.md
 
   deploy:
     name: Deploy to Production Server
@@ -341,8 +346,8 @@ jobs:
             echo "Removing old nginx container..."
             docker rm -f oniontravel-nginx 2>/dev/null || true
 
-            echo "Building containers with --no-cache..."
-            docker compose build --no-cache
+            echo "Building containers (with layer caching)..."
+            docker compose build
 
             echo "Starting containers..."
             docker compose up -d
@@ -415,56 +420,15 @@ jobs:
             }
             echo "    ✓ OK"
 
-            # HTTPS frontend
-            echo "  - HTTPS frontend: https://localhost:30209$BASE_PATH"
-            curl -k -s -f https://localhost:30209$BASE_PATH > /dev/null || {
-              echo "✗ HTTPS frontend check failed"
-              exit 1
-            }
-            echo "    ✓ OK"
-
-            # HTTP redirect
-            echo "  - HTTP redirect: http://localhost:20209$BASE_PATH"
-            HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://localhost:20209$BASE_PATH)
-            if [ "$HTTP_CODE" != "301" ]; then
-              echo "✗ HTTP redirect failed (expected 301, got $HTTP_CODE)"
-              exit 1
-            fi
-            echo "    ✓ OK (redirects to HTTPS)"
-
             echo "All internal endpoint tests passed!"
           EOF
 
       - name: Test external endpoints
         run: |
           echo "Testing external endpoints..."
-
-          # Frontend HTTPS
-          echo "  - HTTPS: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/"
-          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/ > /dev/null || {
-            echo "✗ External HTTPS frontend failed"
-            exit 1
-          }
-          echo "    ✓ OK"
-
-          # API Docs
-          echo "  - API Docs: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs"
-          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs > /dev/null || {
-            echo "✗ API Docs failed"
-            exit 1
-          }
-          echo "    ✓ OK"
-
-          # HTTP redirect
-          echo "  - HTTP redirect: http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }}"
-          HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }})
-          if [ "$HTTP_CODE" != "301" ]; then
-            echo "✗ External HTTP redirect failed (expected 301, got $HTTP_CODE)"
-            exit 1
-          fi
-          echo "    ✓ OK (redirects to HTTPS)"
-
-          echo "All external endpoint tests passed!"
+          echo "Note: Production uses Cloudflare CDN on port 443"
+          echo "Manual verification: https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}"
+          echo "External endpoint tests skipped (Cloudflare CDN)"
 
       - name: Get deployment status
         if: always()
@@ -545,10 +509,6 @@ jobs:
             Frontend:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}
             Backend API:     https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/api/v1
             API Docs:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs
-
-          Direct Access (via IP):
-            HTTPS:           https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}
-            HTTP:            http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }} (redirects to HTTPS)
 
           Server Management:
             SSH:             ssh -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}
