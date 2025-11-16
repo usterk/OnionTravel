@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, labeled, unlabeled]
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   check-version-label:
     name: Check for version label
