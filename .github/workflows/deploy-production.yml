@@ -12,10 +12,10 @@ on:
         type: boolean
         default: false
 
-# Prevent concurrent deployments - wait for previous deployment to finish
+# Prevent concurrent deployments - automatically cancel older deployments
 concurrency:
   group: production-deployment
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PRODUCTION_SSH_HOST: jola209.mikrus.xyz
