@@ -885,7 +885,11 @@ class TestDailyBudgetStatistics:
 
         assert stats['total_spent_today'] == 0.0
         assert stats['expense_count_today'] == 0
-        assert len(stats['by_category_today']) == 0
+        # All categories should be returned (with 0 spent) - this changed in recent update
+        assert len(stats['by_category_today']) == 8  # 8 default categories
+        # All should have 0 spent
+        for cat in stats['by_category_today']:
+            assert cat['total_spent'] == 0.0
 
     def test_daily_stats_trip_not_found(
         self, client, auth_headers
@@ -978,10 +982,15 @@ class TestDailyBudgetStatistics:
         assert response.status_code == 200
         stats = response.json()
 
-        # Check category breakdown
-        assert len(stats['by_category_today']) == 2
+        # Check category breakdown - now returns ALL categories (changed in recent update)
+        assert len(stats['by_category_today']) == 8  # All default categories
 
-        # Verify totals
+        # Verify totals for categories with expenses
         category_totals = {cat['category_id']: cat['total_spent'] for cat in stats['by_category_today']}
         assert category_totals[categories[0]['id']] == 300.0
         assert category_totals[categories[1]['id']] == 200.0
+
+        # Other categories should have 0
+        for cat in stats['by_category_today']:
+            if cat['category_id'] not in [categories[0]['id'], categories[1]['id']]:
+                assert cat['total_spent'] == 0.0

@@ -267,8 +267,8 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     if (!statistics) return null;
 
     const today = new Date().toISOString().split('T')[0];
-    const isPastDay = selectedDate < today;
-    const isFutureDay = selectedDate > today;
+    const isPastDay = statistics.date < today;
+    const isFutureDay = statistics.date > today;
 
     // Future days
     if (isFutureDay) {
@@ -376,23 +376,24 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     delta: 50, // Minimum distance to trigger swipe
   });
 
-  const isAtTripStart = selectedDate <= tripStartDate;
-  const isAtTripEnd = selectedDate >= tripEndDate;
+  const isAtTripStart = (statistics?.date || selectedDate) === tripStartDate;
+  const isAtTripEnd = (statistics?.date || selectedDate) === tripEndDate;
 
   // Check if today is within trip range
   const today = new Date().toISOString().split('T')[0];
   const isTodayInTripRange = today >= tripStartDate && today <= tripEndDate;
 
   const getDateTitle = () => {
+    if (!statistics) return 'Loading...';
     const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
+    if (statistics.date === today) {
       return 'Today';
     }
     // Show only day of week (e.g., "Monday", "Friday")
     try {
-      return format(new Date(selectedDate), 'EEEE');
+      return format(new Date(statistics.date), 'EEEE');
     } catch {
-      return selectedDate;
+      return statistics.date;
     }
   };
 

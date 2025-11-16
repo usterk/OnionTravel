@@ -131,7 +131,7 @@ start_temp_backend() {
 
     if [ ! -d "venv" ]; then
         echo -e "${RED}Error: Backend venv not found. Run ./run.sh first to set up.${NC}"
-        exit 1
+        return 1
     fi
 
     source venv/bin/activate
@@ -151,7 +151,7 @@ start_temp_backend() {
     done
 
     echo -e "${RED}Error: Backend failed to start${NC}"
-    exit 1
+    return 1
 }
 
 # Function to start temporary frontend
@@ -166,10 +166,10 @@ start_temp_frontend() {
 
     if [ ! -d "node_modules" ]; then
         echo -e "${RED}Error: Frontend node_modules not found. Run ./run.sh first to set up.${NC}"
-        exit 1
+        return 1
     fi
 
-    npm run dev > /dev/null 2>&1 &
+    npm run dev -- --port $FRONTEND_PORT > /dev/null 2>&1 &
     TEMP_FRONTEND_PID=$!
 
     # Wait for frontend to be ready
@@ -185,7 +185,7 @@ start_temp_frontend() {
     done
 
     echo -e "${RED}Error: Frontend failed to start${NC}"
-    exit 1
+    return 1
 }
 
 # Function to run backend tests
@@ -255,11 +255,11 @@ run_frontend_tests() {
 
     FRONTEND_REPORT_PATH="$log_file"
 
-    # Run tests with reports
+    # Run tests with reports (verbose for live progress)
     if [ "$1" = "--coverage" ]; then
-        npx vitest run --coverage --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
+        npx vitest run --coverage --reporter=verbose --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
     else
-        npx vitest run --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
+        npx vitest run --reporter=verbose --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
     fi
 
     local exit_code=$?
@@ -293,13 +293,17 @@ run_e2e_tests() {
     # E2E tests require both backend and frontend
     if ! check_app_running && ! is_port_in_use $BACKEND_PORT; then
         echo -e "${YELLOW}E2E tests require backend - starting temporarily...${NC}"
-        start_temp_backend
+        if ! start_temp_backend; then
+            return 1
+        fi
         STARTED_SERVICES=true
     fi
 
     if ! check_app_running && ! is_port_in_use $FRONTEND_PORT; then
         echo -e "${YELLOW}E2E tests require frontend - starting temporarily...${NC}"
-        start_temp_frontend
+        if ! start_temp_frontend; then
+            return 1
+        fi
         STARTED_SERVICES=true
     fi
 
@@ -312,11 +316,11 @@ run_e2e_tests() {
 
     E2E_REPORT_PATH="$html_report_dir/index.html"
 
-    # Run tests with HTML reporter (no interactive server)
+    # Run tests with HTML reporter (no interactive server) + list for live progress
     # PLAYWRIGHT_HTML_OPEN=never prevents the server from starting
     PLAYWRIGHT_HTML_REPORT="$html_report_dir" \
         PLAYWRIGHT_HTML_OPEN=never \
-        npx playwright test --reporter=html \
+        npx playwright test --reporter=list --reporter=html \
         2>&1 | tee "$log_file"
 
     local exit_code=$?

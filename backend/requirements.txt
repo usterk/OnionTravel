@@ -10,7 +10,7 @@ alembic==1.12.1
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-bcrypt<5.0  # Pin to 4.x for compatibility with passlib
+bcrypt==3.2.2  # Last 3.x version compatible with passlib 1.7.4 on Python 3.9-3.11
 python-dotenv==1.0.0
 
 # HTTP client for currency API

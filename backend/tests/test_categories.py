@@ -517,6 +517,133 @@ class TestBudgetPercentageValidation:
         assert response.status_code == 200
 
 
+class TestCategoryReordering:
+    """Test category reordering"""
+
+    def test_reorder_categories_success(self, client, auth_headers, created_trip):
+        """Test successfully reordering categories"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        response = client.get(f"/api/v1/trips/{trip_id}/categories", headers=auth_headers)
+        categories = response.json()
+        assert len(categories) >= 3
+
+        # Reverse the order
+        category_ids = [cat['id'] for cat in categories]
+        reversed_ids = list(reversed(category_ids))
+
+        # Reorder
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": reversed_ids},
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        reordered = response.json()
+
+        # Verify new order
+        assert [cat['id'] for cat in reordered] == reversed_ids
+
+    def test_reorder_categories_missing_category(self, client, auth_headers, created_trip):
+        """Test that reordering with missing category IDs fails"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        response = client.get(f"/api/v1/trips/{trip_id}/categories", headers=auth_headers)
+        categories = response.json()
+
+        # Try to reorder with only some IDs (missing some)
+        partial_ids = [categories[0]['id'], categories[1]['id']]
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": partial_ids},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "must match exactly" in response.json()['detail']
+
+    def test_reorder_categories_extra_category(self, client, auth_headers, created_trip):
+        """Test that reordering with extra category IDs fails"""
+        trip_id = created_trip['id']
+
+        # Get current categories
+        response = client.get(f"/api/v1/trips/{trip_id}/categories", headers=auth_headers)
+        categories = response.json()
+
+        # Try to reorder with extra non-existent ID
+        category_ids = [cat['id'] for cat in categories]
+        category_ids.append(99999)
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": category_ids},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+
+    def test_reorder_categories_wrong_trip(self, client, auth_headers, created_trip, test_trip_data):
+        """Test that reordering with another trip's category IDs fails"""
+        trip_id = created_trip['id']
+
+        # Create second trip
+        second_trip_data = test_trip_data.copy()
+        second_trip_data['name'] = "Second Trip"
+        response = client.post("/api/v1/trips/", json=second_trip_data, headers=auth_headers)
+        assert response.status_code == 201
+        second_trip = response.json()
+
+        # Get categories from second trip
+        response = client.get(f"/api/v1/trips/{second_trip['id']}/categories", headers=auth_headers)
+        second_trip_categories = response.json()
+
+        # Try to reorder first trip with second trip's category IDs
+        category_ids = [cat['id'] for cat in second_trip_categories]
+
+        response = client.post(
+            f"/api/v1/trips/{trip_id}/categories/reorder",
+            json={"category_ids": category_ids},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+
+
+class TestCategoryWithStatsEdgeCases:
+    """Test category statistics edge cases"""
+
+    def test_categories_with_stats_zero_budget(self, client, auth_headers, test_trip_data):
+        """Test categories with stats when trip has zero budget"""
+        # Create trip with zero budget
+        trip_data = test_trip_data.copy()
+        trip_data['total_budget'] = 0.0
+        response = client.post("/api/v1/trips/", json=trip_data, headers=auth_headers)
+        assert response.status_code == 201
+        trip = response.json()
+
+        # Get categories with stats
+        response = client.get(f"/api/v1/trips/{trip['id']}/categories/stats", headers=auth_headers)
+        assert response.status_code == 200
+        categories = response.json()
+
+        # All allocated budgets should be 0
+        for cat in categories:
+            assert cat['allocated_budget'] == 0.0
+
+    def test_categories_with_stats_no_expenses(self, client, auth_headers, created_trip):
+        """Test categories with stats when no expenses exist"""
+        trip_id = created_trip['id']
+
+        response = client.get(f"/api/v1/trips/{trip_id}/categories/stats", headers=auth_headers)
+        assert response.status_code == 200
+        categories = response.json()
+
+        # All total_spent should be 0
+        for cat in categories:
+            assert cat['total_spent'] == 0.0
+            assert cat['percentage_used'] == 0.0
+
+
 class TestCategoryAccessControl:
     """Test category access control"""
 
