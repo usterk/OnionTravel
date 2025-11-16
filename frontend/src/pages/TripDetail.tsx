@@ -231,7 +231,7 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full gap-1">
+          <TabsList className="grid grid-cols-5 w-full gap-1 h-auto p-1">
             <TabsTrigger value="overview" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
               <Info className="h-4 w-4 shrink-0" />
               <span className="leading-tight">Overview</span>
