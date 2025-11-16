@@ -745,7 +745,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                           {isMultiDay && (
                             <ArrowLeftRight className="h-3.5 w-3.5 text-gray-500" title="Multi-day expense - showing daily amount" />
                           )}
-                          <div className="font-bold text-gray-900">
+                          <div className="font-bold text-sm text-gray-900">
                             {isMultiDay && expense.start_date && expense.end_date ? (
                               (() => {
                                 const daysDiff = Math.ceil((new Date(expense.end_date).getTime() - new Date(expense.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1;
