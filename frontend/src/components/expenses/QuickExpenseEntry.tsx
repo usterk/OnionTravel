@@ -18,6 +18,7 @@ interface QuickExpenseEntryProps {
   tripEndDate: string;
   categories: Category[];
   expense?: Expense;
+  initialDate?: string; // Optional initial date (defaults to today)
   onExpenseCreated: () => void;
   onCancel?: () => void;
 }
@@ -33,6 +34,7 @@ export function QuickExpenseEntry({
   tripEndDate,
   categories,
   expense,
+  initialDate,
   onExpenseCreated,
   onCancel,
 }: QuickExpenseEntryProps) {
@@ -40,7 +42,7 @@ export function QuickExpenseEntry({
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [currency, setCurrency] = useState(tripCurrency);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
   const [title, setTitle] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
