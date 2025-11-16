@@ -1,0 +1,560 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      skip_version_bump:
+        description: 'Skip automatic version bump'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PRODUCTION_SSH_HOST: jola209.mikrus.xyz
+  PRODUCTION_SSH_PORT: 10209
+  PRODUCTION_SSH_USER: root
+  PRODUCTION_PATH: /root/OnionTravel
+
+jobs:
+  version-and-release:
+    name: Version Bump & Create Release
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_version_bump }}
+    outputs:
+      new_version: ${{ steps.bump_version.outputs.new_version }}
+      old_version: ${{ steps.get_current_version.outputs.version }}
+      release_notes: ${{ steps.generate_notes.outputs.notes }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: get_current_version
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' frontend/package.json)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Get PR labels
+        id: pr_labels
+        run: |
+          # Get PR number from merge commit
+          PR_NUMBER=$(gh pr list --state merged --search "${{ github.sha }}" --json number --jq '.[0].number')
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR found for this commit, using default patch bump"
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          else
+            # Get PR labels
+            LABELS=$(gh pr view $PR_NUMBER --json labels --jq '.labels[].name')
+            echo "PR Labels: $LABELS"
+
+            if echo "$LABELS" | grep -q "version:major"; then
+              echo "bump_type=major" >> $GITHUB_OUTPUT
+            elif echo "$LABELS" | grep -q "version:minor"; then
+              echo "bump_type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          CURRENT_VERSION="${{ steps.get_current_version.outputs.version }}"
+          BUMP_TYPE="${{ steps.pr_labels.outputs.bump_type }}"
+
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+
+          case $BUMP_TYPE in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          NEW_VERSION="$major.$minor.$patch"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION ($BUMP_TYPE)"
+
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          # Get last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            # No previous tags, get all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Get commits since last tag
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Create release notes
+          cat > /tmp/release_notes.md << EOF
+          ## Changes since ${LAST_TAG:-initial release}
+
+          $COMMITS
+
+          ---
+
+          **Deployed**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Commit**: ${{ github.sha }}
+          **Author**: ${{ github.actor }}
+          EOF
+
+          # Save for later use (escape newlines)
+          NOTES=$(cat /tmp/release_notes.md)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "Release notes preview:"
+          cat /tmp/release_notes.md
+
+      - name: Update version files
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          # Update frontend/package.json
+          jq ".version = \"$NEW_VERSION\"" frontend/package.json > /tmp/package.json
+          mv /tmp/package.json frontend/package.json
+
+          # Update frontend/src/version.ts
+          echo "export const APP_VERSION = '$NEW_VERSION';" > frontend/src/version.ts
+
+          echo "Updated version to $NEW_VERSION in:"
+          echo "  - frontend/package.json"
+          echo "  - frontend/src/version.ts"
+
+      - name: Commit version bump
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          git add frontend/package.json frontend/src/version.ts
+          git commit -m "Release v$NEW_VERSION
+
+          Updated version to $NEW_VERSION
+
+          🤖 Generated with GitHub Actions"
+
+          echo "Created commit for version bump"
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          # Create annotated tag with release notes
+          git tag -a "v$NEW_VERSION" -F /tmp/release_notes.md
+
+          # Push commit and tag
+          git push origin main
+          git push origin "v$NEW_VERSION"
+
+          echo "Pushed commit and tag v$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.bump_version.outputs.new_version }}
+          release_name: Release v${{ steps.bump_version.outputs.new_version }}
+          body: ${{ steps.generate_notes.outputs.notes }}
+          draft: false
+          prerelease: false
+
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    needs: [version-and-release]
+    if: always() && (needs.version-and-release.result == 'success' || needs.version-and-release.result == 'skipped')
+
+    steps:
+      - name: Notify deployment start
+        if: ${{ vars.DISCORD_WEBHOOK_URL }}
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🚀 Deployment Started\",
+                \"description\": \"Deploying OnionTravel to production\",
+                \"color\": 3447003,
+                \"fields\": [
+                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Branch\", \"value\": \"main\", \"inline\": true},
+                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
+                  {\"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true}
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "${{ vars.DISCORD_WEBHOOK_URL }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Add server to known_hosts
+          ssh-keyscan -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_HOST }} >> ~/.ssh/known_hosts
+
+          echo "SSH configured for ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_SSH_PORT }}"
+
+      - name: Load environment and generate nginx config
+        run: |
+          # Load BASE_PATH and PRODUCTION_DOMAIN from backend/.env.example
+          if [ -f backend/.env.example ]; then
+            export $(grep -v '^#' backend/.env.example | xargs)
+          fi
+
+          # Default values if not set
+          BASE_PATH="${BASE_PATH:-/OnionTravel}"
+          PRODUCTION_DOMAIN="${PRODUCTION_DOMAIN:-oniontravel.bieda.it}"
+
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+          echo "PRODUCTION_DOMAIN=$PRODUCTION_DOMAIN" >> $GITHUB_ENV
+
+          # Generate nginx config from template
+          envsubst '${PRODUCTION_DOMAIN} ${BASE_PATH}' < nginx/oniontravel.conf.template > nginx/oniontravel.conf
+
+          echo "Generated nginx config:"
+          echo "  BASE_PATH: $BASE_PATH"
+          echo "  PRODUCTION_DOMAIN: $PRODUCTION_DOMAIN"
+
+      - name: Transfer nginx config
+        run: |
+          scp -P ${{ env.PRODUCTION_SSH_PORT }} \
+            nginx/oniontravel.conf \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:/etc/nginx/sites-available/oniontravel
+
+          echo "Transferred nginx config to server"
+
+      - name: Transfer Docker Compose
+        run: |
+          scp -P ${{ env.PRODUCTION_SSH_PORT }} \
+            docker-compose.yml \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/
+
+          echo "Transferred docker-compose.yml"
+
+      - name: Transfer backend files
+        run: |
+          rsync -avz -e "ssh -p ${{ env.PRODUCTION_SSH_PORT }}" \
+            --exclude 'venv' \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '.pytest_cache' \
+            --exclude 'htmlcov' \
+            --exclude 'data' \
+            --exclude 'uploads' \
+            ./backend/ \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/backend/
+
+          echo "Transferred backend files"
+
+      - name: Transfer frontend files
+        run: |
+          rsync -avz -e "ssh -p ${{ env.PRODUCTION_SSH_PORT }}" \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude '.vite' \
+            ./frontend/ \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/frontend/
+
+          echo "Transferred frontend files"
+
+      - name: Transfer helper scripts
+        run: |
+          scp -P ${{ env.PRODUCTION_SSH_PORT }} \
+            update.sh check-health.sh \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/
+
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} \
+            "chmod +x ${{ env.PRODUCTION_PATH }}/update.sh ${{ env.PRODUCTION_PATH }}/check-health.sh"
+
+          echo "Transferred and made executable: update.sh, check-health.sh"
+
+      - name: Configure and reload nginx
+        run: |
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
+            set -e
+
+            # Enable site
+            ln -sf /etc/nginx/sites-available/oniontravel /etc/nginx/sites-enabled/oniontravel
+
+            # Disable default
+            rm -f /etc/nginx/sites-enabled/default
+
+            # Test nginx config
+            nginx -t
+
+            # Reload nginx
+            systemctl reload nginx
+
+            echo "Nginx configured and reloaded"
+          EOF
+
+      - name: Deploy Docker containers
+        run: |
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << EOF
+            set -e
+            cd ${{ env.PRODUCTION_PATH }}
+
+            echo "Stopping containers..."
+            docker compose down
+
+            echo "Removing old nginx container..."
+            docker rm -f oniontravel-nginx 2>/dev/null || true
+
+            echo "Building containers with --no-cache..."
+            docker compose build --no-cache
+
+            echo "Starting containers..."
+            docker compose up -d
+
+            echo "Docker deployment complete"
+          EOF
+
+      - name: Wait for containers to be healthy
+        run: |
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
+            set -e
+            cd ${{ env.PRODUCTION_PATH }}
+
+            echo "Waiting for containers to be healthy (max 120 seconds)..."
+
+            TIMEOUT=120
+            ELAPSED=0
+
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              # Check backend health
+              BACKEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' oniontravel-backend 2>/dev/null || echo "not_found")
+              FRONTEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' oniontravel-frontend 2>/dev/null || echo "not_found")
+
+              echo "[$ELAPSED s] Backend: $BACKEND_HEALTH | Frontend: $FRONTEND_HEALTH"
+
+              if [ "$BACKEND_HEALTH" = "healthy" ] && [ "$FRONTEND_HEALTH" = "healthy" ]; then
+                echo "✓ All containers are healthy!"
+                exit 0
+              fi
+
+              if [ "$BACKEND_HEALTH" = "unhealthy" ] || [ "$FRONTEND_HEALTH" = "unhealthy" ]; then
+                echo "✗ Container became unhealthy!"
+                docker compose ps
+                docker compose logs --tail=50
+                exit 1
+              fi
+
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
+            done
+
+            echo "✗ Timeout waiting for containers to be healthy"
+            docker compose ps
+            docker compose logs --tail=50
+            exit 1
+          EOF
+
+      - name: Test internal endpoints
+        run: |
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
+            set -e
+
+            echo "Testing internal endpoints..."
+
+            # Backend health
+            echo "  - Backend health: http://localhost:7011/health"
+            curl -s -f http://localhost:7011/health || {
+              echo "✗ Backend health check failed"
+              exit 1
+            }
+            echo "    ✓ OK"
+
+            # Frontend
+            echo "  - Frontend: http://localhost:7010"
+            curl -s -f http://localhost:7010 > /dev/null || {
+              echo "✗ Frontend check failed"
+              exit 1
+            }
+            echo "    ✓ OK"
+
+            # HTTPS frontend
+            echo "  - HTTPS frontend: https://localhost:30209$BASE_PATH"
+            curl -k -s -f https://localhost:30209$BASE_PATH > /dev/null || {
+              echo "✗ HTTPS frontend check failed"
+              exit 1
+            }
+            echo "    ✓ OK"
+
+            # HTTP redirect
+            echo "  - HTTP redirect: http://localhost:20209$BASE_PATH"
+            HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://localhost:20209$BASE_PATH)
+            if [ "$HTTP_CODE" != "301" ]; then
+              echo "✗ HTTP redirect failed (expected 301, got $HTTP_CODE)"
+              exit 1
+            fi
+            echo "    ✓ OK (redirects to HTTPS)"
+
+            echo "All internal endpoint tests passed!"
+          EOF
+
+      - name: Test external endpoints
+        run: |
+          echo "Testing external endpoints..."
+
+          # Frontend HTTPS
+          echo "  - HTTPS: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/"
+          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/ > /dev/null || {
+            echo "✗ External HTTPS frontend failed"
+            exit 1
+          }
+          echo "    ✓ OK"
+
+          # API Docs
+          echo "  - API Docs: https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs"
+          curl -k -s -f https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}/docs > /dev/null || {
+            echo "✗ API Docs failed"
+            exit 1
+          }
+          echo "    ✓ OK"
+
+          # HTTP redirect
+          echo "  - HTTP redirect: http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }}"
+          HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }})
+          if [ "$HTTP_CODE" != "301" ]; then
+            echo "✗ External HTTP redirect failed (expected 301, got $HTTP_CODE)"
+            exit 1
+          fi
+          echo "    ✓ OK (redirects to HTTPS)"
+
+          echo "All external endpoint tests passed!"
+
+      - name: Get deployment status
+        if: always()
+        run: |
+          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
+            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
+            cd ${{ env.PRODUCTION_PATH }}
+
+            echo "=== Docker Container Status ==="
+            docker compose ps
+
+            echo ""
+            echo "=== Nginx Status ==="
+            systemctl status nginx --no-pager -l
+          EOF
+
+      - name: Notify deployment success
+        if: success() && vars.DISCORD_WEBHOOK_URL
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"✅ Deployment Successful\",
+                \"description\": \"OnionTravel deployed successfully to production\",
+                \"color\": 3066993,
+                \"fields\": [
+                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
+                  {\"name\": \"Deployed by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                  {\"name\": \"Production URL\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}\", \"inline\": false},
+                  {\"name\": \"API Docs\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs\", \"inline\": false}
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "${{ vars.DISCORD_WEBHOOK_URL }}"
+
+      - name: Notify deployment failure
+        if: failure() && vars.DISCORD_WEBHOOK_URL
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Deployment Failed\",
+                \"description\": \"OnionTravel deployment to production failed\",
+                \"color\": 15158332,
+                \"fields\": [
+                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
+                  {\"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                  {\"name\": \"Workflow Run\", \"value\": \"[$GITHUB_RUN_NUMBER]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)\", \"inline\": false}
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "${{ vars.DISCORD_WEBHOOK_URL }}"
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+
+          cat << EOF
+
+          ╔════════════════════════════════════════════════════════════════╗
+          ║                  DEPLOYMENT SUCCESSFUL                          ║
+          ╚════════════════════════════════════════════════════════════════╝
+
+          Version:           $VERSION
+          Commit:            ${{ github.sha }}
+          Deployed by:       ${{ github.actor }}
+
+          Production URLs:
+            Frontend:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}
+            Backend API:     https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/api/v1
+            API Docs:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs
+
+          Direct Access (via IP):
+            HTTPS:           https://${{ env.PRODUCTION_SSH_HOST }}:30209${{ env.BASE_PATH }}
+            HTTP:            http://${{ env.PRODUCTION_SSH_HOST }}:20209${{ env.BASE_PATH }} (redirects to HTTPS)
+
+          Server Management:
+            SSH:             ssh -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}
+            Docker:          cd ${{ env.PRODUCTION_PATH }} && docker compose ps
+            Logs:            cd ${{ env.PRODUCTION_PATH }} && docker compose logs -f
+            Health Check:    ${{ env.PRODUCTION_PATH }}/check-health.sh
+
+          ╚════════════════════════════════════════════════════════════════╝
+          EOF

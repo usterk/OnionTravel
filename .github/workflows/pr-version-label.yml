@@ -1,0 +1,115 @@
+name: PR Version Label Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled, unlabeled]
+
+jobs:
+  check-version-label:
+    name: Check for version label
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for version label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const labels = pullRequest.labels.map(label => label.name);
+            const versionLabels = labels.filter(label => label.startsWith('version:'));
+
+            console.log('PR Labels:', labels);
+            console.log('Version Labels:', versionLabels);
+
+            if (versionLabels.length === 0) {
+              // No version label - add comment reminder
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const botComment = comments.find(comment =>
+                comment.user.type === 'Bot' &&
+                comment.body.includes('Version Label Reminder')
+              );
+
+              const message = `### ⚠️ Version Label Reminder
+
+              This PR is missing a version label. Please add one of the following labels to control the version bump:
+
+              - \`version:major\` - Breaking changes (X.0.0)
+              - \`version:minor\` - New features (0.X.0)
+              - \`version:patch\` - Bug fixes (0.0.X)
+
+              **If no label is added, the deployment will default to a patch version bump (+0.0.1).**
+
+              ---
+
+              <details>
+              <summary>Why is this important?</summary>
+
+              Version labels help automate semantic versioning during deployment:
+              - **Major** (X.0.0): Breaking API changes, major new features
+              - **Minor** (0.X.0): New features, backward compatible
+              - **Patch** (0.0.X): Bug fixes, small improvements
+
+              After merging to \`main\`, GitHub Actions will:
+              1. Automatically bump the version based on the label
+              2. Create a git tag
+              3. Deploy to production
+              4. Create a GitHub Release
+              </details>`;
+
+              if (!botComment) {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: message
+                });
+                console.log('Created reminder comment');
+              } else {
+                console.log('Reminder comment already exists');
+              }
+
+              // Set neutral status (not blocking)
+              core.notice('No version label found. Defaulting to patch bump (+0.0.1)');
+            } else if (versionLabels.length > 1) {
+              // Multiple version labels - error
+              core.setFailed(`Multiple version labels found: ${versionLabels.join(', ')}. Please use only one.`);
+            } else {
+              // Correct - exactly one version label
+              const versionLabel = versionLabels[0];
+              const versionType = versionLabel.replace('version:', '');
+
+              core.notice(`✓ Version label found: ${versionLabel}. Will bump ${versionType} version on merge.`);
+
+              // Add success comment
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const botComment = comments.find(comment =>
+                comment.user.type === 'Bot' &&
+                comment.body.includes('Version Label Reminder')
+              );
+
+              if (botComment) {
+                // Delete reminder comment if it exists
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id
+                });
+                console.log('Deleted reminder comment');
+              }
+            }

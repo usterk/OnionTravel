@@ -164,6 +164,57 @@ EOF
 - Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
 - Edit `nginx/oniontravel.conf.template` for nginx changes
 
+### GitHub Actions Deployment (Automated)
+
+**Recommended**: Use GitHub Actions for automated deployments. The manual script (`deploy-prod.sh`) is still available as fallback.
+
+**How it works:**
+1. Create a Pull Request with your changes
+2. Add a version label to the PR:
+   - `version:patch` - Bug fixes, small improvements (0.0.X) - **DEFAULT if no label**
+   - `version:minor` - New features (0.X.0)
+   - `version:major` - Breaking changes (X.0.0)
+3. Merge PR to `main`
+4. GitHub Actions automatically:
+   - Bumps version based on label
+   - Creates git tag (e.g., v1.3.1)
+   - Generates release notes from commits
+   - Deploys to production
+   - Creates GitHub Release
+   - Sends Discord notification
+
+**Version Labels:**
+- **`version:major`** - Breaking changes (X.0.0)
+  - Breaking API changes
+  - Major architectural changes
+  - Removing deprecated features
+  - Example: 1.3.0 → 2.0.0
+
+- **`version:minor`** - New features (0.X.0)
+  - New features (backward compatible)
+  - New API endpoints
+  - Significant improvements
+  - Example: 1.3.0 → 1.4.0
+
+- **`version:patch`** - Bug fixes (0.0.X)
+  - Bug fixes
+  - Small improvements
+  - Documentation updates
+  - Performance improvements
+  - Example: 1.3.0 → 1.3.1
+
+**Default behavior**: If no label is added, deployment uses patch bump (+0.0.1)
+
+**Workflows:**
+- `.github/workflows/deploy-production.yml` - Main deployment workflow
+- `.github/workflows/pr-version-label.yml` - PR label checker (reminds about version labels)
+
+**Setup Guide**: See `.github/DEPLOYMENT_SETUP.md` for complete configuration instructions
+
+**Label Documentation**: See `.github/LABELS.md` for detailed labeling guide
+
+**Manual deployment**: You can still use `./deploy-prod.sh` for manual deployments if needed
+
 ## Project Overview
 
 OnionTravel is a trip budget tracking application with multi-currency support, multi-user trips, and real-time budget tracking. The codebase is organized as a monorepo with a FastAPI backend and React TypeScript frontend.
