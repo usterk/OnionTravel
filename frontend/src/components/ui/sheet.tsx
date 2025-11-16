@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface SheetProps {
   open: boolean;
@@ -26,14 +27,10 @@ interface SheetTitleProps {
 }
 
 export function Sheet({ open, onOpenChange, children }: SheetProps) {
-  useEffect(() => {
-    // Lock body scroll when sheet is open
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+  // Use iOS-safe scroll locking
+  useScrollLock(open);
 
+  useEffect(() => {
     // Handle ESC key
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && open) {
@@ -41,12 +38,19 @@ export function Sheet({ open, onOpenChange, children }: SheetProps) {
       }
     };
 
-    document.addEventListener('keydown', handleEsc);
+    if (open) {
+      document.addEventListener('keydown', handleEsc);
+    }
+
     return () => {
       document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = '';
     };
   }, [open, onOpenChange]);
+
+  // Prevent touch scrolling on backdrop (iOS fix)
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+  }, []);
 
   if (!open) return null;
 
@@ -56,6 +60,8 @@ export function Sheet({ open, onOpenChange, children }: SheetProps) {
       <div
         className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
         onClick={() => onOpenChange(false)}
+        onTouchMove={handleTouchMove}
+        style={{ touchAction: 'none' }}
         aria-hidden="true"
       />
       {/* Content */}
@@ -77,6 +83,11 @@ export function SheetContent({ side = 'left', className = '', children, onClose 
     }
   }, []);
 
+  // Prevent touch events from propagating to backdrop
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+  }, []);
+
   const sideClasses = {
     left: 'left-0',
     right: 'right-0',
@@ -87,6 +98,8 @@ export function SheetContent({ side = 'left', className = '', children, onClose 
       ref={contentRef}
       className={`fixed inset-y-0 ${sideClasses[side]} w-80 md:w-96 bg-white shadow-xl z-50
         flex flex-col animate-slide-in ${className}`}
+      style={{ touchAction: 'pan-y' }}
+      onTouchMove={handleTouchMove}
       role="dialog"
       aria-modal="true"
     >
