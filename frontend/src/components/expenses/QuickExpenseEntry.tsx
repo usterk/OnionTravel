@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +7,7 @@ import { Select } from '@/components/ui/select';
 import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense, updateExpense } from '@/lib/expenses-api';
-import { Zap, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Category, Expense } from '@/types/models';
 
@@ -155,15 +154,7 @@ export function QuickExpenseEntry({
   };
 
   return (
-    <Card className="border-2 border-primary/20">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Zap className="h-5 w-5 text-primary" />
-          Quick Add Expense
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
           {/* Error Message */}
           {error && (
             <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-800 text-sm">
@@ -442,7 +433,5 @@ export function QuickExpenseEntry({
             </p>
           )}
         </form>
-      </CardContent>
-    </Card>
   );
 }

@@ -553,45 +553,27 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   <p className={`text-xs font-medium ${
                     statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} saved
+                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} {statistics.cumulative_savings_past >= 0 ? 'saved' : 'overspent'}
                   </p>
                 )}
               </div>
 
-              {/* Desktop: 3-column flex layout for perfect centering */}
-              <div className="hidden md:flex items-center">
-                {/* Left spacer - flex-1 pushes main amount to center */}
-                <div className="flex-1"></div>
-
+              {/* Desktop: centered layout with savings below */}
+              <div className="hidden md:flex flex-col items-center gap-2">
                 {/* Main amount - centered */}
                 <p className={`text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
                 </p>
 
-                {/* Right section - savings text or spacer */}
-                <div className="flex-1 flex justify-start pl-3">
-                  {statistics.cumulative_savings_past !== null &&
-                   statistics.cumulative_savings_past !== undefined &&
-                   selectedDate <= new Date().toISOString().split('T')[0] && (
-                    <p className={`text-sm font-medium ${
-                      statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} saved
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-center mt-2 text-xs md:text-sm">
-                {statistics.is_over_budget ? (
-                  <>
-                    <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
-                    <span className="text-red-600">Over budget</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
-                    <span className="text-gray-600">Available to spend</span>
-                  </>
+                {/* Savings text below main amount */}
+                {statistics.cumulative_savings_past !== null &&
+                 statistics.cumulative_savings_past !== undefined &&
+                 selectedDate <= new Date().toISOString().split('T')[0] && (
+                  <p className={`text-sm font-medium ${
+                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} {statistics.cumulative_savings_past >= 0 ? 'saved' : 'overspent'}
+                  </p>
                 )}
               </div>
 
@@ -643,7 +625,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       {/* Expenses for the Day */}
         <Card>
           <CardHeader
-            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            className="cursor-pointer hover:bg-gray-50 transition-colors py-3 md:py-6"
             onClick={() => setShowExpenses(!showExpenses)}
           >
             <div className="flex items-center justify-between">
@@ -652,9 +634,6 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   <CreditCard className="h-5 w-5 mr-2" />
                   Expenses for {getDateTitle()}
                 </CardTitle>
-                <CardDescription>
-                  {statistics.expense_count_today} expense{statistics.expense_count_today !== 1 ? 's' : ''} on {formatDate(statistics.date)}
-                </CardDescription>
               </div>
               <Button
                 variant="ghost"
@@ -834,7 +813,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       {statistics.by_category_today && statistics.by_category_today.length > 0 && (
         <Card>
           <CardHeader
-            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            className="cursor-pointer hover:bg-gray-50 transition-colors py-3 md:py-6"
             onClick={() => setShowCategoryBreakdown(!showCategoryBreakdown)}
           >
             <div className="flex items-center justify-between">
@@ -843,9 +822,6 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   <Tag className="h-5 w-5 mr-2" />
                   Remaining by Category
                 </CardTitle>
-                <CardDescription>
-                  Remaining budget by category for {formatDate(statistics.date)}
-                </CardDescription>
               </div>
               <Button
                 variant="ghost"
