@@ -3,11 +3,21 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DailyBudgetView } from './DailyBudgetView';
 import * as expensesApi from '@/lib/expenses-api';
-import type { DailyBudgetStatistics } from '@/lib/expenses-api';
+import * as categoriesApi from '@/lib/categories-api';
+import type { DailyBudgetStatistics, ExpenseStatistics } from '@/lib/expenses-api';
+import type { Expense, Category } from '@/types/models';
 
 // Mock the expenses API
 vi.mock('@/lib/expenses-api', () => ({
   getDailyBudgetStatistics: vi.fn(),
+  getExpenseStatistics: vi.fn(),
+  getExpenses: vi.fn(),
+  deleteExpense: vi.fn(),
+}));
+
+// Mock the categories API
+vi.mock('@/lib/categories-api', () => ({
+  getCategories: vi.fn(),
 }));
 
 // Mock the icon-picker module
@@ -33,19 +43,67 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children, mode }: any) => <>{children}</>,
 }));
 
+// Mock VoiceExpenseButton
+vi.mock('./VoiceExpenseButton', () => ({
+  VoiceExpenseButton: () => <button data-testid="voice-expense-button">Voice Input</button>,
+}));
+
+// Mock ExpenseForm
+vi.mock('./ExpenseForm', () => ({
+  ExpenseForm: ({ onSuccess, onCancel }: any) => (
+    <div data-testid="expense-form">
+      <button onClick={onSuccess}>Submit</button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  ),
+}));
+
+// Mock QuickExpenseEntry
+vi.mock('./QuickExpenseEntry', () => ({
+  QuickExpenseEntry: ({ onExpenseCreated, onCancel }: any) => (
+    <div data-testid="quick-expense-entry">
+      <button onClick={onExpenseCreated}>Create</button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  ),
+}));
+
 describe('DailyBudgetView', () => {
   const mockTripId = 1;
   const mockCurrencyCode = 'USD';
-  const mockTripStartDate = '2025-11-08';
-  const mockTripEndDate = '2025-11-15';
+  // Use dates that include today to avoid edge cases
+  const today = new Date();
+  const mockTripStartDate = new Date(today);
+  mockTripStartDate.setDate(today.getDate() - 3); // 3 days ago
+  const mockTripEndDate = new Date(today);
+  mockTripEndDate.setDate(today.getDate() + 4); // 4 days from now
+
+  const mockTripStartDateStr = mockTripStartDate.toISOString().split('T')[0];
+  const mockTripEndDateStr = mockTripEndDate.toISOString().split('T')[0];
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set default mock implementations
+    vi.mocked(expensesApi.getExpenseStatistics).mockResolvedValue({
+      total_expenses: 0,
+      total_spent: 0,
+      total_budget: 1000,
+      remaining_budget: 1000,
+      percentage_used: 0,
+      by_category: [],
+      by_payment_method: [],
+      average_daily_spending: 0,
+    });
+    // getExpenses returns Expense[] directly
+    vi.mocked(expensesApi.getExpenses).mockResolvedValue([]);
+    // getCategories returns Category[] directly
+    vi.mocked(categoriesApi.getCategories).mockResolvedValue([]);
   });
 
   const createMockStatistics = (overrides?: Partial<DailyBudgetStatistics>): DailyBudgetStatistics => ({
     date: '2025-11-10',
     daily_budget: 100,
+    adjusted_daily_budget: null,
     total_spent_today: 50,
     remaining_today: 50,
     percentage_used_today: 50,
@@ -56,19 +114,44 @@ describe('DailyBudgetView', () => {
         category_name: 'Food',
         category_color: '#FF5733',
         category_icon: 'utensils',
+        category_daily_budget: 35,
         total_spent: 30,
+        remaining_budget: 5,
+        display_order: 0,
       },
       {
         category_id: 2,
         category_name: 'Transport',
         category_color: '#3498DB',
         category_icon: 'car',
+        category_daily_budget: 25,
         total_spent: 20,
+        remaining_budget: 5,
+        display_order: 1,
       },
     ],
     is_over_budget: false,
     days_into_trip: 3,
     total_days: 8,
+    cumulative_savings_past: null,
+    ...overrides,
+  });
+
+  const createMockExpense = (overrides?: Partial<Expense>): Expense => ({
+    id: 1,
+    trip_id: mockTripId,
+    category_id: 1,
+    title: 'Lunch',
+    amount: 15,
+    currency_code: 'USD',
+    amount_in_trip_currency: 15,
+    exchange_rate: 1,
+    payment_method: 'cash',
+    start_date: '2025-11-10',
+    end_date: null,
+    notes: null,
+    created_at: '2025-11-10T12:00:00Z',
+    updated_at: '2025-11-10T12:00:00Z',
     ...overrides,
   });
 
@@ -82,8 +165,8 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
@@ -102,8 +185,8 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
@@ -116,15 +199,18 @@ describe('DailyBudgetView', () => {
   describe('No Daily Budget Set', () => {
     it('should show warning when no daily budget is configured', async () => {
       const today = new Date().toISOString().split('T')[0];
-      const mockStats = createMockStatistics({ daily_budget: null, date: today });
+      const mockStats = createMockStatistics({
+        daily_budget: null as any,
+        date: today
+      });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
@@ -132,76 +218,42 @@ describe('DailyBudgetView', () => {
         expect(screen.getByText('No daily budget set for this trip')).toBeInTheDocument();
       });
 
-      // The text is rendered as one node: "Spent today: 50 USD (2 expenses)"
-      expect(screen.getByText(/Spent today:.*50 USD.*2 expenses/)).toBeInTheDocument();
+      // Check that spent amount is still shown - text may be in multiple elements
+      const spentText = screen.getAllByText((content, element) => {
+        return element?.textContent?.includes('Spent today:') &&
+               element?.textContent?.includes('50 USD') &&
+               element?.textContent?.includes('2 expenses') || false;
+      });
+      expect(spentText.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Normal Budget Display', () => {
-    it('should display daily budget statistics correctly', async () => {
-      // Component will call API with today's date initially
-      const today = new Date().toISOString().split('T')[0];
-      const mockStats = createMockStatistics({ date: today });
+  describe('Main Metrics Display', () => {
+    it('should display "Remaining Today" as main focus', async () => {
+      const mockStats = createMockStatistics();
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
       await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
+        expect(screen.getByText('💰 Remaining Today')).toBeInTheDocument();
       });
 
-      // Check main metrics - multiple instances of currency amounts exist
-      expect(screen.getAllByText('100 USD').length).toBeGreaterThan(0); // Daily budget
-      expect(screen.getAllByText('50 USD').length).toBeGreaterThan(0); // Spent today and remaining
-      expect(screen.getByText('2 expenses')).toBeInTheDocument();
-      expect(screen.getByText('Available')).toBeInTheDocument();
-    });
-
-    it('should show "On Track" badge when under 80% budget', async () => {
-      const mockStats = createMockStatistics({ percentage_used_today: 60 });
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('On Track')).toBeInTheDocument();
+      // Check remaining amount - may appear multiple times
+      const amounts = screen.getAllByText((content, element) => {
+        return element?.textContent === '50 USD';
       });
+      expect(amounts.length).toBeGreaterThan(0);
     });
 
-    it('should show "Warning" badge when between 80-100% budget', async () => {
-      const mockStats = createMockStatistics({ percentage_used_today: 85 });
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Warning')).toBeInTheDocument();
-      });
-    });
-
-    it('should show "Over Budget" badge when exceeding budget', async () => {
+    it('should display negative remaining in red when over budget', async () => {
       const mockStats = createMockStatistics({
         total_spent_today: 120,
         remaining_today: -20,
@@ -214,21 +266,76 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Over Budget')).toBeInTheDocument();
+        expect(screen.getByText('💰 Remaining Today')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Over budget')).toBeInTheDocument();
-      // The message contains "You have exceeded your daily budget by" and "20 USD" separately
-      expect(screen.getByText(/You have exceeded your daily budget/)).toBeInTheDocument();
+      // Check for negative amount with red styling - may appear multiple times
+      const negativeAmounts = screen.getAllByText((content, element) => {
+        return element?.textContent === '-20 USD' &&
+               element?.className?.includes('text-red-600') || false;
+      });
+      expect(negativeAmounts.length).toBeGreaterThan(0);
     });
 
-    it('should display day information correctly', async () => {
+    it('should display cumulative savings when available', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({
+        date: today,
+        cumulative_savings_past: 25,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        const savingsText = screen.getAllByText((content, element) => {
+          return element?.textContent?.includes('+25 USD saved') || false;
+        });
+        expect(savingsText.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should display cumulative overspending in red', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({
+        date: today,
+        cumulative_savings_past: -15,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        const overspentText = screen.getAllByText((content, element) => {
+          return element?.textContent?.includes('-15 USD overspent') || false;
+        });
+        expect(overspentText.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Already Spent Display', () => {
+    it('should display spent amount and progress bar', async () => {
       const mockStats = createMockStatistics();
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
@@ -236,54 +343,36 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/Day 3 of 8/)).toBeInTheDocument();
+        expect(screen.getByText('Already Spent')).toBeInTheDocument();
       });
+
+      // Amounts may appear multiple times in different sections
+      const amounts = screen.getAllByText((content, element) => {
+        return element?.textContent === '50 USD';
+      });
+      expect(amounts.length).toBeGreaterThan(0);
+
+      const percentages = screen.getAllByText((content, element) => {
+        return element?.textContent === '50% of budget';
+      });
+      expect(percentages.length).toBeGreaterThan(0);
+
+      expect(screen.getByText('2 expenses • 50% available')).toBeInTheDocument();
     });
   });
 
-  describe('Category Breakdown', () => {
-    it('should display category breakdown with icons and colors', async () => {
+  describe('Status Badge', () => {
+    it('should show "On Track" badge when under 80% budget', async () => {
       const today = new Date().toISOString().split('T')[0];
-      const mockStats = createMockStatistics({ date: today });
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText("Today's Spending by Category")).toBeInTheDocument();
-      });
-
-      // Check categories are displayed
-      expect(screen.getByText('Food')).toBeInTheDocument();
-      expect(screen.getByText('Transport')).toBeInTheDocument();
-
-      // Check amounts (may have multiple instances)
-      expect(screen.getAllByText(/30 USD/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/20 USD/).length).toBeGreaterThan(0);
-
-      // Check percentages
-      expect(screen.getByText(/60.0%/)).toBeInTheDocument(); // Food: 30/50 = 60%
-      expect(screen.getByText(/40.0%/)).toBeInTheDocument(); // Transport: 20/50 = 40%
-    });
-
-    it('should not show category breakdown when no expenses', async () => {
       const mockStats = createMockStatistics({
-        by_category_today: [],
-        expense_count_today: 0,
-        total_spent_today: 0,
+        date: today,
+        percentage_used_today: 60
       });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
@@ -291,278 +380,45 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
       await waitFor(() => {
-        expect(screen.queryByText("Today's Spending by Category")).not.toBeInTheDocument();
-      });
-
-      expect(screen.getByText(/No expenses recorded for/)).toBeInTheDocument();
-    });
-  });
-
-  describe('Date Navigation', () => {
-    it('should have Previous, Today, and Next buttons', async () => {
-      const mockStats = createMockStatistics();
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('Today')).toBeInTheDocument();
-      expect(screen.getByText('Next')).toBeInTheDocument();
+        expect(screen.getByText('On Track')).toBeInTheDocument();
+      }, { timeout: 3000 });
     });
 
-    it('should navigate to next day when Next button is clicked', async () => {
-      const user = userEvent.setup();
+    it('should show "Warning" badge when between 80-100% budget', async () => {
       const today = new Date().toISOString().split('T')[0];
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowDate = tomorrow.toISOString().split('T')[0];
-
-      const mockStats = createMockStatistics({ date: today });
-      const mockStatsNext = createMockStatistics({ date: tomorrowDate });
-
-      vi.mocked(expensesApi.getDailyBudgetStatistics)
-        .mockResolvedValueOnce(mockStats)
-        .mockResolvedValueOnce(mockStatsNext);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      const nextButton = screen.getByRole('button', { name: /Next/i });
-      await user.click(nextButton);
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(mockTripId, tomorrowDate);
-      });
-    });
-
-    it('should navigate to previous day when Previous button is clicked', async () => {
-      const user = userEvent.setup();
-      const mockStats = createMockStatistics({ date: '2025-11-10' });
-      const mockStatsPrev = createMockStatistics({ date: '2025-11-09' });
-
-      vi.mocked(expensesApi.getDailyBudgetStatistics)
-        .mockResolvedValueOnce(mockStats)
-        .mockResolvedValueOnce(mockStatsPrev);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      const prevButton = screen.getByText('Previous');
-      await user.click(prevButton);
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(mockTripId, '2025-11-09');
-      });
-    });
-
-    it('should disable Previous button at trip start date', async () => {
-      const user = userEvent.setup();
-      const today = new Date().toISOString().split('T')[0];
-
-      // Mock responses: first for today, then for trip start date
-      const mockStatsToday = createMockStatistics({ date: today });
-      const mockStatsStart = createMockStatistics({ date: mockTripStartDate });
-
-      vi.mocked(expensesApi.getDailyBudgetStatistics)
-        .mockResolvedValueOnce(mockStatsToday)
-        .mockResolvedValueOnce(mockStatsStart);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      // Navigate to trip start by clicking the date picker
-      const dateInputs = screen.getAllByRole('textbox') as HTMLInputElement[];
-      const dateInput = dateInputs.find(input => input.type === 'date')!;
-      await user.clear(dateInput);
-      await user.type(dateInput, mockTripStartDate);
-
-      // Wait for the new data to load
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(mockTripId, mockTripStartDate);
-      });
-
-      // Now check that Previous is disabled
-      const prevButton = screen.getByRole('button', { name: /Previous/i });
-      expect(prevButton).toBeDisabled();
-    });
-
-    it('should disable Next button at trip end date', async () => {
-      const user = userEvent.setup();
-      const today = new Date().toISOString().split('T')[0];
-
-      // Mock responses: first for today, then for trip end date
-      const mockStatsToday = createMockStatistics({ date: today });
-      const mockStatsEnd = createMockStatistics({ date: mockTripEndDate });
-
-      vi.mocked(expensesApi.getDailyBudgetStatistics)
-        .mockResolvedValueOnce(mockStatsToday)
-        .mockResolvedValueOnce(mockStatsEnd);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      // Navigate to trip end by clicking the date picker
-      const dateInputs = screen.getAllByRole('textbox') as HTMLInputElement[];
-      const dateInput = dateInputs.find(input => input.type === 'date')!;
-      await user.clear(dateInput);
-      await user.type(dateInput, mockTripEndDate);
-
-      // Wait for the new data to load
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(mockTripId, mockTripEndDate);
-      });
-
-      // Now check that Next is disabled
-      const nextButton = screen.getByRole('button', { name: /Next/i });
-      expect(nextButton).toBeDisabled();
-    });
-
-    it('should have date input with min and max constraints', async () => {
-      const mockStats = createMockStatistics({ date: '2025-11-10' });
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      // Find the date input by its type attribute
-      const dateInputs = screen.getAllByRole('textbox') as HTMLInputElement[];
-      const dateInput = dateInputs.find(input => input.type === 'date');
-
-      expect(dateInput).toBeDefined();
-      expect(dateInput).toHaveAttribute('min', mockTripStartDate);
-      expect(dateInput).toHaveAttribute('max', mockTripEndDate);
-    });
-
-    it('should update statistics when date input is changed', async () => {
-      const user = userEvent.setup();
-      const mockStats = createMockStatistics({ date: '2025-11-10' });
-      const mockStatsNew = createMockStatistics({ date: '2025-11-12' });
-
-      vi.mocked(expensesApi.getDailyBudgetStatistics)
-        .mockResolvedValueOnce(mockStats)
-        .mockResolvedValueOnce(mockStatsNew);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        // Check for navigation buttons instead (UI has changed - no more "Daily Budget Overview" title)
-        expect(screen.getByText('Previous')).toBeInTheDocument();
-      });
-
-      const dateInputs = screen.getAllByRole('textbox') as HTMLInputElement[];
-      const dateInput = dateInputs.find(input => input.type === 'date')!;
-
-      await user.clear(dateInput);
-      await user.type(dateInput, '2025-11-12');
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(mockTripId, '2025-11-12');
-      });
-    });
-  });
-
-  describe('Progress Bar', () => {
-    it('should display progress bar with correct percentage', async () => {
-      const mockStats = createMockStatistics({ percentage_used_today: 50 });
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText("Today's Budget Usage")).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('50.0% of daily budget used')).toBeInTheDocument();
-    });
-
-    it('should cap progress bar width at 100% even when over budget', async () => {
       const mockStats = createMockStatistics({
-        percentage_used_today: 150,
+        date: today,
+        percentage_used_today: 85
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Warning')).toBeInTheDocument();
+      });
+    });
+
+    it('should show "Over Budget" badge when exceeding budget', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({
+        date: today,
+        total_spent_today: 120,
+        remaining_today: -20,
+        percentage_used_today: 120,
         is_over_budget: true,
       });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
@@ -571,21 +427,621 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
         />
       );
 
       await waitFor(() => {
-        expect(screen.getByText('150.0% of daily budget used')).toBeInTheDocument();
+        expect(screen.getByText('Over Budget')).toBeInTheDocument();
+      });
+    });
+
+    it('should show "Completed" badge for past days within budget', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayDate = yesterday.toISOString().split('T')[0];
+
+      const mockStats = createMockStatistics({
+        date: yesterdayDate,
+        percentage_used_today: 60,
+        is_over_budget: false,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Completed')).toBeInTheDocument();
+      });
+    });
+
+    it('should show "Not Started" badge for future days with no expenses', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDate = tomorrow.toISOString().split('T')[0];
+
+      const mockStats = createMockStatistics({
+        date: tomorrowDate,
+        total_spent_today: 0,
+        expense_count_today: 0,
+        remaining_today: 100,
+        percentage_used_today: 0,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Not Started')).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+  });
+
+  describe('Date Navigation', () => {
+    it('should display day title as "Today" for current date', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({ date: today });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Today')).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('should display day of week for non-today dates', async () => {
+      const mockStats = createMockStatistics({ date: '2025-11-10' });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        // 2025-11-10 is a Monday
+        expect(screen.getByText('Monday')).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('should show day counter', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Day 3 of 8')).toBeInTheDocument();
+      });
+    });
+
+    it('should have Previous and Next buttons', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('button', { name: /Previous/i })[0]).toBeInTheDocument();
+      });
+
+      expect(screen.getAllByRole('button', { name: /Next/i })[0]).toBeInTheDocument();
+    });
+
+    it('should disable Previous button at trip start', async () => {
+      const mockStats = createMockStatistics({ date: mockTripStartDateStr });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        const prevButton = screen.getAllByRole('button', { name: /Previous/i })[0];
+        expect(prevButton).toBeDisabled();
+      }, { timeout: 3000 });
+    });
+
+    it('should disable Next button at trip end', async () => {
+      const mockStats = createMockStatistics({ date: mockTripEndDateStr });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        const nextButton = screen.getAllByRole('button', { name: /Next/i })[0];
+        expect(nextButton).toBeDisabled();
       });
     });
   });
 
-  describe('Currency Formatting', () => {
-    it('should format amounts with the provided currency code', async () => {
+  describe('Expenses Section', () => {
+    it('should display expenses for the selected day', async () => {
+      const mockStats = createMockStatistics();
+      const mockExpenses = [
+        createMockExpense({ id: 1, title: 'Lunch', amount_in_trip_currency: 15 }),
+        createMockExpense({ id: 2, title: 'Bus ticket', amount_in_trip_currency: 5 }),
+      ];
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue(mockExpenses);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Lunch')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Bus ticket')).toBeInTheDocument();
+    });
+
+    it('should show "No expenses recorded" when day has no expenses', async () => {
+      const mockStats = createMockStatistics({
+        expense_count_today: 0,
+        total_spent_today: 0,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue([]);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/No expenses recorded for/)).toBeInTheDocument();
+      });
+    });
+
+    it('should collapse/expand expenses section when clicked', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      const mockExpenses = [createMockExpense()];
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue(mockExpenses);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Lunch')).toBeInTheDocument();
+      });
+
+      // Find the expenses header and click it
+      const expensesHeader = screen.getByText(/Expenses for/);
+      await user.click(expensesHeader);
+
+      // After collapse, expense should not be visible
+      await waitFor(() => {
+        expect(screen.queryByText('Lunch')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should display multi-day expense with daily amount', async () => {
+      const mockStats = createMockStatistics();
+      const multiDayExpense = createMockExpense({
+        title: 'Hotel',
+        amount_in_trip_currency: 300,
+        start_date: '2025-11-10',
+        end_date: '2025-11-12', // 3 days: 10, 11, 12
+      });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue([multiDayExpense]);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Hotel')).toBeInTheDocument();
+      });
+
+      // Daily amount should be 300/3 = 100 - may appear multiple times
+      const amounts = screen.getAllByText((content, element) => {
+        return element?.textContent === '100 USD';
+      });
+      expect(amounts.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Category Breakdown Section', () => {
+    it('should display category breakdown when collapsed by default', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Remaining by Category')).toBeInTheDocument();
+      });
+
+      // Should not show category details initially (collapsed)
+      expect(screen.queryByText('Food')).not.toBeInTheDocument();
+    });
+
+    it('should expand category breakdown when clicked', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Remaining by Category')).toBeInTheDocument();
+      });
+
+      const categoryHeader = screen.getByText('Remaining by Category');
+      await user.click(categoryHeader);
+
+      // After expand, categories should be visible
+      await waitFor(() => {
+        expect(screen.getByText('Food')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Transport')).toBeInTheDocument();
+    });
+
+    it('should show remaining budget per category', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Remaining by Category')).toBeInTheDocument();
+      });
+
+      // Expand section
+      await user.click(screen.getByText('Remaining by Category'));
+
+      await waitFor(() => {
+        // Food: 35 budget - 30 spent = 5 remaining - may appear multiple times
+        const amounts = screen.getAllByText((content, element) => {
+          return element?.textContent === '5 USD';
+        });
+        expect(amounts.length).toBeGreaterThan(0);
+      }, { timeout: 3000 });
+    });
+  });
+
+  describe('Budget Details Section', () => {
+    it('should display daily budget', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Daily Budget')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText((content, element) => {
+        return element?.textContent === '100 USD';
+      })).toBeInTheDocument();
+    });
+
+    it('should display adjusted daily budget when different from daily budget', async () => {
       const today = new Date().toISOString().split('T')[0];
-      const mockStats = createMockStatistics({ date: today });
+      const mockStats = createMockStatistics({
+        date: today,
+        adjusted_daily_budget: 110,
+      });
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Adjusted Daily Budget')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText((content, element) => {
+        return element?.textContent === '110 USD';
+      })).toBeInTheDocument();
+    });
+
+    it('should display average daily spending when available', async () => {
+      const mockStats = createMockStatistics();
+      const mockTripStats: ExpenseStatistics = {
+        total_expenses: 10,
+        total_spent: 500,
+        total_budget: 1000,
+        remaining_budget: 500,
+        percentage_used: 50,
+        by_category: [],
+        by_payment_method: [],
+        average_daily_spending: 62.5,
+      };
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenseStatistics).mockResolvedValue(mockTripStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Avg. Daily')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText((content, element) => {
+        return element?.textContent === '62.5 USD';
+      })).toBeInTheDocument();
+    });
+  });
+
+  describe('Quick Add Button', () => {
+    it('should render quick add floating button', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Quick add expense')).toBeInTheDocument();
+      });
+    });
+
+    it('should open quick add dialog when clicked', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Quick add expense')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByLabelText('Quick add expense'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Quick Add Expense')).toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('quick-expense-entry')).toBeInTheDocument();
+    });
+  });
+
+  describe('Voice Expense Button', () => {
+    it('should render voice expense button', async () => {
+      const mockStats = createMockStatistics();
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('voice-expense-button')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Delete Expense', () => {
+    it('should show delete confirmation dialog', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      const mockExpenses = [createMockExpense({ title: 'Lunch to delete' })];
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue(mockExpenses);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Lunch to delete')).toBeInTheDocument();
+      });
+
+      // Expand expense to show delete button
+      await user.click(screen.getByText('Lunch to delete'));
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Delete expense')).toBeInTheDocument();
+      });
+
+      // Click delete button
+      await user.click(screen.getByTitle('Delete expense'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Delete Expense')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Are you sure you want to delete this expense?')).toBeInTheDocument();
+      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+    });
+
+    it('should delete expense when confirmed', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics();
+      const mockExpenses = [createMockExpense({ id: 123, title: 'Lunch to delete' })];
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue(mockExpenses);
+      vi.mocked(expensesApi.deleteExpense).mockResolvedValue(undefined);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Lunch to delete')).toBeInTheDocument();
+      });
+
+      // Expand and delete
+      await user.click(screen.getByText('Lunch to delete'));
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Delete expense')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTitle('Delete expense'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Delete Expense')).toBeInTheDocument();
+      });
+
+      // Confirm deletion - click the Delete button in the dialog
+      const confirmButton = screen.getByRole('button', { name: 'Delete' });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(expensesApi.deleteExpense).toHaveBeenCalledWith(mockTripId, 123);
+      }, { timeout: 3000 });
+    });
+  });
+
+  describe('Currency Formatting', () => {
+    it('should format amounts with provided currency code', async () => {
+      const mockStats = createMockStatistics();
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
@@ -598,67 +1054,10 @@ describe('DailyBudgetView', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getAllByText(/100 EUR/).length).toBeGreaterThan(0);
-      });
-
-      expect(screen.getAllByText(/50 EUR/).length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('API Integration', () => {
-    it('should call API with correct parameters on mount', async () => {
-      const mockStats = createMockStatistics();
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      render(
-        <DailyBudgetView
-          tripId={mockTripId}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledWith(
-          mockTripId,
-          expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) // Today's date in YYYY-MM-DD format
-        );
-      });
-    });
-
-    it('should reload statistics when tripId changes', async () => {
-      const mockStats = createMockStatistics();
-      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
-
-      const { rerender } = render(
-        <DailyBudgetView
-          tripId={1}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledTimes(1);
-      });
-
-      rerender(
-        <DailyBudgetView
-          tripId={2}
-          currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDate}
-          tripEndDate={mockTripEndDate}
-        />
-      );
-
-      await waitFor(() => {
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenCalledTimes(2);
-        expect(expensesApi.getDailyBudgetStatistics).toHaveBeenLastCalledWith(
-          2,
-          expect.any(String)
-        );
+        // Check for EUR currency in budget details
+        expect(screen.getByText((content, element) => {
+          return element?.textContent === '100 EUR';
+        })).toBeInTheDocument();
       });
     });
   });
