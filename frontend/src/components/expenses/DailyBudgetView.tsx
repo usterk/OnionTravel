@@ -550,26 +550,11 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                 {statistics.cumulative_savings_past !== null &&
                  statistics.cumulative_savings_past !== undefined &&
                  selectedDate <= new Date().toISOString().split('T')[0] && (
-                  <div className="relative group">
-                    <div className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold cursor-help ${
-                      statistics.cumulative_savings_past >= 0
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-red-100 text-red-700 border border-red-300'
-                    }`}>
-                      {statistics.cumulative_savings_past >= 0 ? '+' : ''}{formatCurrency(statistics.cumulative_savings_past)}
-                    </div>
-                    {/* Tooltip - bottom on mobile */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                      <div className="font-semibold mb-1">Cumulative {statistics.cumulative_savings_past >= 0 ? 'Savings' : 'Overspend'}</div>
-                      <div className="text-gray-300">
-                        {statistics.cumulative_savings_past >= 0
-                          ? 'Total saved from previous days'
-                          : 'Total overspent from previous days'}
-                      </div>
-                      {/* Tooltip arrow - top */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                    </div>
-                  </div>
+                  <p className={`text-xs font-medium ${
+                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} saved
+                  </p>
                 )}
               </div>
 
@@ -583,31 +568,16 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                   {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
                 </p>
 
-                {/* Right section - badge or spacer */}
+                {/* Right section - savings text or spacer */}
                 <div className="flex-1 flex justify-start pl-3">
                   {statistics.cumulative_savings_past !== null &&
                    statistics.cumulative_savings_past !== undefined &&
                    selectedDate <= new Date().toISOString().split('T')[0] && (
-                    <div className="relative group">
-                      <div className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold cursor-help ${
-                        statistics.cumulative_savings_past >= 0
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-red-100 text-red-700 border border-red-300'
-                      }`}>
-                        {statistics.cumulative_savings_past >= 0 ? '+' : ''}{formatCurrency(statistics.cumulative_savings_past)}
-                      </div>
-                      {/* Tooltip - right on desktop */}
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                        <div className="font-semibold mb-1">Cumulative {statistics.cumulative_savings_past >= 0 ? 'Savings' : 'Overspend'}</div>
-                        <div className="text-gray-300">
-                          {statistics.cumulative_savings_past >= 0
-                            ? 'Total saved from previous days'
-                            : 'Total overspent from previous days'}
-                        </div>
-                        {/* Tooltip arrow - left */}
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
-                      </div>
-                    </div>
+                    <p className={`text-sm font-medium ${
+                      statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} saved
+                    </p>
                   )}
                 </div>
               </div>
