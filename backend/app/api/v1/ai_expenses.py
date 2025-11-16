@@ -62,11 +62,11 @@ def get_trip_or_404(db: Session, trip_id: int, user: User) -> Trip:
 
 @router.post(
     "/trips/{trip_id}/expenses/voice-parse",
-    response_model=ExpenseResponse,
+    response_model=list[ExpenseResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="Parse voice input and create expense using AI",
+    summary="Parse voice input and create expense(s) using AI",
     responses={
-        201: {"description": "Expense created successfully from voice input"},
+        201: {"description": "Expense(s) created successfully from voice input"},
         400: {"description": "Invalid audio or parsing failed"},
         403: {"description": "Access denied to trip"},
         404: {"description": "Trip not found"},
@@ -80,13 +80,22 @@ async def parse_and_create_voice_expense(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Parse voice input and automatically create an expense using AI.
+    Parse voice input and automatically create one or more expenses using AI.
 
     This endpoint:
     1. Transcribes audio to text using OpenAI Whisper (gpt-4o-mini-transcribe)
     2. Parses text to structured expense data using GPT models with retry logic
-    3. Automatically creates the expense in the database
-    4. Returns the created expense
+    3. Detects multiple items if separate prices are mentioned
+    4. Automatically creates expense(s) in the database
+    5. Returns list of created expense(s)
+
+    **Multiple Items Support:**
+    - Separate prices → Multiple expenses (e.g., "milk for 5 PLN and bread for 3 PLN")
+    - Combined price → Single expense (e.g., "milk and bread for 8 PLN")
+
+    **Language Preservation:**
+    - Keeps title, notes, location in the same language as spoken
+    - Does NOT translate to English
 
     **Retry Logic:**
     - Attempt 1: gpt-5-mini (reasoning: minimal)
@@ -99,7 +108,7 @@ async def parse_and_create_voice_expense(
     - `expense_date`: Date for the expense (YYYY-MM-DD)
 
     **Response:**
-    - Returns the created expense object with all fields
+    - Returns list of created expense objects (1 or more)
     """
 
     # Verify access to trip
@@ -148,14 +157,14 @@ async def parse_and_create_voice_expense(
             detail=f"Transcription error: {str(e)}"
         )
 
-    # Step 2: Parse expense with retry logic
-    parsed_data = None
+    # Step 2: Parse expense(s) with retry logic
+    parsed_expenses_list = None
     last_error = None
     max_retries = 4
 
     for retry_attempt in range(max_retries):
         try:
-            parsed_data = ai_parser.parse_expense_from_text(
+            parsed_expenses_list = ai_parser.parse_expense_from_text(
                 transcribed_text=transcribed_text,
                 trip_currency=trip.currency_code,
                 categories=categories_data,
@@ -181,47 +190,55 @@ async def parse_and_create_voice_expense(
             )
 
     # Validate that we have parsed data
-    if not parsed_data:
+    if not parsed_expenses_list or len(parsed_expenses_list) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to parse expense from voice input"
         )
 
-    # Validate category ID
-    if not parsed_data.category_id:
-        # Fallback to first category if AI couldn't match
-        parsed_data.category_id = categories[0].id
-
-    # Step 3: Create expense in database
+    # Step 3: Create all expenses in database
+    created_expenses = []
     try:
-        expense_create = ExpenseCreate(
-            title=parsed_data.title,
-            amount=parsed_data.amount,
-            currency_code=parsed_data.currency_code,
-            category_id=parsed_data.category_id,
-            start_date=request.expense_date,
-            end_date=None,  # Single-day expense
-            notes=parsed_data.notes,
-            location=parsed_data.location,
-            payment_method=None,  # Not extracted from voice
-            description=None
-        )
+        for parsed_data in parsed_expenses_list:
+            # Validate category ID
+            if not parsed_data.category_id:
+                # Fallback to first category if AI couldn't match
+                parsed_data.category_id = categories[0].id
 
-        created_expense = await expense_service.create_expense(
-            db=db,
-            trip_id=trip_id,
-            user_id=current_user.id,
-            expense_data=expense_create
-        )
+            expense_create = ExpenseCreate(
+                title=parsed_data.title,
+                amount=parsed_data.amount,
+                currency_code=parsed_data.currency_code,
+                category_id=parsed_data.category_id,
+                start_date=request.expense_date,
+                end_date=None,  # Single-day expense
+                notes=parsed_data.notes,
+                location=parsed_data.location,
+                payment_method=None,  # Not extracted from voice
+                description=None
+            )
 
+            created_expense = await expense_service.create_expense(
+                db=db,
+                trip_id=trip_id,
+                user_id=current_user.id,
+                expense_data=expense_create
+            )
+
+            created_expenses.append(created_expense)
+
+        # Commit all expenses at once
         db.commit()
-        db.refresh(created_expense)
 
-        return created_expense
+        # Refresh all created expenses
+        for expense in created_expenses:
+            db.refresh(expense)
+
+        return created_expenses
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create expense: {str(e)}"
+            detail=f"Failed to create expense(s): {str(e)}"
         )

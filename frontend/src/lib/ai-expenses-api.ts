@@ -26,18 +26,21 @@ export interface VoiceExpenseResponse {
 }
 
 /**
- * Parse voice input and create expense using AI
+ * Parse voice input and create expense(s) using AI
+ *
+ * Supports multiple items if separate prices are mentioned in voice input.
+ * Example: "milk for 5 PLN and bread for 3 PLN" → creates 2 expenses
  *
  * @param tripId - Trip ID
  * @param audioBlob - Audio blob from recording
  * @param expenseDate - Date for the expense (YYYY-MM-DD)
- * @returns Created expense
+ * @returns Array of created expense(s) (1 or more)
  */
 export const parseAndCreateVoiceExpense = async (
   tripId: number,
   audioBlob: Blob,
   expenseDate: string
-): Promise<Expense> => {
+): Promise<Expense[]> => {
   // Convert Blob to base64
   const audio_base64 = await blobToBase64(audioBlob);
 
@@ -46,7 +49,7 @@ export const parseAndCreateVoiceExpense = async (
     expense_date: expenseDate,
   };
 
-  const response = await api.post<Expense>(
+  const response = await api.post<Expense[]>(
     `/trips/${tripId}/expenses/voice-parse`,
     requestData
   );

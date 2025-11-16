@@ -166,11 +166,14 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
     setError(null);
 
     try {
-      const createdExpense = await parseAndCreateVoiceExpense(
+      const createdExpenses = await parseAndCreateVoiceExpense(
         tripId,
         blob,
         expenseDate
       );
+
+      // Log how many expenses were created
+      console.log(`Created ${createdExpenses.length} expense(s) from voice input`);
 
       setStep('success');
       setTimeout(() => {
