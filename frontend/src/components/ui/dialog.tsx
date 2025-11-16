@@ -106,7 +106,7 @@ interface DialogTitleProps {
 
 const DialogTitle: React.FC<DialogTitleProps> = ({ children, className }) => {
   return (
-    <h2 className={`text-lg font-semibold text-gray-900 ${className || ''}`}>
+    <h2 className={`text-xl sm:text-lg font-semibold text-gray-900 ${className || ''}`}>
       {children}
     </h2>
   );

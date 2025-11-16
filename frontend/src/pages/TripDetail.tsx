@@ -204,13 +204,12 @@ export default function TripDetail() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-2 text-sm"
+            className="mb-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 sm:border-0 -ml-2"
           >
-            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -231,26 +230,26 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Info className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
+          <TabsList className="grid grid-cols-5 w-full gap-1 h-auto p-1">
+            <TabsTrigger value="overview" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Info className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Receipt className="h-4 w-4" />
-              <span className="hidden sm:inline">Expenses</span>
+            <TabsTrigger value="expenses" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Receipt className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Expenses</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Categories</span>
+            <TabsTrigger value="categories" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Tag className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Categories</span>
             </TabsTrigger>
-            <TabsTrigger value="members" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Members</span>
+            <TabsTrigger value="members" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <Users className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Members</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
+            <TabsTrigger value="settings" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <SettingsIcon className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Settings</span>
             </TabsTrigger>
           </TabsList>
 
