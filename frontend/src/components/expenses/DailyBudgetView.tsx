@@ -734,7 +734,7 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
                         >
-                          <h4 className="font-medium text-gray-900 truncate">{expense.title}</h4>
+                          <span className="font-medium text-sm text-gray-900 truncate block">{expense.title}</span>
                         </div>
 
                         {/* Amount */}
