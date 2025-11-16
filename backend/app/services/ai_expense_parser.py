@@ -113,9 +113,10 @@ class AIExpenseParser:
         trip_currency: str,
         categories: list[dict],
         retry_attempt: int = 0
-    ) -> ParsedExpenseData:
+    ) -> list[ParsedExpenseData]:
         """
         Parse transcribed text to structured expense data using GPT models.
+        Supports multiple items if separate prices are mentioned.
 
         Args:
             transcribed_text: Text from voice transcription
@@ -124,7 +125,7 @@ class AIExpenseParser:
             retry_attempt: Current retry attempt (0-3)
 
         Returns:
-            ParsedExpenseData object
+            List of ParsedExpenseData objects (1 or more)
 
         Raises:
             AIExpenseParserError: If parsing fails after all retries
@@ -182,21 +183,34 @@ class AIExpenseParser:
             # Parse JSON response
             parsed_json = self._extract_json_from_response(response_text)
 
-            # Match category name to category ID
-            if "category_name" in parsed_json and parsed_json["category_name"]:
-                category_id = self._match_category(
-                    parsed_json["category_name"],
-                    categories
-                )
-                parsed_json["category_id"] = category_id
+            # Handle both old format (single expense) and new format (multiple expenses)
+            if "expenses" in parsed_json:
+                # New format: {"expenses": [...]}
+                expenses_list = parsed_json["expenses"]
+            else:
+                # Old format: single expense object - wrap in list for compatibility
+                expenses_list = [parsed_json]
 
-            # Validate and create ParsedExpenseData
-            parsed_data = ParsedExpenseData(**parsed_json)
+            # Process each expense
+            parsed_expenses = []
+            for expense_json in expenses_list:
+                # Match category name to category ID
+                if "category_name" in expense_json and expense_json["category_name"]:
+                    category_id = self._match_category(
+                        expense_json["category_name"],
+                        categories
+                    )
+                    expense_json["category_id"] = category_id
 
-            # Ensure currency is uppercase
-            parsed_data.currency_code = parsed_data.currency_code.upper()
+                # Validate and create ParsedExpenseData
+                parsed_data = ParsedExpenseData(**expense_json)
 
-            return parsed_data
+                # Ensure currency is uppercase
+                parsed_data.currency_code = parsed_data.currency_code.upper()
+
+                parsed_expenses.append(parsed_data)
+
+            return parsed_expenses
 
         except Exception as e:
             # If parsing failed and we have retries left, raise for retry
@@ -221,7 +235,7 @@ class AIExpenseParser:
             for cat in categories
         ])
 
-        prompt = f"""Parse the following voice transcription into a structured expense.
+        prompt = f"""Parse the following voice transcription into structured expense(s).
 
 TRIP CONTEXT:
 - Default currency: {trip_currency}
@@ -232,30 +246,77 @@ TRANSCRIPTION:
 "{transcribed_text}"
 
 INSTRUCTIONS:
-1. Extract expense title (brief, descriptive)
-2. Extract amount as a number (e.g., 45.50, not "45 dollars")
-3. Detect currency code (ISO 3-letter code like USD, EUR, PLN)
-   - If not mentioned, use trip currency: {trip_currency}
-   - Common currencies: USD ($), EUR (€), GBP (£), PLN (zł)
-4. Match to most appropriate category from the list above
-   - Use "category_name" field with exact category name from list
-5. Extract optional: location, notes/description
+1. LANGUAGE PRESERVATION:
+   - CRITICAL: Keep title, notes, location in the SAME LANGUAGE as the transcription
+   - DO NOT translate to English or any other language
+   - Examples:
+     * If transcription is "kupiłem mleko" → title: "Mleko" (NOT "Milk")
+     * If transcription is "lunch in Rome" → title: "Lunch in Rome" (NOT "Pranzo a Roma")
 
-EXAMPLE OUTPUT (JSON only, no markdown):
+2. MULTIPLE ITEMS DETECTION:
+   - If SEPARATE PRICES are mentioned for different items → create SEPARATE expense entries
+   - Examples of SEPARATE items (create multiple expenses):
+     * "kupiłem mleko za 5 zł i chleb za 3 zł" → 2 expenses
+     * "bought coffee for $3 and sandwich for $5" → 2 expenses
+   - Examples of SINGLE item (create one expense):
+     * "kupiłem mleko i chleb za 8 zł" → 1 expense (combined)
+     * "bought groceries for $20" → 1 expense
+
+3. EXTRACT FOR EACH EXPENSE:
+   - title: Brief, descriptive (in original language)
+   - amount: Number only (e.g., 45.50, not "45 dollars")
+   - currency_code: ISO 3-letter code (USD, EUR, PLN, GBP, etc.)
+     * If not mentioned, use trip currency: {trip_currency}
+     * Common: USD ($), EUR (€), GBP (£), PLN (zł), CZK (Kč)
+   - category_name: Match to most appropriate category from list above
+   - location: Optional (in original language)
+   - notes: Optional additional info (in original language)
+
+EXAMPLE OUTPUT FORMATS (JSON only, no markdown):
+
+Single expense:
 {{
-  "title": "Lunch at restaurant",
-  "amount": 45.50,
-  "currency_code": "USD",
-  "category_name": "Food & Dining",
-  "location": "Downtown Rome",
-  "notes": "Nice Italian place, pasta carbonara"
+  "expenses": [
+    {{
+      "title": "Lunch at restaurant",
+      "amount": 45.50,
+      "currency_code": "USD",
+      "category_name": "Food & Dining",
+      "location": "Downtown Rome",
+      "notes": "Nice Italian place"
+    }}
+  ]
 }}
 
-CRITICAL:
-- Return ONLY valid JSON, no markdown code blocks, no explanations
+Multiple expenses (separate prices mentioned):
+{{
+  "expenses": [
+    {{
+      "title": "Mleko",
+      "amount": 5.0,
+      "currency_code": "PLN",
+      "category_name": "Shopping",
+      "location": "Biedronka",
+      "notes": null
+    }},
+    {{
+      "title": "Chleb",
+      "amount": 3.0,
+      "currency_code": "PLN",
+      "category_name": "Shopping",
+      "location": "Biedronka",
+      "notes": null
+    }}
+  ]
+}}
+
+CRITICAL RULES:
+- Return ONLY valid JSON with "expenses" array, no markdown code blocks, no explanations
+- PRESERVE original language in title, notes, location fields
+- Create separate expense entries ONLY when separate prices are explicitly mentioned
 - Use exact category names from the list above
 - Amount must be a number, not a string
-- Currency code must be 3 letters (ISO 4217)
+- Currency code must be 3 uppercase letters (ISO 4217)
 
 OUTPUT (JSON only):"""
 

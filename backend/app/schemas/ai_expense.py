@@ -28,7 +28,7 @@ class VoiceExpenseRequest(BaseModel):
 
 
 class ParsedExpenseData(BaseModel):
-    """Schema for AI-parsed expense data"""
+    """Schema for AI-parsed expense data (single item)"""
     title: str = Field(..., min_length=1, max_length=255)
     amount: float = Field(..., gt=0)
     currency_code: str = Field(..., min_length=3, max_length=3)
@@ -46,6 +46,35 @@ class ParsedExpenseData(BaseModel):
                 "category_name": "Food & Dining",
                 "notes": "Nice pasta carbonara",
                 "location": "Downtown Rome"
+            }
+        }
+
+
+class ParsedExpensesData(BaseModel):
+    """Schema for AI-parsed expense data (supports multiple items)"""
+    expenses: list[ParsedExpenseData] = Field(..., min_items=1, description="List of parsed expenses (1 or more)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "expenses": [
+                    {
+                        "title": "Mleko",
+                        "amount": 5.0,
+                        "currency_code": "PLN",
+                        "category_name": "Shopping",
+                        "notes": None,
+                        "location": "Biedronka"
+                    },
+                    {
+                        "title": "Chleb",
+                        "amount": 3.0,
+                        "currency_code": "PLN",
+                        "category_name": "Shopping",
+                        "notes": None,
+                        "location": "Biedronka"
+                    }
+                ]
             }
         }
 
