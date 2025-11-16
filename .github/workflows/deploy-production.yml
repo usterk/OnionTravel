@@ -17,6 +17,11 @@ concurrency:
   group: production-deployment
   cancel-in-progress: true
 
+permissions:
+  contents: write       # For creating tags and releases
+  pull-requests: write  # For test workflow PR comments
+  issues: write         # For test workflow PR comments
+
 env:
   PRODUCTION_SSH_HOST: jola209.mikrus.xyz
   PRODUCTION_SSH_PORT: 10209
