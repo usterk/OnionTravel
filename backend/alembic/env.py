@@ -24,8 +24,13 @@ sys.path.append(str(Path(__file__).parents[1]))
 
 from app.database import Base
 from app.models import User, Trip, TripUser, Category, Expense, Attachment, ExchangeRate
+import os
 
 target_metadata = Base.metadata
+
+# Override sqlalchemy.url from environment variable if present
+def get_url():
+    return os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -45,7 +50,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -64,8 +69,11 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    configuration = config.get_section(config.config_ini_section, {})
+    configuration["sqlalchemy.url"] = get_url()
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
