@@ -570,14 +570,16 @@ describe('DailyBudgetView', () => {
     });
 
     it('should disable Previous button at trip start', async () => {
-      const mockStats = createMockStatistics({ date: mockTripStartDateStr });
+      // Use today as trip start to match hook's initialization
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({ date: today });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDateStr}
+          tripStartDate={today}
           tripEndDate={mockTripEndDateStr}
         />
       );
@@ -589,7 +591,9 @@ describe('DailyBudgetView', () => {
     });
 
     it('should disable Next button at trip end', async () => {
-      const mockStats = createMockStatistics({ date: mockTripEndDateStr });
+      // Use today as trip end to match hook's initialization
+      const today = new Date().toISOString().split('T')[0];
+      const mockStats = createMockStatistics({ date: today });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
@@ -597,7 +601,7 @@ describe('DailyBudgetView', () => {
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
           tripStartDate={mockTripStartDateStr}
-          tripEndDate={mockTripEndDateStr}
+          tripEndDate={today}
         />
       );
 
@@ -1064,16 +1068,21 @@ describe('DailyBudgetView', () => {
 
   describe('Date Navigation Functions', () => {
     it('should not navigate beyond trip start date', async () => {
-      const mockStats = createMockStatistics({ date: '2025-01-10' });
+      // Use today's date as trip start to ensure hook initializes correctly
+      const today = new Date().toISOString().split('T')[0];
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 10);
+      const endDateStr = endDate.toISOString().split('T')[0];
 
+      const mockStats = createMockStatistics({ date: today });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate="2025-01-10"
-          tripEndDate="2025-01-20"
+          tripStartDate={today}
+          tripEndDate={endDateStr}
         />
       );
 
@@ -1084,16 +1093,21 @@ describe('DailyBudgetView', () => {
     });
 
     it('should not navigate beyond trip end date', async () => {
-      const mockStats = createMockStatistics({ date: '2025-01-20' });
+      // Use dates where today is the end date
+      const today = new Date().toISOString().split('T')[0];
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 10);
+      const startDateStr = startDate.toISOString().split('T')[0];
 
+      const mockStats = createMockStatistics({ date: today });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate="2025-01-10"
-          tripEndDate="2025-01-20"
+          tripStartDate={startDateStr}
+          tripEndDate={today}
         />
       );
 
