@@ -6,19 +6,104 @@ import type { CategoryWithStats } from '@/types/models';
 // Mock Recharts components
 vi.mock('recharts', () => ({
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-  Pie: ({ data }: any) => (
-    <div data-testid="pie">
-      {data?.map((item: any, i: number) => (
-        <div key={i} data-testid={`pie-cell-${i}`}>
-          {item.name}: {item.value}%
-        </div>
-      ))}
-    </div>
-  ),
+  Pie: ({ data, label }: any) => {
+    // Call the label function to test renderCustomLabel
+    const labelProps = {
+      cx: 100,
+      cy: 100,
+      midAngle: 45,
+      innerRadius: 50,
+      outerRadius: 80,
+      percent: 0.25, // 25%
+    };
+
+    return (
+      <div data-testid="pie">
+        {data?.map((item: any, i: number) => (
+          <div key={i} data-testid={`pie-cell-${i}`}>
+            {item.name}: {item.value}%
+          </div>
+        ))}
+        {/* Call label function if provided */}
+        {label && (
+          <div data-testid="custom-label">
+            {label(labelProps)}
+          </div>
+        )}
+        {/* Test with small percentage */}
+        {label && (
+          <div data-testid="custom-label-small">
+            {label({ ...labelProps, percent: 0.03 })}
+          </div>
+        )}
+      </div>
+    );
+  },
   Cell: () => null,
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  Legend: () => <div data-testid="legend">Legend</div>,
-  Tooltip: () => <div data-testid="tooltip">Tooltip</div>,
+  Legend: ({ formatter }: any) => {
+    // Call the formatter function to test Legend formatter
+    const testEntry = {
+      payload: {
+        value: 35,
+        isUnbudgeted: false,
+      },
+    };
+    const testEntryUnbudgeted = {
+      payload: {
+        value: 20,
+        isUnbudgeted: true,
+      },
+    };
+
+    return (
+      <div data-testid="legend">
+        <div data-testid="legend-formatted">
+          {formatter ? formatter('Food', testEntry) : 'Legend'}
+        </div>
+        <div data-testid="legend-formatted-unbudgeted">
+          {formatter ? formatter('Shopping', testEntryUnbudgeted) : 'Legend'}
+        </div>
+      </div>
+    );
+  },
+  Tooltip: ({ content }: any) => {
+    // Call the CustomTooltip component
+    if (content) {
+      const testPayload = {
+        payload: {
+          name: 'Food',
+          value: 35,
+          spent: 200,
+          allocated: 350,
+          isUnbudgeted: false,
+        },
+      };
+      const testPayloadUnbudgeted = {
+        payload: {
+          name: 'Shopping',
+          value: 20,
+          spent: 100,
+          isUnbudgeted: true,
+        },
+      };
+
+      return (
+        <div data-testid="tooltip">
+          <div data-testid="tooltip-active">
+            {content.type({ active: true, payload: [testPayload] })}
+          </div>
+          <div data-testid="tooltip-active-unbudgeted">
+            {content.type({ active: true, payload: [testPayloadUnbudgeted] })}
+          </div>
+          <div data-testid="tooltip-inactive">
+            {content.type({ active: false, payload: [] })}
+          </div>
+        </div>
+      );
+    }
+    return <div data-testid="tooltip">Tooltip</div>;
+  },
 }));
 
 describe('CategoryPieChart', () => {
@@ -327,6 +412,259 @@ describe('CategoryPieChart', () => {
       // Should have 3 cells for 3 categories in first pie
       const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
       expect(cells).toHaveLength(3);
+    });
+  });
+
+  describe('Unbudgeted Categories', () => {
+    it('should show unbudgeted category with spending', () => {
+      const unbudgetedCategories: CategoryWithStats[] = [
+        {
+          ...mockCategories[0],
+          budget_percentage: 50,
+          total_spent: 500,
+        },
+        {
+          ...mockCategories[1],
+          budget_percentage: 0, // No budget
+          total_spent: 100, // But has spending
+        },
+      ];
+
+      render(<CategoryPieChart categories={unbudgetedCategories} tripCurrency="USD" />);
+
+      // Should show both categories
+      const pieElements = screen.getAllByTestId('pie');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
+      expect(cells.length).toBeGreaterThan(0);
+    });
+
+    it('should calculate proportional value for unbudgeted category with spending', () => {
+      const unbudgetedCategories: CategoryWithStats[] = [
+        {
+          ...mockCategories[0],
+          budget_percentage: 0,
+          allocated_budget: 0,
+          total_spent: 100, // 50% of total spending
+        },
+        {
+          ...mockCategories[1],
+          budget_percentage: 0,
+          allocated_budget: 0,
+          total_spent: 100, // 50% of total spending
+        },
+      ];
+
+      render(<CategoryPieChart categories={unbudgetedCategories} tripCurrency="USD" />);
+
+      // Both categories should appear with proportional values
+      const pieElements = screen.getAllByTestId('pie');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
+      expect(cells).toHaveLength(2);
+    });
+
+    it('should show unbudgeted indicator in summary', () => {
+      const unbudgetedCategories: CategoryWithStats[] = [
+        {
+          ...mockCategories[0],
+          budget_percentage: 0,
+          total_spent: 100,
+        },
+      ];
+
+      render(<CategoryPieChart categories={unbudgetedCategories} tripCurrency="USD" />);
+
+      // Should show unbudgeted message
+      expect(screen.getByText(/Category has spending but no budget allocated/i)).toBeInTheDocument();
+    });
+
+    it('should not show unbudgeted indicator when all categories have budget', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Should not show unbudgeted message
+      expect(screen.queryByText(/Category has spending but no budget allocated/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Tooltip and Label Rendering', () => {
+    it('should render custom tooltip with budgeted category data', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Tooltip should render with budgeted category info
+      const tooltipActive = screen.getAllByTestId('tooltip-active');
+      expect(tooltipActive.length).toBeGreaterThan(0);
+
+      // Should contain category name
+      expect(tooltipActive[0]).toHaveTextContent('Food');
+      // Should contain budget percentage
+      expect(tooltipActive[0]).toHaveTextContent('Budget:');
+      expect(tooltipActive[0]).toHaveTextContent('35%');
+      // Should contain allocated amount
+      expect(tooltipActive[0]).toHaveTextContent('Allocated:');
+      expect(tooltipActive[0]).toHaveTextContent('USD');
+      expect(tooltipActive[0]).toHaveTextContent('350');
+      // Should contain spent amount
+      expect(tooltipActive[0]).toHaveTextContent('Spent:');
+      expect(tooltipActive[0]).toHaveTextContent('200');
+    });
+
+    it('should render custom tooltip with unbudgeted category data', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Tooltip should render with unbudgeted category info
+      const tooltipUnbudgeted = screen.getAllByTestId('tooltip-active-unbudgeted');
+      expect(tooltipUnbudgeted.length).toBeGreaterThan(0);
+
+      // Should contain category name
+      expect(tooltipUnbudgeted[0]).toHaveTextContent('Shopping');
+      // Should contain "No budget allocated" message
+      expect(tooltipUnbudgeted[0]).toHaveTextContent('No budget allocated');
+      // Should contain spent amount
+      expect(tooltipUnbudgeted[0]).toHaveTextContent('Spent:');
+      expect(tooltipUnbudgeted[0]).toHaveTextContent('USD');
+      expect(tooltipUnbudgeted[0]).toHaveTextContent('100');
+    });
+
+    it('should return null when tooltip is inactive', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Inactive tooltip should be empty
+      const tooltipInactive = screen.getAllByTestId('tooltip-inactive');
+      expect(tooltipInactive.length).toBeGreaterThan(0);
+      // Should not contain any content when inactive
+      expect(tooltipInactive[0]).toBeEmptyDOMElement();
+    });
+
+    it('should render custom label for percentages >= 5%', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Custom label should render for normal percentages (25%)
+      const customLabels = screen.getAllByTestId('custom-label');
+      expect(customLabels.length).toBeGreaterThan(0);
+
+      // Should contain percentage text (25% from labelProps)
+      expect(customLabels[0]).toHaveTextContent('25%');
+    });
+
+    it('should not render custom label for percentages < 5%', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Custom label should NOT render for small percentages (3%)
+      const customLabelsSmall = screen.getAllByTestId('custom-label-small');
+      expect(customLabelsSmall.length).toBeGreaterThan(0);
+
+      // Should be empty (return null for < 5%)
+      expect(customLabelsSmall[0]).toBeEmptyDOMElement();
+    });
+
+    it('should format legend with category name and percentage', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Legend should format entries correctly
+      const legendFormatted = screen.getAllByTestId('legend-formatted');
+      expect(legendFormatted.length).toBeGreaterThan(0);
+
+      // Should contain category name and percentage
+      expect(legendFormatted[0]).toHaveTextContent('Food');
+      expect(legendFormatted[0]).toHaveTextContent('35%');
+      // Should NOT contain unbudgeted indicator (*)
+      expect(legendFormatted[0]).not.toHaveTextContent('*');
+    });
+
+    it('should format legend with unbudgeted indicator', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Legend should format unbudgeted entries with indicator
+      const legendUnbudgeted = screen.getAllByTestId('legend-formatted-unbudgeted');
+      expect(legendUnbudgeted.length).toBeGreaterThan(0);
+
+      // Should contain category name and percentage
+      expect(legendUnbudgeted[0]).toHaveTextContent('Shopping');
+      expect(legendUnbudgeted[0]).toHaveTextContent('20%');
+      // Should contain unbudgeted indicator (*)
+      expect(legendUnbudgeted[0]).toHaveTextContent('*');
+    });
+  });
+
+  describe('Responsive Layout', () => {
+    it('should render both mobile and desktop charts', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Should have 2 pie charts (one for mobile, one for desktop)
+      expect(screen.getAllByTestId('pie-chart')).toHaveLength(2);
+    });
+
+    it('should render mobile chart with correct styling', () => {
+      const { container } = render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Mobile chart container should exist
+      const mobileChart = container.querySelector('.md\\:hidden');
+      expect(mobileChart).toBeInTheDocument();
+    });
+
+    it('should render desktop chart with correct styling', () => {
+      const { container } = render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      // Desktop chart container should exist
+      const desktopChart = container.querySelector('.hidden.md\\:block');
+      expect(desktopChart).toBeInTheDocument();
+    });
+  });
+
+  describe('Data Transformation', () => {
+    it('should filter and sort chart data correctly', () => {
+      render(<CategoryPieChart categories={mockCategories} tripCurrency="USD" />);
+
+      const pieElements = screen.getAllByTestId('pie');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
+
+      // Should be sorted by budget percentage descending
+      expect(cells[0].textContent).toContain('Accommodation: 40%');
+      expect(cells[1].textContent).toContain('Food: 35%');
+      expect(cells[2].textContent).toContain('Transport: 25%');
+    });
+
+    it('should include category with spending but no budget', () => {
+      const mixedCategories: CategoryWithStats[] = [
+        {
+          ...mockCategories[0],
+          budget_percentage: 50,
+          total_spent: 250,
+        },
+        {
+          ...mockCategories[1],
+          budget_percentage: 0,
+          total_spent: 100, // Has spending
+        },
+      ];
+
+      render(<CategoryPieChart categories={mixedCategories} tripCurrency="USD" />);
+
+      // Both should be in chart
+      const pieElements = screen.getAllByTestId('pie');
+      const cells = pieElements[0].querySelectorAll('[data-testid^="pie-cell-"]');
+      expect(cells).toHaveLength(2);
+    });
+
+    it('should calculate total percentage correctly', () => {
+      const partialCategories: CategoryWithStats[] = [
+        {
+          ...mockCategories[0],
+          budget_percentage: 30,
+          total_spent: 0,
+        },
+        {
+          ...mockCategories[1],
+          budget_percentage: 20,
+          total_spent: 0,
+        },
+      ];
+
+      render(<CategoryPieChart categories={partialCategories} tripCurrency="USD" />);
+
+      // Should show 50% allocated with 50% unallocated
+      expect(screen.getByText((content, element) => {
+        return element?.textContent === '50% of budget allocated across 2 categories';
+      })).toBeInTheDocument();
     });
   });
 });

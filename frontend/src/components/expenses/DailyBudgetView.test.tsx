@@ -1061,4 +1061,244 @@ describe('DailyBudgetView', () => {
       });
     });
   });
+
+  describe('Date Navigation Functions', () => {
+    it('should not navigate beyond trip start date', async () => {
+      const mockStats = createMockStatistics({ date: '2025-01-10' });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate="2025-01-10"
+          tripEndDate="2025-01-20"
+        />
+      );
+
+      await waitFor(() => {
+        const prevButton = screen.getAllByRole('button', { name: /Previous/i })[0];
+        expect(prevButton).toBeDisabled();
+      });
+    });
+
+    it('should not navigate beyond trip end date', async () => {
+      const mockStats = createMockStatistics({ date: '2025-01-20' });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate="2025-01-10"
+          tripEndDate="2025-01-20"
+        />
+      );
+
+      await waitFor(() => {
+        const nextButton = screen.getAllByRole('button', { name: /Next/i })[0];
+        expect(nextButton).toBeDisabled();
+      });
+    });
+  });
+
+  describe('Category Breakdown Section', () => {
+    it('should collapse/expand category breakdown when clicked', async () => {
+      const user = userEvent.setup();
+      const mockStats = createMockStatistics({
+        by_category_today: [
+          {
+            category_id: 1,
+            category_name: 'Food',
+            category_color: '#FF5733',
+            category_icon: 'utensils',
+            category_daily_budget: 20,
+            total_spent: 10,
+            remaining_budget: 10,
+          },
+        ],
+      });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Remaining by Category')).toBeInTheDocument();
+      });
+
+      // Initially collapsed
+      expect(screen.queryByText('Food')).not.toBeInTheDocument();
+
+      // Click to expand
+      const header = screen.getByText('Remaining by Category').closest('.cursor-pointer');
+      if (header) {
+        await user.click(header);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Food')).toBeInTheDocument();
+      });
+
+      // Click to collapse
+      if (header) {
+        await user.click(header);
+      }
+
+      await waitFor(() => {
+        expect(screen.queryByText('Food')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show remaining budget per category', async () => {
+      const mockStats = createMockStatistics({
+        by_category_today: [
+          {
+            category_id: 1,
+            category_name: 'Food',
+            category_color: '#FF5733',
+            category_icon: 'utensils',
+            category_daily_budget: 30,
+            total_spent: 15,
+            remaining_budget: 15,
+          },
+          {
+            category_id: 2,
+            category_name: 'Transport',
+            category_color: '#3498DB',
+            category_icon: 'car',
+            category_daily_budget: 20,
+            total_spent: 25,
+            remaining_budget: -5, // Over budget
+          },
+        ],
+      });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenses).mockResolvedValue([]);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      // Expand category breakdown
+      await waitFor(() => {
+        expect(screen.getByText('Remaining by Category')).toBeInTheDocument();
+      });
+
+      const header = screen.getByText('Remaining by Category').closest('.cursor-pointer');
+      if (header) {
+        await userEvent.click(header);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Food')).toBeInTheDocument();
+        expect(screen.getByText('Transport')).toBeInTheDocument();
+      });
+
+      // Check remaining amounts (multiple elements with "15 USD" expected)
+      const amountElements = screen.getAllByText((content, element) => {
+        return element?.textContent?.includes('15') && element?.textContent?.includes('USD') || false;
+      });
+      expect(amountElements.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Budget Details Section', () => {
+    it('should display daily budget', async () => {
+      const mockStats = createMockStatistics({ daily_budget: 100 });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Daily Budget')).toBeInTheDocument();
+      });
+
+      expect(screen.getAllByText((content, element) => {
+        return element?.textContent?.includes('100') && element?.textContent?.includes('USD') || false;
+      })[0]).toBeInTheDocument();
+    });
+
+    it('should display adjusted daily budget when different from daily budget', async () => {
+      const mockStats = createMockStatistics({
+        daily_budget: 100,
+        adjusted_daily_budget: 120,
+        cumulative_savings_past: 20,
+      });
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Adjusted Daily Budget')).toBeInTheDocument();
+      });
+    });
+
+    it('should display average daily spending when available', async () => {
+      const mockStats = createMockStatistics();
+      const mockTripStats: ExpenseStatistics = {
+        total_budget: 1000,
+        daily_budget: 100,
+        total_spent: 300,
+        remaining_budget: 700,
+        percentage_used: 30,
+        total_expenses: 15,
+        average_daily_spending: 75,
+        days_into_trip: 4,
+        total_days: 10,
+      };
+
+      vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
+      vi.mocked(expensesApi.getExpenseStatistics).mockResolvedValue(mockTripStats);
+
+      render(
+        <DailyBudgetView
+          tripId={mockTripId}
+          currencyCode={mockCurrencyCode}
+          tripStartDate={mockTripStartDateStr}
+          tripEndDate={mockTripEndDateStr}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Avg. Daily')).toBeInTheDocument();
+      });
+
+      const avgElements = screen.getAllByText((content, element) => {
+        return element?.textContent?.includes('75') && element?.textContent?.includes('USD') || false;
+      });
+      expect(avgElements.length).toBeGreaterThan(0);
+    });
+  });
 });
