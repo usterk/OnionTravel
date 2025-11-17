@@ -1,22 +1,22 @@
-import { useEffect, useState, useRef } from 'react';
-import { useSwipeable } from 'react-swipeable';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDailyBudgetStatistics, getExpenses, getExpenseStatistics, deleteExpense } from '@/lib/expenses-api';
-import type { DailyBudgetStatistics, ExpenseStatistics } from '@/lib/expenses-api';
-import { getCategories } from '@/lib/categories-api';
-import type { Expense, Category } from '@/types/models';
-import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle, Tag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, CircleDollarSign, Edit, Trash2, Plus, ArrowLeftRight } from 'lucide-react';
-import { format } from 'date-fns';
-import { getIconComponent } from '@/components/ui/icon-picker';
+import { Calendar, AlertTriangle, Plus } from 'lucide-react';
 import { VoiceExpenseButton } from './VoiceExpenseButton';
-import { ExpenseForm } from './ExpenseForm';
 import { QuickExpenseEntry } from './QuickExpenseEntry';
+import { useDateNavigation } from './hooks/useDateNavigation';
+import { useDailyBudgetData } from './hooks/useDailyBudgetData';
+import { useExpenseOperations } from './hooks/useExpenseOperations';
+import { DailyBudgetHeader } from './components/DailyBudgetHeader';
+import { BudgetMetricsCard } from './components/BudgetMetricsCard';
+import { ExpensesList } from './components/ExpensesList';
+import { CategoryBreakdown } from './components/CategoryBreakdown';
+import { BudgetDetailsCard } from './components/BudgetDetailsCard';
+import { formatCurrency, formatDateString, getDateTitle } from './utils/formatters';
+import { getStatusBadge } from './utils/budgetCalculations';
 
 interface DailyBudgetViewProps {
   tripId: number;
@@ -26,222 +26,23 @@ interface DailyBudgetViewProps {
 }
 
 export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDate }: DailyBudgetViewProps) {
-  const [statistics, setStatistics] = useState<DailyBudgetStatistics | null>(null);
-  const [tripStatistics, setTripStatistics] = useState<ExpenseStatistics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-
-  // Category breakdown collapse state (default: collapsed)
-  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
-
-  // Expenses collapse state (default: expanded)
-  const [showExpenses, setShowExpenses] = useState(true);
-
-  // Expenses for the selected day
-  const [dayExpenses, setDayExpenses] = useState<Expense[]>([]);
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
-
-  // Expanded expense IDs
-  const [expandedExpenseId, setExpandedExpenseId] = useState<number | null>(null);
-
-  // Edit expense dialog
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  // Delete expense confirmation
-  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Categories for ExpenseForm
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  // Quick Add expense dialog
-  const [isQuickAddDialogOpen, setIsQuickAddDialogOpen] = useState(false);
-
-  // Visual hints state - only on mobile/touch devices
-  const [showHints, setShowHints] = useState(() => {
-    // Check if device has touch support
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Custom hooks
+  const dateNav = useDateNavigation({ tripStartDate, tripEndDate });
+  const budgetData = useDailyBudgetData({ tripId, selectedDate: dateNav.selectedDate });
+  const expenseOps = useExpenseOperations({
+    tripId,
+    onOperationSuccess: budgetData.refreshAll,
   });
-
-  // Swipe direction for animation
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   // Ref for scrolling to "Remaining Today" section
   const remainingTodayRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Set initial date based on trip range
-    const today = new Date().toISOString().split('T')[0];
-
-    if (today < tripStartDate) {
-      // Trip hasn't started yet - show first day
-      setSelectedDate(tripStartDate);
-    } else if (today > tripEndDate) {
-      // Trip has ended - show last day
-      setSelectedDate(tripEndDate);
-    } else {
-      // Trip is ongoing - show today
-      setSelectedDate(today);
-    }
-  }, [tripStartDate, tripEndDate]);
-
-  // Hide hints after 3 seconds or on first swipe
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowHints(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Load trip-level statistics once on mount
-  useEffect(() => {
-    loadTripStatistics();
-    loadCategories();
-  }, [tripId]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      loadStatistics();
-      loadDayExpenses();
-    }
-  }, [tripId, selectedDate]);
-
-  const loadTripStatistics = async () => {
-    try {
-      const stats = await getExpenseStatistics(tripId);
-      setTripStatistics(stats);
-    } catch (err: any) {
-      console.error('Failed to load trip statistics:', err);
-    }
-  };
-
-  const loadStatistics = async () => {
-    // Only show loading state if we don't have any statistics yet (initial load)
-    // For subsequent loads (day changes), use isRefreshing to show smooth transition
-    if (!statistics) {
-      setIsLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
-    setError(null);
-
-    try {
-      const stats = await getDailyBudgetStatistics(tripId, selectedDate);
-      setStatistics(stats);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load daily statistics');
-      console.error('Failed to load daily statistics:', err);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  const loadDayExpenses = async () => {
-    setIsLoadingExpenses(true);
-    try {
-      const expenses = await getExpenses(tripId, {
-        start_date: selectedDate,
-        end_date: selectedDate,
-      });
-      setDayExpenses(expenses);
-    } catch (err: any) {
-      console.error('Failed to load day expenses:', err);
-      setDayExpenses([]);
-    } finally {
-      setIsLoadingExpenses(false);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const cats = await getCategories(tripId);
-      setCategories(cats);
-    } catch (err: any) {
-      console.error('Failed to load categories:', err);
-    }
-  };
-
-  const handleEditExpense = (expense: Expense) => {
-    setEditingExpense(expense);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEditSuccess = () => {
-    setIsEditDialogOpen(false);
-    setEditingExpense(null);
-    // Reload data
-    loadStatistics();
-    loadDayExpenses();
-    loadTripStatistics();
-  };
-
-  const handleEditCancel = () => {
-    setIsEditDialogOpen(false);
-    setEditingExpense(null);
-  };
-
-  const handleDeleteExpense = (expense: Expense) => {
-    setDeletingExpense(expense);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deletingExpense) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteExpense(tripId, deletingExpense.id);
-      // Close dialog and reload data
-      setIsDeleteDialogOpen(false);
-      setDeletingExpense(null);
-      loadStatistics();
-      loadDayExpenses();
-      loadTripStatistics();
-      // Close the expanded view if this expense was expanded
-      if (expandedExpenseId === deletingExpense.id) {
-        setExpandedExpenseId(null);
-      }
-    } catch (err: any) {
-      console.error('Failed to delete expense:', err);
-      alert('Failed to delete expense. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setIsDeleteDialogOpen(false);
-    setDeletingExpense(null);
-  };
-
-  const handleQuickAddSuccess = () => {
-    setIsQuickAddDialogOpen(false);
-    // Reload data
-    loadStatistics();
-    loadDayExpenses();
-    loadTripStatistics();
-  };
-
-  const handleQuickAddCancel = () => {
-    setIsQuickAddDialogOpen(false);
-  };
 
   /**
    * Refresh all data and scroll to "Remaining Today" section
    * Called after creating expense via voice input
    */
   const handleExpenseAdded = async () => {
-    // Reload statistics and expenses
-    await Promise.all([
-      loadStatistics(),
-      loadDayExpenses()
-    ]);
+    await budgetData.refreshAll();
 
     // Scroll to "Remaining Today" section with offset for header
     if (remainingTodayRef.current) {
@@ -251,157 +52,16 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   };
 
-  const formatCurrency = (amount: number | string | undefined | null) => {
-    const value = Number(amount ?? 0);
-    return `${formatNumber(value)} ${currencyCode}`;
-  };
+  // Helper to format currency with trip currency code
+  const formatCurrencyWithCode = (amount: number) => formatCurrency(amount, currencyCode);
 
-  const getProgressColor = (percentage: number, isOverBudget: boolean) => {
-    if (isOverBudget) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getStatusBadge = () => {
-    if (!statistics) return null;
-
-    const today = new Date().toISOString().split('T')[0];
-    const isPastDay = statistics.date < today;
-    const isFutureDay = statistics.date > today;
-
-    // Future days
-    if (isFutureDay) {
-      // No expenses yet - show placeholder
-      if (statistics.expense_count_today === 0) {
-        return {
-          label: 'Not Started',
-          style: { backgroundColor: '#9ca3af', color: 'white' } // gray-400
-        };
-      }
-      // Has expenses - show normal budget status
-    }
-
-    // Budget status (for today and past days with expenses, future days with expenses)
-    if (statistics.is_over_budget) {
-      return {
-        label: 'Over Budget',
-        style: { backgroundColor: '#dc2626', color: 'white' } // red-600
-      };
-    } else if (statistics.percentage_used_today >= 80) {
-      return {
-        label: 'Warning',
-        style: { backgroundColor: '#f59e0b', color: 'white' } // amber-500
-      };
-    } else {
-      // Past days that stayed within budget - show "Completed"
-      // Today and future days - show "On Track"
-      return {
-        label: isPastDay ? 'Completed' : 'On Track',
-        style: { backgroundColor: '#16a34a', color: 'white' } // green-600
-      };
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'EEEE, MMM d, yyyy');
-    } catch {
-      return dateString;
-    }
-  };
-
-  const changeDay = (days: number) => {
-    const currentDate = new Date(selectedDate);
-    currentDate.setDate(currentDate.getDate() + days);
-    const newDate = currentDate.toISOString().split('T')[0];
-
-    // Check if new date is within trip range
-    if (newDate >= tripStartDate && newDate <= tripEndDate) {
-      // Set animation direction
-      setSwipeDirection(days > 0 ? 'left' : 'right');
-
-      // Hide hints on first swipe
-      setShowHints(false);
-
-      // Haptic feedback (if supported)
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
-
-      setSelectedDate(newDate);
-
-      // Reset direction after animation
-      setTimeout(() => setSwipeDirection(null), 300);
-    }
-  };
-
-  const goToToday = () => {
-    const today = new Date().toISOString().split('T')[0];
-
-    // Only go to today if it's within trip range
-    if (today >= tripStartDate && today <= tripEndDate) {
-      setSelectedDate(today);
-    } else if (today < tripStartDate) {
-      // If today is before trip, go to trip start
-      setSelectedDate(tripStartDate);
-    } else {
-      // If today is after trip, go to trip end
-      setSelectedDate(tripEndDate);
-    }
-  };
-
-  const goToStart = () => {
-    setSelectedDate(tripStartDate);
-  };
-
-  const goToEnd = () => {
-    setSelectedDate(tripEndDate);
-  };
-
-  // Swipe handlers using react-swipeable
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (!isRefreshing && !isAtTripEnd) {
-        changeDay(1); // Next day
-      }
-    },
-    onSwipedRight: () => {
-      if (!isRefreshing && !isAtTripStart) {
-        changeDay(-1); // Previous day
-      }
-    },
-    preventScrollOnSwipe: false, // Allow vertical scrolling
-    trackMouse: false, // Only track touch, not mouse
-    delta: 50, // Minimum distance to trigger swipe
-  });
-
-  const isAtTripStart = (statistics?.date || selectedDate) === tripStartDate;
-  const isAtTripEnd = (statistics?.date || selectedDate) === tripEndDate;
-
-  // Check if today is within trip range
-  const today = new Date().toISOString().split('T')[0];
-  const isTodayInTripRange = today >= tripStartDate && today <= tripEndDate;
-
-  const getDateTitle = () => {
-    if (!statistics) return 'Loading...';
-    const today = new Date().toISOString().split('T')[0];
-    if (statistics.date === today) {
-      return 'Today';
-    }
-    // Show only day of week (e.g., "Monday", "Friday")
-    try {
-      return format(new Date(statistics.date), 'EEEE');
-    } catch {
-      return statistics.date;
-    }
-  };
-
-  if (isLoading) {
+  // Loading state
+  if (budgetData.isLoading) {
     return (
       <Card>
         <CardContent className="py-6">
@@ -411,19 +71,23 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     );
   }
 
-  if (error) {
+  // Error state
+  if (budgetData.error) {
     return (
       <Card>
         <CardContent className="py-6">
-          <p className="text-center text-red-600">{error}</p>
+          <p className="text-center text-red-600">{budgetData.error}</p>
         </CardContent>
       </Card>
     );
   }
 
-  if (!statistics) {
+  // No statistics
+  if (!budgetData.statistics) {
     return null;
   }
+
+  const { statistics, tripStatistics, dayExpenses, categories } = budgetData;
 
   // If no daily budget is set
   if (!statistics.daily_budget) {
@@ -439,14 +103,15 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
               Day {statistics.days_into_trip} of {statistics.total_days}
             </Badge>
           </div>
-          <CardDescription>{formatDate(statistics.date)}</CardDescription>
+          <CardDescription>{formatDateString(statistics.date)}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
             <p className="text-gray-600 mb-2">No daily budget set for this trip</p>
             <p className="text-sm text-gray-500">
-              Spent today: {formatCurrency(statistics.total_spent_today)} ({statistics.expense_count_today} expenses)
+              Spent today: {formatCurrencyWithCode(statistics.total_spent_today)} ({statistics.expense_count_today}{' '}
+              expenses)
             </p>
           </div>
         </CardContent>
@@ -454,634 +119,192 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     );
   }
 
-  const status = getStatusBadge();
+  const statusBadge = getStatusBadge(
+    statistics.date,
+    statistics.is_over_budget,
+    statistics.percentage_used_today,
+    statistics.expense_count_today
+  );
+
+  const dateTitle = getDateTitle(statistics.date);
 
   return (
     <>
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={selectedDate}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="space-y-4 touch-pan-y"
-        style={{ touchAction: 'pan-y' }}
-        {...swipeHandlers}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={dateNav.selectedDate}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="space-y-4 touch-pan-y"
+          style={{ touchAction: 'pan-y' }}
+          {...dateNav.swipeHandlers}
+        >
+          {/* Header with Date Navigation */}
+          <DailyBudgetHeader
+            selectedDate={dateNav.selectedDate}
+            tripStartDate={tripStartDate}
+            tripEndDate={tripEndDate}
+            daysIntoTrip={statistics.days_into_trip}
+            totalDays={statistics.total_days}
+            statusBadge={statusBadge}
+            isAtTripStart={dateNav.isAtTripStart}
+            isAtTripEnd={dateNav.isAtTripEnd}
+            isTodayInTripRange={dateNav.isTodayInTripRange}
+            isRefreshing={budgetData.isRefreshing}
+            showHints={dateNav.showHints}
+            onPreviousDay={() => dateNav.changeDay(-1)}
+            onNextDay={() => dateNav.changeDay(1)}
+            onDateChange={(date) => dateNav.setSelectedDate(date.toISOString().split('T')[0])}
+            onTodayClick={dateNav.goToToday}
+            onStartClick={dateNav.goToStart}
+            onEndClick={dateNav.goToEnd}
+          />
+
+          {/* Main Metrics */}
+          <BudgetMetricsCard
+            ref={remainingTodayRef}
+            remainingToday={statistics.remaining_today}
+            cumulativeSavingsPast={statistics.cumulative_savings_past}
+            totalSpentToday={statistics.total_spent_today}
+            percentageUsedToday={statistics.percentage_used_today}
+            expenseCountToday={statistics.expense_count_today}
+            isOverBudget={statistics.is_over_budget}
+            selectedDate={dateNav.selectedDate}
+            currencyCode={currencyCode}
+            formatCurrency={formatCurrencyWithCode}
+          />
+
+          {/* Expenses for the Day */}
+          <ExpensesList
+            dateTitle={dateTitle}
+            dateString={statistics.date}
+            expenses={dayExpenses}
+            statistics={statistics}
+            isLoading={budgetData.isLoadingExpenses}
+            expandedExpenseId={expenseOps.expandedExpenseId}
+            currencyCode={currencyCode}
+            formatCurrency={formatCurrencyWithCode}
+            onToggleExpand={expenseOps.setExpandedExpenseId}
+            onEditExpense={expenseOps.handleEditExpense}
+            onDeleteExpense={expenseOps.handleDeleteExpense}
+          />
+
+          {/* Category Breakdown */}
+          {statistics.by_category_today && statistics.by_category_today.length > 0 && (
+            <CategoryBreakdown
+              categories={statistics.by_category_today}
+              formatCurrency={formatCurrencyWithCode}
+            />
+          )}
+
+          {/* Budget Details */}
+          <BudgetDetailsCard
+            statistics={statistics}
+            tripStatistics={tripStatistics}
+            selectedDate={dateNav.selectedDate}
+            formatCurrency={formatCurrencyWithCode}
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Quick Add Button (Floating Action Button) */}
+      <button
+        onClick={expenseOps.handleQuickAddOpen}
+        className="fixed bottom-20 right-4 z-50 m-0 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-full p-4 shadow-lg transition-colors duration-200 focus:outline-none"
+        style={{ touchAction: 'manipulation', margin: 0 }}
+        aria-label="Quick add expense"
+        title="Dodaj wydatek"
       >
-        {/* Header with Date Navigation */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-3">
-              {/* Compact Navigation Panel with Swipe */}
-              <div
-                className="flex items-center justify-between gap-4 relative"
-              >
-                {/* Visual Hints - Animated Arrows */}
-                {showHints && !isAtTripStart && (
-                  <motion.div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: [0.3, 0.7, 0.3], x: [20, 10, 20] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  >
-                    <ChevronLeft className="h-6 w-6 text-blue-500" />
-                  </motion.div>
-                )}
-                {showHints && !isAtTripEnd && (
-                  <motion.div
-                    className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: [0.3, 0.7, 0.3], x: [-20, -10, -20] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  >
-                    <ChevronRight className="h-6 w-6 text-blue-500" />
-                  </motion.div>
-                )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => changeDay(-1)}
-                disabled={isAtTripStart || isRefreshing}
-                className="shrink-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden md:inline ml-1">Previous</span>
-              </Button>
+        <Plus className="h-6 w-6" />
+      </button>
 
-              <div className="flex flex-col items-center gap-1 flex-1">
-                {status && (
-                  <Badge style={status.style} className="mb-1">
-                    {status.label}
-                  </Badge>
-                )}
-                <CardTitle className="flex items-center text-lg md:text-2xl">
-                  {selectedDate !== new Date().toISOString().split('T')[0] ? (
-                    <div className="relative group mr-2">
-                      <Calendar
-                        className="h-5 w-5 text-blue-600 cursor-pointer hover:text-blue-700 transition-colors"
-                        onClick={goToToday}
-                      />
-                      <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        Jump to Today
-                      </div>
-                    </div>
-                  ) : (
-                    <Calendar className="h-5 w-5 mr-2" />
-                  )}
-                  {getDateTitle()}
-                </CardTitle>
-                <CardDescription className="text-xs md:text-sm">
-                  Day {statistics.days_into_trip} of {statistics.total_days}
-                </CardDescription>
-                <div className="mt-2">
-                  <DatePicker
-                    value={new Date(selectedDate)}
-                    onChange={(date) => setSelectedDate(date.toISOString().split('T')[0])}
-                    min={new Date(tripStartDate)}
-                    max={new Date(tripEndDate)}
-                    onStartClick={goToStart}
-                    onTodayClick={goToToday}
-                    onEndClick={goToEnd}
-                    todayDisabled={!isTodayInTripRange}
-                  />
-                </div>
-              </div>
+      {/* Voice Expense Button (Floating Action Button) */}
+      <VoiceExpenseButton tripId={tripId} currentDate={dateNav.selectedDate} onExpenseAdded={handleExpenseAdded} />
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => changeDay(1)}
-                disabled={isAtTripEnd || isRefreshing}
-                className="shrink-0"
-              >
-                <span className="hidden md:inline mr-1">Next</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Main Metrics - Single Row */}
-      <Card className="border-2 border-green-500" ref={remainingTodayRef}>
-        <CardContent className="py-6">
-          <div className="flex flex-col gap-4">
-            {/* YOU CAN STILL SPEND - Main focus */}
-            <div className="text-center pb-4 border-b border-gray-200">
-              <p className="text-sm md:text-base text-gray-600 mb-2">💰 Remaining Today</p>
-              {/* Mobile: column layout */}
-              <div className="flex flex-col md:hidden items-center gap-2">
-                <p className={`text-4xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
-                </p>
-                {statistics.cumulative_savings_past !== null &&
-                 statistics.cumulative_savings_past !== undefined &&
-                 selectedDate <= new Date().toISOString().split('T')[0] && (
-                  <p className={`text-xs font-medium ${
-                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} {statistics.cumulative_savings_past >= 0 ? 'saved' : 'overspent'}
-                  </p>
-                )}
-              </div>
-
-              {/* Desktop: centered layout with savings below */}
-              <div className="hidden md:flex flex-col items-center gap-2">
-                {/* Main amount - centered */}
-                <p className={`text-5xl font-bold ${statistics.remaining_today < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {statistics.remaining_today < 0 ? '-' : ''}{formatCurrency(Math.abs(statistics.remaining_today))}
-                </p>
-
-                {/* Savings text below main amount */}
-                {statistics.cumulative_savings_past !== null &&
-                 statistics.cumulative_savings_past !== undefined &&
-                 selectedDate <= new Date().toISOString().split('T')[0] && (
-                  <p className={`text-sm font-medium ${
-                    statistics.cumulative_savings_past >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {statistics.cumulative_savings_past >= 0 ? '+' : '-'}{formatCurrency(Math.abs(statistics.cumulative_savings_past))} {statistics.cumulative_savings_past >= 0 ? 'saved' : 'overspent'}
-                  </p>
-                )}
-              </div>
-
-            </div>
-
-            {/* Already Spent / Budget Used - Combined */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-6 h-6 rounded" style={{
-                    backgroundColor: statistics.is_over_budget ? '#ef444420' :
-                                   statistics.percentage_used_today >= 80 ? '#f59e0b20' : '#10b98120'
-                  }}>
-                    {statistics.is_over_budget ? (
-                      <TrendingDown className="h-3.5 w-3.5" style={{ color: '#ef4444' }} />
-                    ) : (
-                      <TrendingUp className="h-3.5 w-3.5" style={{ color: statistics.percentage_used_today >= 80 ? '#f59e0b' : '#10b981' }} />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">Already Spent</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-gray-900">
-                    {formatCurrency(statistics.total_spent_today)}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {formatNumber(statistics.percentage_used_today, 1)}% of budget
-                  </div>
-                </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full transition-all"
-                  style={{
-                    backgroundColor: statistics.is_over_budget ? '#ef4444' :
-                                   statistics.percentage_used_today >= 80 ? '#f59e0b' : '#10b981',
-                    width: `${Math.min(statistics.percentage_used_today, 100)}%`
-                  }}
-                />
-              </div>
-              <div className="mt-1 text-xs text-gray-500">
-                {statistics.expense_count_today} expense{statistics.expense_count_today !== 1 ? 's' : ''} • {formatNumber(100 - statistics.percentage_used_today, 1)}% available
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Expenses for the Day */}
-        <Card>
-          <CardHeader
-            className="cursor-pointer hover:bg-gray-50 transition-colors py-3 md:py-6"
-            onClick={() => setShowExpenses(!showExpenses)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center text-lg md:text-xl">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Expenses for {getDateTitle()}
-                </CardTitle>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-2 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowExpenses(!showExpenses);
-                }}
-              >
-                {showExpenses ? (
-                  <ChevronUp className="h-5 w-5" />
-                ) : (
-                  <ChevronDown className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          {showExpenses && (
-            <CardContent>
-            {isLoadingExpenses ? (
-              <div className="py-6 text-center text-gray-600">
-                Loading expenses...
-              </div>
-            ) : dayExpenses.length === 0 ? (
-              <div className="py-6 text-center text-gray-600">
-                No expenses recorded for {formatDate(statistics.date)}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {dayExpenses
-                  .sort((a, b) => {
-                    // Multi-day expenses (with end_date) go to the bottom
-                    const aIsMultiDay = !!a.end_date;
-                    const bIsMultiDay = !!b.end_date;
-                    if (aIsMultiDay && !bIsMultiDay) return 1;
-                    if (!aIsMultiDay && bIsMultiDay) return -1;
-                    return 0; // Keep original order for same type
-                  })
-                  .map((expense) => {
-                  // Find category info from statistics
-                  const categoryInfo = statistics.by_category_today?.find(
-                    (cat) => cat.category_id === expense.category_id
-                  );
-                  const CategoryIcon = categoryInfo ? getIconComponent(categoryInfo.category_icon) : null;
-
-                  const isExpanded = expandedExpenseId === expense.id;
-                  const isMultiDay = !!expense.end_date;
-
-                  return (
-                    <div
-                      key={expense.id}
-                      className="rounded-lg border border-gray-200 overflow-hidden"
-                    >
-                      {/* Main row - clickable */}
-                      <div
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 transition-colors min-h-[44px]"
-                      >
-                        {/* Category Icon */}
-                        {categoryInfo && (
-                          <div
-                            className="flex items-center justify-center w-6 h-6 rounded-md shrink-0 cursor-pointer"
-                            style={{ backgroundColor: categoryInfo.category_color + '20' }}
-                            onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
-                          >
-                            {CategoryIcon && (
-                              <CategoryIcon
-                                className="h-4 w-4"
-                                style={{ color: categoryInfo.category_color }}
-                              />
-                            )}
-                          </div>
-                        )}
-
-                        {/* Expense Title */}
-                        <div
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
-                        >
-                          <span className="font-medium text-sm text-gray-900 truncate block">{expense.title}</span>
-                        </div>
-
-                        {/* Amount */}
-                        <div
-                          className="text-right shrink-0 cursor-pointer flex items-center gap-1.5"
-                          onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
-                        >
-                          {isMultiDay && (
-                            <ArrowLeftRight className="h-3.5 w-3.5 text-gray-500" title="Multi-day expense - showing daily amount" />
-                          )}
-                          <div className="font-bold text-sm text-gray-900">
-                            {isMultiDay && expense.start_date && expense.end_date ? (
-                              (() => {
-                                const daysDiff = Math.ceil((new Date(expense.end_date).getTime() - new Date(expense.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                                const dailyAmount = expense.amount_in_trip_currency / daysDiff;
-                                return formatCurrency(dailyAmount);
-                              })()
-                            ) : (
-                              formatCurrency(expense.amount_in_trip_currency)
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Expanded details */}
-                      {isExpanded && (
-                        <div className="px-2 pb-2 pt-1 border-t border-gray-100 bg-gray-50">
-                          <div className="space-y-2 text-sm">
-                            {/* Category */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-500 w-20">Category:</span>
-                              <span className="text-gray-900">{categoryInfo?.category_name || 'Unknown'}</span>
-                            </div>
-
-                            {/* Payment method */}
-                            {expense.payment_method && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500 w-20">Payment:</span>
-                                <span className="text-gray-900">{expense.payment_method}</span>
-                              </div>
-                            )}
-
-                            {/* Original currency */}
-                            {expense.currency_code !== currencyCode && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500 w-20">Original:</span>
-                                <span className="text-gray-900">
-                                  {formatNumber(expense.amount)} {expense.currency_code}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Notes */}
-                            {expense.notes && (
-                              <div className="flex gap-2">
-                                <span className="text-gray-500 w-20 shrink-0">Notes:</span>
-                                <span className="text-gray-900">{expense.notes}</span>
-                              </div>
-                            )}
-
-                            {/* Action buttons */}
-                            <div className="flex gap-2 pt-2 justify-end">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditExpense(expense);
-                                }}
-                                className="p-2 hover:bg-blue-50 rounded-md transition-colors text-gray-600 hover:text-blue-600"
-                                title="Edit expense"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteExpense(expense);
-                                }}
-                                className="p-2 hover:bg-red-50 rounded-md transition-colors text-gray-600 hover:text-red-600"
-                                title="Delete expense"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+      {/* Edit Expense Dialog */}
+      <Dialog open={expenseOps.isEditDialogOpen} onOpenChange={expenseOps.handleEditCancel}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader onClose={expenseOps.handleEditCancel}>
+            <DialogTitle>Edit Expense</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {expenseOps.editingExpense && (
+              <QuickExpenseEntry
+                tripId={tripId}
+                tripCurrency={currencyCode}
+                tripStartDate={tripStartDate}
+                tripEndDate={tripEndDate}
+                categories={categories}
+                expense={expenseOps.editingExpense}
+                onExpenseCreated={expenseOps.handleEditSuccess}
+                onCancel={expenseOps.handleEditCancel}
+              />
             )}
-            </CardContent>
-          )}
-        </Card>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
 
-      {/* Category Breakdown - Remaining Budget */}
-      {statistics.by_category_today && statistics.by_category_today.length > 0 && (
-        <Card>
-          <CardHeader
-            className="cursor-pointer hover:bg-gray-50 transition-colors py-3 md:py-6"
-            onClick={() => setShowCategoryBreakdown(!showCategoryBreakdown)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center text-lg md:text-xl">
-                  <Tag className="h-5 w-5 mr-2" />
-                  Remaining by Category
-                </CardTitle>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-2 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCategoryBreakdown(!showCategoryBreakdown);
-                }}
-              >
-                {showCategoryBreakdown ? (
-                  <ChevronUp className="h-5 w-5" />
-                ) : (
-                  <ChevronDown className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          {showCategoryBreakdown && (
-            <CardContent>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={expenseOps.isDeleteDialogOpen} onOpenChange={expenseOps.handleDeleteCancel}>
+        <DialogContent className="max-w-md mx-auto">
+          <DialogHeader onClose={expenseOps.handleDeleteCancel}>
+            <DialogTitle>Delete Expense</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
             <div className="space-y-4">
-              {statistics.by_category_today
-                .filter(cat => cat.category_daily_budget > 0 || cat.total_spent > 0)  // Show categories with budget OR spending
-                // Categories are already sorted by display_order from backend - respect user's custom order
-                .map((category) => {
-                  // Progress bar shows how much was spent (visual intuition)
-                  const spentPercentage = category.category_daily_budget > 0
-                    ? (category.total_spent / category.category_daily_budget) * 100
-                    : 0;
-                  const CategoryIcon = getIconComponent(category.category_icon);
-                  const isOverBudget = category.remaining_budget < 0;
-
-                  return (
-                    <div key={category.category_id}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="flex items-center justify-center w-6 h-6 rounded"
-                            style={{ backgroundColor: category.category_color + '20' }}
-                          >
-                            {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5" style={{ color: category.category_color }} />}
-                          </div>
-                          <span className="text-sm font-medium">{category.category_name}</span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className={`text-sm font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
-                            {isOverBudget ? '-' : ''}{formatCurrency(Math.abs(category.remaining_budget))}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            of {formatCurrency(category.category_daily_budget)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="h-2 rounded-full transition-all"
-                          style={{
-                            backgroundColor: category.category_color,
-                            width: `${Math.min(Math.max(spentPercentage, 0), 100)}%`
-                          }}
-                        />
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        Spent: {formatCurrency(category.total_spent)}
-                      </div>
-                    </div>
-                  );
-              })}
-            </div>
-            </CardContent>
-          )}
-        </Card>
-      )}
-
-      {/* Budget Details - Compact */}
-      <Card className="bg-gray-50">
-        <CardContent className="py-3 md:py-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 divide-y md:divide-y-0 md:divide-x divide-gray-300">
-            {/* Daily Budget */}
-            <div className="flex items-center justify-between pb-3 md:pb-0 md:pr-4">
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">Daily Budget</p>
-                <p className="text-lg md:text-xl font-bold text-gray-900">{formatCurrency(statistics.daily_budget)}</p>
-              </div>
-              <Calendar className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
-            </div>
-
-            {/* Adjusted Daily Budget */}
-            {statistics.adjusted_daily_budget !== null &&
-             statistics.adjusted_daily_budget !== undefined &&
-             statistics.daily_budget &&
-             Math.abs(statistics.adjusted_daily_budget - statistics.daily_budget) > 0.01 &&
-             selectedDate <= new Date().toISOString().split('T')[0] && (
-              <div className="flex items-center justify-between py-3 md:py-0 md:px-4">
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 mb-1">Adjusted Daily Budget</p>
-                  <p className={`text-lg md:text-xl font-bold ${
-                    statistics.adjusted_daily_budget > statistics.daily_budget ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {formatCurrency(statistics.adjusted_daily_budget)}
+              <p className="text-gray-700">Are you sure you want to delete this expense?</p>
+              {expenseOps.deletingExpense && (
+                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                  <p className="font-medium text-gray-900">{expenseOps.deletingExpense.title}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {formatCurrencyWithCode(expenseOps.deletingExpense.amount_in_trip_currency)}
                   </p>
                 </div>
-                <CircleDollarSign className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
-              </div>
-            )}
+              )}
+              <p className="text-sm text-red-600">This action cannot be undone.</p>
+            </div>
+          </DialogBody>
+          <DialogFooter className="justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={expenseOps.handleDeleteCancel}
+              disabled={expenseOps.isDeleting}
+              className="min-w-[120px]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={expenseOps.handleDeleteConfirm}
+              disabled={expenseOps.isDeleting}
+              className="min-w-[120px] bg-red-600 hover:bg-red-700 text-white"
+            >
+              {expenseOps.isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Average Daily Spending */}
-            {tripStatistics && tripStatistics.average_daily_spending > 0 && (
-              <div className="flex items-center justify-between pt-3 md:pt-0 md:pl-4">
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 mb-1">Avg. Daily</p>
-                  <p className={`text-lg md:text-xl font-bold ${
-                    statistics.daily_budget && tripStatistics.average_daily_spending > statistics.daily_budget
-                      ? 'text-amber-600'
-                      : 'text-blue-600'
-                  }`}>
-                    {formatCurrency(tripStatistics.average_daily_spending)}
-                  </p>
-                </div>
-                <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-gray-400 shrink-0" />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      </motion.div>
-    </AnimatePresence>
-
-    {/* Quick Add Button (Floating Action Button) */}
-    <button
-      onClick={() => setIsQuickAddDialogOpen(true)}
-      className="fixed bottom-20 right-4 z-50 m-0 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-full p-4 shadow-lg transition-colors duration-200 focus:outline-none"
-      style={{ touchAction: 'manipulation', margin: 0 }}
-      aria-label="Quick add expense"
-      title="Dodaj wydatek"
-    >
-      <Plus className="h-6 w-6" />
-    </button>
-
-    {/* Voice Expense Button (Floating Action Button) */}
-    <VoiceExpenseButton
-      tripId={tripId}
-      currentDate={selectedDate}
-      onExpenseAdded={handleExpenseAdded}
-    />
-
-    {/* Edit Expense Dialog */}
-    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader onClose={handleEditCancel}>
-          <DialogTitle>Edit Expense</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          {editingExpense && (
+      {/* Quick Add Expense Dialog */}
+      <Dialog open={expenseOps.isQuickAddDialogOpen} onOpenChange={expenseOps.handleQuickAddCancel}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader onClose={expenseOps.handleQuickAddCancel}>
+            <DialogTitle>Quick Add Expense</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
             <QuickExpenseEntry
               tripId={tripId}
               tripCurrency={currencyCode}
               tripStartDate={tripStartDate}
               tripEndDate={tripEndDate}
               categories={categories}
-              expense={editingExpense}
-              onExpenseCreated={handleEditSuccess}
-              onCancel={handleEditCancel}
+              initialDate={dateNav.selectedDate}
+              onExpenseCreated={expenseOps.handleQuickAddSuccess}
             />
-          )}
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
-
-    {/* Delete Confirmation Dialog */}
-    <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-      <DialogContent className="max-w-md mx-auto">
-        <DialogHeader onClose={handleDeleteCancel}>
-          <DialogTitle>Delete Expense</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <div className="space-y-4">
-            <p className="text-gray-700">
-              Are you sure you want to delete this expense?
-            </p>
-            {deletingExpense && (
-              <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                <p className="font-medium text-gray-900">{deletingExpense.title}</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  {formatCurrency(deletingExpense.amount_in_trip_currency)}
-                </p>
-              </div>
-            )}
-            <p className="text-sm text-red-600">
-              This action cannot be undone.
-            </p>
-          </div>
-        </DialogBody>
-        <DialogFooter className="justify-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleDeleteCancel}
-            disabled={isDeleting}
-            className="min-w-[120px]"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            disabled={isDeleting}
-            className="min-w-[120px] bg-red-600 hover:bg-red-700 text-white"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    {/* Quick Add Expense Dialog */}
-    <Dialog open={isQuickAddDialogOpen} onOpenChange={setIsQuickAddDialogOpen}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader onClose={handleQuickAddCancel}>
-          <DialogTitle>Quick Add Expense</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <QuickExpenseEntry
-            tripId={tripId}
-            tripCurrency={currencyCode}
-            tripStartDate={tripStartDate}
-            tripEndDate={tripEndDate}
-            categories={categories}
-            initialDate={selectedDate}
-            onExpenseCreated={handleQuickAddSuccess}
-          />
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
