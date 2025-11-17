@@ -384,7 +384,16 @@ def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
         last_day = min(today, trip.end_date)
         if last_day >= trip.start_date:
             elapsed_days = (last_day - trip.start_date).days + 1
-            average_daily = total_spent / elapsed_days if elapsed_days > 0 else 0
+
+            # Calculate total spent only for expenses up to today (exclude future expenses)
+            spent_up_to_today = db.query(
+                func.coalesce(func.sum(Expense.amount_in_trip_currency), 0)
+            ).filter(
+                Expense.trip_id == trip_id,
+                Expense.start_date <= last_day
+            ).scalar()
+
+            average_daily = float(spent_up_to_today) / elapsed_days if elapsed_days > 0 else 0
         else:
             # Trip hasn't started yet
             average_daily = 0
