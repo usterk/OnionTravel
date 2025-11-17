@@ -243,11 +243,15 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
       loadDayExpenses()
     ]);
 
-    // Scroll to "Remaining Today" section
+    // Scroll to "Remaining Today" section with offset for header
     if (remainingTodayRef.current) {
-      remainingTodayRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+      const headerHeight = 64; // h-16 in Tailwind = 64px
+      const elementPosition = remainingTodayRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
       });
     }
   };
