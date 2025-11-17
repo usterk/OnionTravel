@@ -981,12 +981,12 @@ export function DailyBudgetView({ tripId, currencyCode, tripStartDate, tripEndDa
     {/* Quick Add Button (Floating Action Button) */}
     <button
       onClick={() => setIsQuickAddDialogOpen(true)}
-      className="fixed bottom-16 md:bottom-20 right-4 z-50 m-0 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-full p-3 md:p-4 shadow-lg transition-colors duration-200 focus:outline-none"
+      className="fixed bottom-28 md:bottom-20 right-4 z-50 m-0 bg-green-600 hover:bg-green-700 active:bg-green-700 text-white rounded-full p-6 md:p-4 shadow-lg transition-colors duration-200 focus:outline-none"
       style={{ touchAction: 'manipulation', margin: 0 }}
       aria-label="Quick add expense"
       title="Dodaj wydatek"
     >
-      <Plus className="h-5 w-5 md:h-6 md:w-6" />
+      <Plus className="h-10 w-10 md:h-6 md:w-6" />
     </button>
 
     {/* Voice Expense Button (Floating Action Button) */}
