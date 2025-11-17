@@ -105,10 +105,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (90% threshold enforced)
         working-directory: frontend
         run: |
-          npm run test -- --run --coverage
+          npm run test:coverage -- --run
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4

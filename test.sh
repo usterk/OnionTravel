@@ -4,6 +4,7 @@
 # Intelligent test runner that manages application lifecycle
 
 set -e
+set -o pipefail  # Ensure pipes return exit code of first failing command
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -197,7 +198,22 @@ run_backend_tests() {
     echo ""
 
     cd "$SCRIPT_DIR/backend"
+
+    # Check if venv exists, create if not
+    if [ ! -d "venv" ]; then
+        echo -e "${YELLOW}Creating Python virtual environment...${NC}"
+        python3 -m venv venv
+    fi
+
+    # Activate venv
     source venv/bin/activate
+
+    # Check if dependencies are installed
+    if ! python -c "import pytest" 2>/dev/null; then
+        echo -e "${YELLOW}Installing Python dependencies...${NC}"
+        pip install -q --upgrade pip
+        pip install -q -r requirements.txt
+    fi
 
     # Set up report paths
     local html_report="$BACKEND_REPORTS_DIR/${TIMESTAMP}_pytest.html"
@@ -206,20 +222,16 @@ run_backend_tests() {
 
     BACKEND_REPORT_PATH="$html_report"
 
-    # Run tests with reports
-    if [ "$1" = "--coverage" ]; then
-        pytest tests/ --cov=app --cov-report=term --cov-report=html:htmlcov \
-            --html="$html_report" --self-contained-html \
-            --json-report --json-report-file="$json_report" \
-            2>&1 | tee "$log_file"
-    else
-        pytest tests/ -v \
-            --html="$html_report" --self-contained-html \
-            --json-report --json-report-file="$json_report" \
-            2>&1 | tee "$log_file"
-    fi
-
+    # Run tests with coverage (ALWAYS enforce 90% threshold)
+    # The --cov-fail-under=90 flag ensures minimum coverage requirement
+    # Temporarily disable exit-on-error to capture exit code
+    set +e
+    pytest tests/ --cov=app --cov-fail-under=90 --cov-report=term --cov-report=html:htmlcov \
+        --html="$html_report" --self-contained-html \
+        --json-report --json-report-file="$json_report" \
+        2>&1 | tee "$log_file"
     local exit_code=$?
+    set -e
 
     # Parse JSON report for statistics
     if [ -f "$json_report" ]; then
@@ -249,20 +261,25 @@ run_frontend_tests() {
 
     cd "$SCRIPT_DIR/frontend"
 
+    # Check if node_modules exists, install if not
+    if [ ! -d "node_modules" ]; then
+        echo -e "${YELLOW}Installing npm dependencies...${NC}"
+        npm install
+    fi
+
     # Set up report paths
     local json_report="$FRONTEND_REPORTS_DIR/${TIMESTAMP}_vitest.json"
     local log_file="$FRONTEND_REPORTS_DIR/${TIMESTAMP}_vitest.log"
 
     FRONTEND_REPORT_PATH="$log_file"
 
-    # Run tests with reports (verbose for live progress)
-    if [ "$1" = "--coverage" ]; then
-        npx vitest run --coverage --reporter=verbose --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
-    else
-        npx vitest run --reporter=verbose --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
-    fi
-
+    # Run tests with coverage (ALWAYS enforce 90% threshold from vite.config.ts)
+    # The --coverage flag ensures thresholds are checked (lines/functions/branches/statements >= 90%)
+    # Temporarily disable exit-on-error to capture exit code
+    set +e
+    npx vitest run --coverage --reporter=verbose --reporter=json --outputFile="$json_report" 2>&1 | tee "$log_file"
     local exit_code=$?
+    set -e
 
     # Parse JSON report for statistics
     if [ -f "$json_report" ]; then
@@ -440,22 +457,23 @@ show_help() {
     echo "  ./test.sh [command] [options]"
     echo ""
     echo -e "${YELLOW}Commands:${NC}"
-    echo "  backend       Run backend tests only (pytest)"
-    echo "  frontend      Run frontend tests only (vitest)"
+    echo "  backend       Run backend tests only (pytest with 90% coverage requirement)"
+    echo "  frontend      Run frontend tests only (vitest with 90% coverage requirement)"
     echo "  e2e           Run E2E tests only (playwright)"
     echo "  all           Run all tests sequentially (default)"
     echo "  --help        Show this help message"
     echo ""
-    echo -e "${YELLOW}Options:${NC}"
-    echo "  --coverage    Generate coverage reports (for backend/frontend)"
-    echo ""
     echo -e "${YELLOW}Examples:${NC}"
-    echo "  ./test.sh                    # Run all tests"
-    echo "  ./test.sh backend            # Run only backend tests"
-    echo "  ./test.sh backend --coverage # Run backend tests with coverage"
+    echo "  ./test.sh                    # Run all tests with coverage"
+    echo "  ./test.sh backend            # Run only backend tests (90% coverage required)"
+    echo "  ./test.sh frontend           # Run only frontend tests (90% coverage required)"
     echo "  ./test.sh e2e                # Run only E2E tests"
     echo ""
     echo -e "${YELLOW}Notes:${NC}"
+    echo "  • Backend and frontend tests ALWAYS run with coverage enforcement (90% minimum)"
+    echo "  • Tests will FAIL if coverage drops below 90% (lines, functions, branches, statements)"
+    echo "  • Script automatically creates Python venv if missing (backend)"
+    echo "  • Script automatically installs npm dependencies if missing (frontend)"
     echo "  • Script automatically detects if app is running via ./run.sh"
     echo "  • If app is not running, temporary instances are started for tests"
     echo "  • E2E tests always require both backend and frontend running"
@@ -466,13 +484,6 @@ show_help() {
 # Main script
 main() {
     local command="${1:-all}"
-    local coverage_flag=""
-
-    # Check for coverage flag
-    if [ "$2" = "--coverage" ] || [ "$1" = "--coverage" ]; then
-        coverage_flag="--coverage"
-        [ "$1" = "--coverage" ] && command="all"
-    fi
 
     # Handle help
     if [ "$command" = "--help" ] || [ "$command" = "-h" ]; then
@@ -495,10 +506,10 @@ main() {
     # Run tests based on command
     case "$command" in
         backend)
-            run_backend_tests "$coverage_flag"
+            run_backend_tests
             ;;
         frontend)
-            run_frontend_tests "$coverage_flag"
+            run_frontend_tests
             ;;
         e2e)
             run_e2e_tests
@@ -506,8 +517,8 @@ main() {
         all)
             local all_passed=true
 
-            run_backend_tests "$coverage_flag" || all_passed=false
-            run_frontend_tests "$coverage_flag" || all_passed=false
+            run_backend_tests || all_passed=false
+            run_frontend_tests || all_passed=false
             run_e2e_tests || all_passed=false
 
             print_summary
