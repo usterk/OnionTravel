@@ -131,10 +131,10 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
       setStep('recording');
       setRecordingTime(10);
 
-      // Start countdown timer (10s)
+      // Start countdown timer (10s) - update every 100ms for smooth animation
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => {
-          if (prev <= 1) {
+          if (prev <= 0.1) {
             // Auto-stop when reaching 0
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
               shouldProcessRef.current = true;
@@ -147,9 +147,9 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
             }
             return 0;
           }
-          return prev - 1;
+          return prev - 0.1;
         });
-      }, 1000);
+      }, 100);
     } catch (err) {
       console.error('Failed to start recording:', err);
       setError('Nie można uzyskać dostępu do mikrofonu. Upewnij się, że przeglądarka ma uprawnienia do mikrofonu i że mikrofon jest podłączony.');
