@@ -513,22 +513,25 @@ describe('DailyBudgetView', () => {
     });
 
     it('should display day of week for non-today dates', async () => {
-      const mockStats = createMockStatistics({ date: '2025-11-10' });
+      // Use future trip dates so component starts at trip start
+      // 2026-11-09 is a Monday
+      const futureStart = '2026-11-09';
+      const futureEnd = '2026-11-19';
+      const mockStats = createMockStatistics({ date: futureStart });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDateStr}
-          tripEndDate={mockTripEndDateStr}
+          tripStartDate={futureStart}
+          tripEndDate={futureEnd}
         />
       );
 
       await waitFor(() => {
-        // 2025-11-10 is a Monday
         expect(screen.getByText('Monday')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      });
     });
 
     it('should show day counter', async () => {
@@ -570,34 +573,40 @@ describe('DailyBudgetView', () => {
     });
 
     it('should disable Previous button at trip start', async () => {
-      const mockStats = createMockStatistics({ date: mockTripStartDateStr });
+      // Use future trip dates so component starts at trip start
+      const futureStart = '2026-01-10';
+      const futureEnd = '2026-01-20';
+      const mockStats = createMockStatistics({ date: futureStart });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDateStr}
-          tripEndDate={mockTripEndDateStr}
+          tripStartDate={futureStart}
+          tripEndDate={futureEnd}
         />
       );
 
       await waitFor(() => {
         const prevButton = screen.getAllByRole('button', { name: /Previous/i })[0];
         expect(prevButton).toBeDisabled();
-      }, { timeout: 3000 });
+      });
     });
 
     it('should disable Next button at trip end', async () => {
-      const mockStats = createMockStatistics({ date: mockTripEndDateStr });
+      // Use past trip dates so component starts at trip end, not today
+      const pastStart = '2025-01-10';
+      const pastEnd = '2025-01-20';
+      const mockStats = createMockStatistics({ date: pastEnd });
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
       render(
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate={mockTripStartDateStr}
-          tripEndDate={mockTripEndDateStr}
+          tripStartDate={pastStart}
+          tripEndDate={pastEnd}
         />
       );
 
@@ -1064,7 +1073,10 @@ describe('DailyBudgetView', () => {
 
   describe('Date Navigation Functions', () => {
     it('should not navigate beyond trip start date', async () => {
-      const mockStats = createMockStatistics({ date: '2025-01-10' });
+      // Use future dates so component starts at trip start
+      const futureStart = '2026-01-10';
+      const futureEnd = '2026-01-20';
+      const mockStats = createMockStatistics({ date: futureStart });
 
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
@@ -1072,8 +1084,8 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate="2025-01-10"
-          tripEndDate="2025-01-20"
+          tripStartDate={futureStart}
+          tripEndDate={futureEnd}
         />
       );
 
@@ -1084,7 +1096,10 @@ describe('DailyBudgetView', () => {
     });
 
     it('should not navigate beyond trip end date', async () => {
-      const mockStats = createMockStatistics({ date: '2025-01-20' });
+      // Use past dates so component starts at trip end
+      const pastStart = '2024-01-10';
+      const pastEnd = '2024-01-20';
+      const mockStats = createMockStatistics({ date: pastEnd });
 
       vi.mocked(expensesApi.getDailyBudgetStatistics).mockResolvedValue(mockStats);
 
@@ -1092,8 +1107,8 @@ describe('DailyBudgetView', () => {
         <DailyBudgetView
           tripId={mockTripId}
           currencyCode={mockCurrencyCode}
-          tripStartDate="2025-01-10"
-          tripEndDate="2025-01-20"
+          tripStartDate={pastStart}
+          tripEndDate={pastEnd}
         />
       );
 
