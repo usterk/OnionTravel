@@ -215,6 +215,43 @@ EOF
 
 **Manual deployment**: You can still use `./deploy-prod.sh` for manual deployments if needed
 
+### CI/CD Testing Strategy
+
+**⚠️ IMPORTANT: Merge Commit Testing**
+
+All tests run on the **merge commit** for Pull Requests. This ensures code will work AFTER merging to target branch.
+
+**How it works:**
+1. You create a PR with your changes
+2. GitHub Actions automatically creates a "merge commit" (your branch + target branch merged)
+3. Tests run on this merge commit, not just your branch
+4. This prevents situations where:
+   - Tests pass on your PR branch
+   - But fail after merging to main (due to conflicts or integration issues)
+
+**Testing Flow:**
+
+```
+PR created → Tests run on MERGE COMMIT (PR + target) → PR merged → Tests run again on main → Deploy
+```
+
+**What this means for you:**
+- ✅ **You can trust the tests**: If tests pass on PR, they will pass after merge
+- ✅ **No surprises**: You test against the latest code from target branch
+- ✅ **Safe merges**: Conflicts and integration issues are caught before merge
+- ⚠️ **Important**: Always wait for tests to pass before merging
+
+**Workflow files:**
+- `.github/workflows/test.yml` - Main testing workflow (backend + frontend)
+- `.github/workflows/deploy-production.yml` - Calls test workflow before deployment
+
+**Test requirements:**
+- Backend: 90% code coverage (pytest)
+- Frontend: Coverage reporting (vitest)
+- All tests must pass before deployment
+
+**See also**: `.github/README.md` for detailed CI/CD documentation
+
 ## Project Overview
 
 OnionTravel is a trip budget tracking application with multi-currency support, multi-user trips, and real-time budget tracking. The codebase is organized as a monorepo with a FastAPI backend and React TypeScript frontend.

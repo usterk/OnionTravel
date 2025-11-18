@@ -27,6 +27,34 @@ Main automated deployment workflow that runs on every push to `main` branch.
 1. `version-and-release` - Bumps version, creates tag and GitHub release
 2. `deploy` - Deploys to production server and runs tests
 
+#### `test.yml`
+Comprehensive testing workflow that runs backend and frontend tests.
+
+**Features:**
+- **Merge commit testing for PRs** - Tests run on the actual code that will exist AFTER merging to target branch
+- Backend tests with 90% coverage requirement (pytest)
+- Frontend tests with coverage reporting (vitest)
+- Coverage reports posted as PR comments
+- Discord notifications on test failures (main branch only)
+
+**Testing Strategy:**
+- **For Pull Requests**: Tests run on the merge commit (PR branch + target branch merged)
+  - This ensures tests pass with the latest code from target branch
+  - Prevents situations where tests pass on PR but fail after merge
+  - GitHub automatically creates this merge commit for testing
+- **For pushes to main**: Tests run on the actual commit
+- **Called by deploy workflow**: Ensures all tests pass before deployment
+
+**Triggers:**
+- Pull requests (on merge commit)
+- Push to `main` branch
+- Called by `deploy-production.yml`
+
+**Jobs:**
+1. `backend-tests` - Python/pytest with coverage
+2. `frontend-tests` - Node/vitest with coverage
+3. `notify-failure` - Discord notification if tests fail on main
+
 #### `pr-version-label.yml`
 PR helper workflow that checks for version labels on pull requests.
 
@@ -66,6 +94,19 @@ Comprehensive guide to version labels and semantic versioning.
 
 **Start here if**: You're unsure which version label to use on your PR.
 
+### `TESTING_STRATEGY.md`
+Detailed explanation of merge commit testing strategy.
+
+**Topics covered:**
+- How merge commit testing works
+- Benefits and real-world examples
+- Testing flow and implementation details
+- Best practices for developers and reviewers
+- Troubleshooting common issues
+- Technical details about GitHub refs
+
+**Start here if**: You want to understand how CI/CD testing ensures safe merges.
+
 ## Quick Start
 
 ### For Contributors
@@ -77,9 +118,14 @@ When creating a pull request:
    - `version:minor` - New features (0.X.0)
    - `version:patch` - Bug fixes (0.0.X)
 
-2. **If you forget**: Don't worry! The workflow will default to `patch` (+0.0.1) and a bot will remind you about the label.
+2. **Tests run automatically**: GitHub Actions will test your PR merged with the target branch
+   - This ensures your code will work AFTER merging
+   - Wait for tests to pass before requesting review
+   - Check coverage reports in PR comments
 
-3. **Merge to main**: GitHub Actions will automatically deploy to production.
+3. **If you forget**: Don't worry! The workflow will default to `patch` (+0.0.1) and a bot will remind you about the label.
+
+4. **Merge to main**: GitHub Actions will automatically test again and deploy to production.
 
 ### For Administrators
 
@@ -108,7 +154,20 @@ Developer creates PR
        ↓
 Adds version label (major/minor/patch)
        ↓
-PR reviewed and merged to main
+[GitHub Actions - test workflow on PR]
+  - Tests run on MERGE COMMIT (PR + target branch)
+  - Ensures code will work after merging
+  - Backend tests (pytest, 90% coverage)
+  - Frontend tests (vitest)
+  - Coverage reports posted as PR comments
+       ↓
+PR reviewed and approved
+       ↓
+Developer merges PR to main
+       ↓
+[GitHub Actions - test workflow on main]
+  - Tests run again on actual main commit
+  - Validates deployment candidate
        ↓
 [GitHub Actions - version-and-release job]
   - Reads PR labels
@@ -207,6 +266,7 @@ See `CLAUDE.md` for manual deployment documentation.
 - **Main project docs**: `../CLAUDE.md`
 - **Deployment setup**: `DEPLOYMENT_SETUP.md`
 - **Version labels**: `LABELS.md`
+- **Testing strategy**: `TESTING_STRATEGY.md`
 - **Nginx configuration**: `../nginx/README.md`
 
 ## Support
