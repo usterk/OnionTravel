@@ -10,6 +10,14 @@ describe('Progress', () => {
       expect(progressBar).toBeInTheDocument();
     });
 
+    it('should render with default props when no className provided', () => {
+      const { container } = render(<Progress value={50} />);
+      const progressBar = container.querySelector('[role="progressbar"]');
+      expect(progressBar).toBeInTheDocument();
+      const indicator = container.querySelector('[role="progressbar"] > div');
+      expect(indicator).toBeInTheDocument();
+    });
+
     it('should render with correct aria attributes', () => {
       const { container } = render(<Progress value={75} />);
       const progressBar = container.querySelector('[role="progressbar"]');
@@ -64,6 +72,28 @@ describe('Progress', () => {
 
     it('should handle 100 value', () => {
       const { container } = render(<Progress value={100} />);
+      const indicator = container.querySelector('[role="progressbar"] > div');
+      expect(indicator).toHaveStyle({ width: '100%' });
+    });
+
+    it('should handle decimal values', () => {
+      const { container } = render(<Progress value={50.5} />);
+      const progressBar = container.querySelector('[role="progressbar"]');
+      expect(progressBar).toHaveAttribute('aria-valuenow', '50.5');
+      const indicator = container.querySelector('[role="progressbar"] > div');
+      expect(indicator).toHaveStyle({ width: '50.5%' });
+    });
+
+    it('should handle very small positive values', () => {
+      const { container } = render(<Progress value={0.1} />);
+      const indicator = container.querySelector('[role="progressbar"] > div');
+      expect(indicator).toHaveStyle({ width: '0.1%' });
+    });
+
+    it('should handle very large values', () => {
+      const { container } = render(<Progress value={999} />);
+      const progressBar = container.querySelector('[role="progressbar"]');
+      expect(progressBar).toHaveAttribute('aria-valuenow', '100');
       const indicator = container.querySelector('[role="progressbar"] > div');
       expect(indicator).toHaveStyle({ width: '100%' });
     });
