@@ -19,7 +19,7 @@ from app.schemas.ai_expense import (
 from app.schemas.expense import ExpenseCreate, ExpenseResponse
 from app.services.ai_expense_parser import get_ai_parser, AIExpenseParserError
 from app.services import expense_service
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user_flexible
 
 
 router = APIRouter()
@@ -68,6 +68,7 @@ def get_trip_or_404(db: Session, trip_id: int, user: User) -> Trip:
     responses={
         201: {"description": "Expense(s) created successfully from voice input"},
         400: {"description": "Invalid audio or parsing failed"},
+        401: {"description": "Authentication required (JWT token or API key)"},
         403: {"description": "Access denied to trip"},
         404: {"description": "Trip not found"},
         500: {"description": "AI service error"}
@@ -77,10 +78,14 @@ async def parse_and_create_voice_expense(
     trip_id: int,
     request: VoiceExpenseRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_flexible)
 ):
     """
     Parse voice input and automatically create one or more expenses using AI.
+
+    **Authentication:**
+    - Supports both JWT token (Authorization header) and API key (X-API-Key header)
+    - Use API key for programmatic access and automation
 
     This endpoint:
     1. Transcribes audio to text using OpenAI Whisper (gpt-4o-mini-transcribe)

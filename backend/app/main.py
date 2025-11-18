@@ -6,7 +6,7 @@ from app.tasks.scheduler import start_scheduler
 
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import (
-    User, Trip, TripUser, Category, Expense, Attachment, ExchangeRate
+    User, Trip, TripUser, Category, Expense, Attachment, ExchangeRate, ApiKey
 )
 
 # Create database tables
@@ -53,7 +53,7 @@ async def health():
 
 
 # Import and include routers
-from app.api.v1 import auth, trips, categories, expenses, currency, users, ai_expenses
+from app.api.v1 import auth, trips, categories, expenses, currency, users, ai_expenses, api_keys
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(trips.router, prefix="/api/v1/trips", tags=["trips"])
 app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
@@ -61,3 +61,4 @@ app.include_router(expenses.router, prefix="/api/v1", tags=["expenses"])
 app.include_router(ai_expenses.router, prefix="/api/v1", tags=["ai-expenses"])
 app.include_router(currency.router, prefix="/api/v1/currency", tags=["currency"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(api_keys.router, prefix="/api/v1", tags=["api-keys"])

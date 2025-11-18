@@ -20,6 +20,7 @@ class User(Base):
     owned_trips = relationship("Trip", back_populates="owner", foreign_keys="Trip.owner_id")
     trip_memberships = relationship("TripUser", back_populates="user", cascade="all, delete-orphan")
     expenses = relationship("Expense", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"

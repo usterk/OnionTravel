@@ -188,3 +188,25 @@ export const userApi = {
     return response.data;
   },
 };
+
+// API Key management functions
+import type { ApiKeyCreate, ApiKeyResponse, ApiKeyWithSecret } from '@/types/apiKey';
+
+export const apiKeyApi = {
+  // Create a new API key
+  createApiKey: async (data: ApiKeyCreate): Promise<ApiKeyWithSecret> => {
+    const response = await api.post<ApiKeyWithSecret>('/api-keys', data);
+    return response.data;
+  },
+
+  // List all API keys
+  listApiKeys: async (): Promise<ApiKeyResponse[]> => {
+    const response = await api.get<ApiKeyResponse[]>('/api-keys');
+    return response.data;
+  },
+
+  // Delete an API key
+  deleteApiKey: async (keyId: number): Promise<void> => {
+    await api.delete(`/api-keys/${keyId}`);
+  },
+};
