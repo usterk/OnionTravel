@@ -143,7 +143,7 @@ describe('useDateNavigation', () => {
     expect(result.current.selectedDate).toBe(tripEndDate);
   });
 
-  it('should go to today', () => {
+  it('should go to today when within trip range', () => {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -161,6 +161,36 @@ describe('useDateNavigation', () => {
     });
 
     expect(result.current.selectedDate).toBe(today);
+  });
+
+  it('should go to trip start when today is before trip', () => {
+    const futureStart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const futureEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const { result } = renderHook(() =>
+      useDateNavigation({ tripStartDate: futureStart, tripEndDate: futureEnd })
+    );
+
+    act(() => {
+      result.current.goToToday();
+    });
+
+    expect(result.current.selectedDate).toBe(futureStart);
+  });
+
+  it('should go to trip end when today is after trip', () => {
+    const pastStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const pastEnd = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const { result } = renderHook(() =>
+      useDateNavigation({ tripStartDate: pastStart, tripEndDate: pastEnd })
+    );
+
+    act(() => {
+      result.current.goToToday();
+    });
+
+    expect(result.current.selectedDate).toBe(pastEnd);
   });
 
   it('should go to trip start', () => {
