@@ -30,18 +30,15 @@ export function useDateNavigation({
   tripStartDate,
   tripEndDate,
 }: UseDateNavigationProps): UseDateNavigationReturn {
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  // Initialize selected date immediately based on trip range
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    getInitialDate(tripStartDate, tripEndDate)
+  );
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [showHints, setShowHints] = useState(() => {
     // Check if device has touch support
     return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   });
-
-  // Initialize selected date based on trip range
-  useEffect(() => {
-    const initialDate = getInitialDate(tripStartDate, tripEndDate);
-    setSelectedDate(initialDate);
-  }, [tripStartDate, tripEndDate]);
 
   // Hide hints after 3 seconds
   useEffect(() => {
