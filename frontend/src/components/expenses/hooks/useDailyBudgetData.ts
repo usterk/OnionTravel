@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getDailyBudgetStatistics, getExpenses, getExpenseStatistics } from '@/lib/expenses-api';
 import { getCategories } from '@/lib/categories-api';
 import type { DailyBudgetStatistics, ExpenseStatistics } from '@/lib/expenses-api';
@@ -38,6 +38,9 @@ export function useDailyBudgetData({
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Track if this is the initial load to determine loading vs refreshing state
+  const isInitialLoadRef = useRef(true);
+
   /**
    * Load trip-level statistics
    */
@@ -54,9 +57,9 @@ export function useDailyBudgetData({
    * Load daily statistics for selected date
    */
   const loadStatistics = useCallback(async () => {
-    // Only show loading state if we don't have any statistics yet (initial load)
+    // Only show loading state if this is the initial load
     // For subsequent loads (day changes), use isRefreshing to show smooth transition
-    if (!statistics) {
+    if (isInitialLoadRef.current) {
       setIsLoading(true);
     } else {
       setIsRefreshing(true);
@@ -66,6 +69,7 @@ export function useDailyBudgetData({
     try {
       const stats = await getDailyBudgetStatistics(tripId, selectedDate);
       setStatistics(stats);
+      isInitialLoadRef.current = false;
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load daily statistics');
       console.error('Failed to load daily statistics:', err);
@@ -73,7 +77,7 @@ export function useDailyBudgetData({
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [tripId, selectedDate, statistics]);
+  }, [tripId, selectedDate]);
 
   /**
    * Load expenses for selected date
