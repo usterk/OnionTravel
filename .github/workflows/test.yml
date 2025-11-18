@@ -2,20 +2,21 @@ name: Tests
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-  workflow_call:  # Allow this workflow to be called by other workflows
+  workflow_call:  # Called by deploy-production.yml after merge to main
 
 # Testing Strategy:
 # - For PRs: Tests run on the merge commit (PR branch merged with target)
 #   This ensures the code will work after merging to main
-# - For pushes to main: Tests run on the actual commit
-# This prevents situations where tests pass on PR branch but fail after merge
+#   Branch protection REQUIRES these tests to pass before allowing merge
+# - After merge: Deploy workflow calls this via workflow_call for double-check
+#   This ensures tests still pass on the actual merged commit before deploying
+#
+# Note: We don't run tests directly on push to main to avoid duplication
+# (deploy-production.yml already calls this workflow via workflow_call)
 
 # Concurrency: Cancel old test runs when new commits are pushed
 # - For PRs: Each PR has its own concurrency group (test-pr-123)
-# - For main: All pushes to main share one group (test-main)
+# - For workflow_call: Uses the caller's concurrency group
 # - Old runs are automatically cancelled when new ones start
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('test-pr-{0}', github.event.pull_request.number) || 'test-main' }}
@@ -51,10 +52,10 @@ jobs:
             echo "  This ensures tests pass AFTER merging to target branch"
             echo "  Old test runs for this PR are automatically cancelled"
           else
-            echo "  Event: Push to ${{ github.ref_name }}"
-            echo "  Testing: Actual commit"
+            echo "  Event: ${{ github.event_name }} on ${{ github.ref_name }}"
+            echo "  Testing: Actual commit (called by deploy workflow)"
             echo "  Concurrency group: test-main"
-            echo "  Old test runs on main are automatically cancelled"
+            echo "  This is a double-check before deploying to production"
           fi
           echo "  Commit SHA: ${{ github.sha }}"
 
@@ -147,10 +148,10 @@ jobs:
             echo "  This ensures tests pass AFTER merging to target branch"
             echo "  Old test runs for this PR are automatically cancelled"
           else
-            echo "  Event: Push to ${{ github.ref_name }}"
-            echo "  Testing: Actual commit"
+            echo "  Event: ${{ github.event_name }} on ${{ github.ref_name }}"
+            echo "  Testing: Actual commit (called by deploy workflow)"
             echo "  Concurrency group: test-main"
-            echo "  Old test runs on main are automatically cancelled"
+            echo "  This is a double-check before deploying to production"
           fi
           echo "  Commit SHA: ${{ github.sha }}"
 
@@ -213,7 +214,7 @@ jobs:
     name: Notify Test Failure
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
-    if: failure() && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: failure() && github.event_name == 'workflow_call'
 
     steps:
       - name: Send Discord notification
