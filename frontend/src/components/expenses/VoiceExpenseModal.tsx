@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Mic, Loader2, CheckCircle, XCircle, StopCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { parseAndCreateVoiceExpense } from '@/lib/ai-expenses-api';
 
 interface VoiceExpenseModalProps {
@@ -37,7 +38,7 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
   const [step, setStep] = useState<ProcessingStep>('recording');
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingTime, setRecordingTime] = useState(10); // Countdown from 10s
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -69,7 +70,7 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
       timerRef.current = null;
     }
     setIsRecording(false);
-    setRecordingTime(0);
+    setRecordingTime(10);
     audioBlobRef.current = null;
     shouldProcessRef.current = false;
   };
@@ -128,11 +129,26 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
       mediaRecorder.start();
       setIsRecording(true);
       setStep('recording');
-      setRecordingTime(0);
+      setRecordingTime(10);
 
-      // Start timer
+      // Start countdown timer (10s)
       timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
+        setRecordingTime((prev) => {
+          if (prev <= 1) {
+            // Auto-stop when reaching 0
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+              shouldProcessRef.current = true;
+              mediaRecorderRef.current.stop();
+              setIsRecording(false);
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
     } catch (err) {
       console.error('Failed to start recording:', err);
@@ -196,12 +212,6 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
     onClose();
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const getStepMessage = (): string => {
     switch (step) {
       case 'recording':
@@ -224,86 +234,114 @@ export const VoiceExpenseModal: React.FC<VoiceExpenseModalProps> = ({
   const renderIcon = () => {
     switch (step) {
       case 'recording':
-        return <Mic className="h-8 w-8 text-red-500 animate-pulse" />;
+        return <Mic className="h-12 w-12 text-red-500 animate-pulse" />;
       case 'transcribing':
       case 'parsing':
       case 'saving':
-        return <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />;
+        return <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />;
       case 'success':
-        return <CheckCircle className="h-8 w-8 text-green-500" />;
+        return <CheckCircle className="h-12 w-12 text-green-500" />;
       case 'error':
-        return <XCircle className="h-8 w-8 text-red-500" />;
+        return <XCircle className="h-12 w-12 text-red-500" />;
     }
   };
 
   const isProcessing = ['transcribing', 'parsing', 'saving'].includes(step);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-sm mx-auto">
-        <DialogHeader onClose={handleCancel}>
-          <DialogTitle>Nagrywanie wydatku</DialogTitle>
-        </DialogHeader>
+  // Calculate progress percentage (10s = 100%, 0s = 0%)
+  const progressPercentage = (recordingTime / 10) * 100;
 
-        <DialogBody>
-          <div className="flex flex-col items-center justify-center py-6 space-y-4">
+  return (
+    <Dialog open={isOpen} onOpenChange={() => handleCancel()}>
+      <DialogContent className="max-w-sm mx-auto rounded-3xl">
+        {step === 'recording' ? (
+          // Recording view - minimalist iOS style
+          <div className="flex flex-col items-center justify-center py-8 px-4 space-y-6">
             {/* Icon */}
-            {renderIcon()}
+            <div className="flex items-center justify-center">
+              {renderIcon()}
+            </div>
 
             {/* Status message */}
-            <p className="text-base font-medium text-gray-900">
+            <p className="text-lg font-medium text-gray-900">
               {getStepMessage()}
             </p>
 
-            {/* Timer for recording */}
-            {step === 'recording' && (
-              <p className="text-2xl font-mono text-gray-700">
-                {formatTime(recordingTime)}
-              </p>
-            )}
+            {/* Red progress bar */}
+            <div className="w-full px-2">
+              <Progress
+                value={progressPercentage}
+                className="h-3 bg-gray-200"
+                indicatorClassName="bg-gradient-to-r from-red-500 to-red-600"
+              />
+            </div>
 
-            {/* Error message */}
-            {step === 'error' && error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3 w-full">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-          </div>
-        </DialogBody>
-
-        <DialogFooter>
-          {step === 'recording' && (
-            <>
+            {/* Action buttons */}
+            <div className="flex flex-col w-full gap-3 pt-2">
               <Button
                 onClick={handleSend}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-green-600 hover:bg-green-700 text-white rounded-2xl py-6 text-base font-medium shadow-lg"
               >
-                Wyślij
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Stop and Add
               </Button>
-              <Button onClick={handleCancel} variant="outline">
-                Anuluj
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                className="w-full border-2 border-gray-300 hover:bg-gray-100 text-gray-700 rounded-2xl py-6 text-base font-medium"
+              >
+                <XCircle className="h-5 w-5 mr-2" />
+                Stop and Cancel
               </Button>
-            </>
-          )}
+            </div>
+          </div>
+        ) : (
+          // Processing/Success/Error view
+          <>
+            <DialogHeader>
+              <DialogTitle>Nagrywanie wydatku</DialogTitle>
+            </DialogHeader>
 
-          {isProcessing && (
-            <Button disabled className="bg-gray-400 w-full">
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Przetwarzanie...
-            </Button>
-          )}
+            <DialogBody>
+              <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                {/* Icon */}
+                {renderIcon()}
 
-          {step === 'error' && (
-            <>
-              <Button onClick={() => { cleanup(); startRecording(); }} className="bg-blue-600 hover:bg-blue-700">
-                Spróbuj ponownie
-              </Button>
-              <Button onClick={handleCancel} variant="outline">
-                Zamknij
-              </Button>
-            </>
-          )}
-        </DialogFooter>
+                {/* Status message */}
+                <p className="text-base font-medium text-gray-900">
+                  {getStepMessage()}
+                </p>
+
+                {/* Error message */}
+                {step === 'error' && error && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3 w-full">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                )}
+              </div>
+            </DialogBody>
+
+            <DialogFooter>
+              {isProcessing && (
+                <Button disabled className="bg-gray-400 w-full">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Przetwarzanie...
+                </Button>
+              )}
+
+              {step === 'error' && (
+                <>
+                  <Button onClick={() => { cleanup(); startRecording(); }} className="bg-blue-600 hover:bg-blue-700">
+                    Spróbuj ponownie
+                  </Button>
+                  <Button onClick={handleCancel} variant="outline">
+                    Zamknij
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
