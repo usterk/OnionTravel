@@ -13,6 +13,14 @@ on:
 # - For pushes to main: Tests run on the actual commit
 # This prevents situations where tests pass on PR branch but fail after merge
 
+# Concurrency: Cancel old test runs when new commits are pushed
+# - For PRs: Each PR has its own concurrency group (test-pr-123)
+# - For main: All pushes to main share one group (test-main)
+# - Old runs are automatically cancelled when new ones start
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('test-pr-{0}', github.event.pull_request.number) || 'test-main' }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -39,10 +47,14 @@ jobs:
             echo "  Testing: MERGE COMMIT (PR + target branch)"
             echo "  Source: ${{ github.head_ref }}"
             echo "  Target: ${{ github.base_ref }}"
+            echo "  Concurrency group: test-pr-${{ github.event.pull_request.number }}"
             echo "  This ensures tests pass AFTER merging to target branch"
+            echo "  Old test runs for this PR are automatically cancelled"
           else
             echo "  Event: Push to ${{ github.ref_name }}"
             echo "  Testing: Actual commit"
+            echo "  Concurrency group: test-main"
+            echo "  Old test runs on main are automatically cancelled"
           fi
           echo "  Commit SHA: ${{ github.sha }}"
 
@@ -131,10 +143,14 @@ jobs:
             echo "  Testing: MERGE COMMIT (PR + target branch)"
             echo "  Source: ${{ github.head_ref }}"
             echo "  Target: ${{ github.base_ref }}"
+            echo "  Concurrency group: test-pr-${{ github.event.pull_request.number }}"
             echo "  This ensures tests pass AFTER merging to target branch"
+            echo "  Old test runs for this PR are automatically cancelled"
           else
             echo "  Event: Push to ${{ github.ref_name }}"
             echo "  Testing: Actual commit"
+            echo "  Concurrency group: test-main"
+            echo "  Old test runs on main are automatically cancelled"
           fi
           echo "  Commit SHA: ${{ github.sha }}"
 

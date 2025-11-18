@@ -239,7 +239,9 @@ PR created → Tests run on MERGE COMMIT (PR + target) → PR merged → Tests r
 - ✅ **You can trust the tests**: If tests pass on PR, they will pass after merge
 - ✅ **No surprises**: You test against the latest code from target branch
 - ✅ **Safe merges**: Conflicts and integration issues are caught before merge
+- ✅ **Push freely**: Old test runs are automatically cancelled when you push new commits
 - ⚠️ **Important**: Always wait for tests to pass before merging
+- 💡 **Tip**: Ignore "Cancelled" test runs - this is normal when pushing new commits
 
 **Workflow files:**
 - `.github/workflows/test.yml` - Main testing workflow (backend + frontend)

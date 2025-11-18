@@ -32,6 +32,7 @@ Comprehensive testing workflow that runs backend and frontend tests.
 
 **Features:**
 - **Merge commit testing for PRs** - Tests run on the actual code that will exist AFTER merging to target branch
+- **Automatic test cancellation** - Old test runs are cancelled when you push new commits to PR
 - Backend tests with 90% coverage requirement (pytest)
 - Frontend tests with coverage reporting (vitest)
 - Coverage reports posted as PR comments
@@ -42,7 +43,11 @@ Comprehensive testing workflow that runs backend and frontend tests.
   - This ensures tests pass with the latest code from target branch
   - Prevents situations where tests pass on PR but fail after merge
   - GitHub automatically creates this merge commit for testing
+  - **Automatic cancellation**: When you push a new commit, old test runs are cancelled
+  - Each PR has its own concurrency group (`test-pr-123`)
 - **For pushes to main**: Tests run on the actual commit
+  - Old test runs on main are cancelled when new pushes arrive
+  - Concurrency group: `test-main`
 - **Called by deploy workflow**: Ensures all tests pass before deployment
 
 **Triggers:**
@@ -120,8 +125,10 @@ When creating a pull request:
 
 2. **Tests run automatically**: GitHub Actions will test your PR merged with the target branch
    - This ensures your code will work AFTER merging
+   - Push commits freely - old test runs are automatically cancelled
    - Wait for tests to pass before requesting review
    - Check coverage reports in PR comments
+   - Ignore "Cancelled" test runs (this is normal when you push new commits)
 
 3. **If you forget**: Don't worry! The workflow will default to `patch` (+0.0.1) and a bot will remind you about the label.
 

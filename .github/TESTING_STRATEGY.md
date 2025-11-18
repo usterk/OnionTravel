@@ -25,10 +25,40 @@ Merge commit:         D---E---F---M  (your changes + latest main)
 1. **PR Created**: Developer creates a Pull Request
 2. **Merge Commit Created**: GitHub automatically creates merge commit
 3. **Tests Run on Merge Commit**: CI/CD tests the actual code that will exist after merge
-4. **Tests Pass**: PR is ready to merge
-5. **PR Merged**: Code is merged to main
-6. **Tests Run Again**: Validation on actual main commit
-7. **Deploy**: If all tests pass, deploy to production
+4. **New Commit Pushed**: If you push another commit to the PR, old tests are cancelled
+5. **Tests Run Again**: New merge commit is tested (latest PR commit + latest target)
+6. **Tests Pass**: PR is ready to merge
+7. **PR Merged**: Code is merged to main
+8. **Tests Run Again**: Validation on actual main commit
+9. **Deploy**: If all tests pass, deploy to production
+
+### Automatic Cancellation of Old Tests
+
+When you push a new commit to your PR, GitHub Actions automatically **cancels old test runs** that are still in progress. This ensures:
+
+- **Faster feedback**: No need to wait for outdated tests to finish
+- **Resource efficiency**: CI/CD runners are not wasted on obsolete code
+- **Always testing latest**: Only the most recent commit is tested
+
+**How it works:**
+
+```
+PR #123 opened
+  └─> Tests start for commit A (merge commit A+main)
+
+You push commit B to PR #123
+  └─> Tests for commit A are CANCELLED
+  └─> Tests start for commit B (merge commit B+main)
+
+You push commit C to PR #123
+  └─> Tests for commit B are CANCELLED
+  └─> Tests start for commit C (merge commit C+main)
+```
+
+**Concurrency groups:**
+- Each PR has its own group: `test-pr-123`, `test-pr-124`, etc.
+- Main branch has its own group: `test-main`
+- Tests from different PRs don't cancel each other
 
 ## Benefits
 
@@ -62,21 +92,37 @@ When tests pass on the merge commit, you can be **100% confident** that merging 
 
 ### Workflow Configuration
 
-In `.github/workflows/test.yml`, we use GitHub's merge ref for PRs:
+In `.github/workflows/test.yml`, we use GitHub's merge ref for PRs and concurrency control:
 
 ```yaml
-- name: Checkout code
-  uses: actions/checkout@v4
-  with:
-    # For PRs: test merge commit (PR + target merged)
-    # For pushes: test actual commit
-    ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/merge', github.event.pull_request.number) || github.ref }}
+# Concurrency: Cancel old test runs when new commits are pushed
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('test-pr-{0}', github.event.pull_request.number) || 'test-main' }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # For PRs: test merge commit (PR + target merged)
+          # For pushes: test actual commit
+          ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/merge', github.event.pull_request.number) || github.ref }}
 ```
 
 ### What Gets Tested
 
 - **For Pull Requests**: `refs/pull/:prNumber/merge` (merge commit)
 - **For pushes to main**: `refs/heads/main` (actual commit)
+
+### Concurrency Control
+
+- **For Pull Requests**: Each PR has its own group (`test-pr-123`)
+  - New commits to PR #123 cancel old tests for PR #123
+  - Tests for PR #124 are not affected
+- **For main branch**: All pushes share one group (`test-main`)
+  - New pushes to main cancel old tests on main
 
 ## Real-World Example
 
@@ -105,22 +151,32 @@ Both PRs would pass tests, both would be merged, production would break! 🔥
 
 ### For Developers
 
-1. **Always wait for tests to pass** before requesting review
-2. **Re-run tests** if target branch changed while your PR was open
-3. **Check test logs** to understand what's being tested:
+1. **Push commits freely**: Old test runs are automatically cancelled when you push new commits
+   - No need to wait for tests to finish before pushing
+   - The latest commit is always tested
+2. **Always wait for tests to pass** before requesting review
+   - Check the "Actions" tab to see test progress
+   - Old runs show as "Cancelled" (this is expected)
+3. **Re-run tests manually if needed**: If target branch changed while your PR was open
+   - Click "Re-run jobs" in the Actions tab
+4. **Check test logs** to understand what's being tested:
    ```
    Testing context:
      Event: Pull Request #123
      Testing: MERGE COMMIT (PR + target branch)
      Source: feature/my-feature
      Target: main
+     Concurrency group: test-pr-123
+     Old test runs for this PR are automatically cancelled
    ```
 
 ### For Reviewers
 
 1. **Check that tests passed** on the merge commit
+   - Look for the latest test run (old cancelled runs are normal)
 2. **Don't approve** if tests are failing
 3. **Re-request tests** if target branch was updated since last test run
+4. **Ignore cancelled test runs** - these are automatically cancelled by newer commits
 
 ### For CI/CD Maintainers
 
