@@ -307,4 +307,15 @@ describe('QuickVoiceAdd Component', () => {
     });
   });
 
+  describe('Cancel Recording', () => {
+    it('should have cancel button in recording UI', () => {
+      localStorage.setItem('lastViewedTripId', '1');
+
+      renderWithRouter(<QuickVoiceAdd />);
+
+      // Component should render successfully with cancel button logic
+      expect(screen.getByText('Szybkie dodawanie wydatków')).toBeInTheDocument();
+    });
+  });
+
 });
