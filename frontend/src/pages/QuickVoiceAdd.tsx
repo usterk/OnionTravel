@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createVoiceExpense } from '@/lib/ai-expenses-api';
 import { getDefaultTripId, tripApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 
 interface AddedExpense {
   id: number;
@@ -183,6 +185,8 @@ export default function QuickVoiceAdd() {
   const cancelRecording = () => {
     cancelledRef.current = true;
     stopRecording();
+    // Redirect to main view
+    window.location.href = '/OnionTravel';
   };
 
   const processAudio = async (audioBlob: Blob) => {
@@ -333,12 +337,12 @@ export default function QuickVoiceAdd() {
                 {error}
               </p>
             )}
-            <button
+            <Button
               onClick={handleTripSelect}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3.5 text-base font-semibold transition-colors"
+              className="w-full h-12 text-lg font-semibold"
             >
               Kontynuuj
-            </button>
+            </Button>
           </div>
         )}
 
@@ -352,28 +356,30 @@ export default function QuickVoiceAdd() {
 
         {state === 'recording' && (
           <div className="py-10 px-5">
-            <div className="text-7xl font-bold text-red-500 mb-5 animate-pulse">
-              {timeLeft}
-            </div>
             <div className="text-5xl mb-5">🎤</div>
-            <progress
+            <div className="text-4xl font-bold text-red-600 mb-5 animate-pulse">
+              {timeLeft}s
+            </div>
+            <Progress
               value={progress}
-              max={100}
-              className="w-full h-2 rounded mb-5"
+              className="h-3 bg-gray-200 mb-5"
+              indicatorClassName="bg-gradient-to-r from-red-500 to-red-600"
             />
             <div className="flex flex-col gap-2.5 mt-2.5">
-              <button
+              <Button
                 onClick={stopRecording}
-                className="w-full bg-red-500 hover:bg-red-600 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors"
+                variant="destructive"
+                className="w-full h-12 text-lg font-semibold"
               >
                 ⏹️ Zatrzymaj i dodaj
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={cancelRecording}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md px-6 py-3 text-base font-semibold transition-colors"
+                variant="outline"
+                className="w-full h-12 text-lg font-semibold"
               >
                 ❌ Anuluj
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -396,12 +402,12 @@ export default function QuickVoiceAdd() {
             <p className="text-green-600 text-xl font-semibold mb-8">
               Wydatek dodany!
             </p>
-            <button
+            <Button
               onClick={handleAddAnother}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3 text-base font-semibold transition-colors"
+              className="w-full h-12 text-lg font-semibold"
             >
               ➕ Dodaj kolejny
-            </button>
+            </Button>
           </div>
         )}
 
@@ -416,19 +422,19 @@ export default function QuickVoiceAdd() {
             </p>
             <div className="flex flex-col gap-2.5">
               {error.includes('kategorii') ? (
-                <button
+                <Button
                   onClick={() => window.location.href = '/OnionTravel'}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors"
+                  className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700"
                 >
                   Wróć do głównej strony
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleAddAnother}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3 text-base font-semibold transition-colors"
+                  className="w-full h-12 text-lg font-semibold"
                 >
                   Spróbuj ponownie
-                </button>
+                </Button>
               )}
             </div>
           </div>
