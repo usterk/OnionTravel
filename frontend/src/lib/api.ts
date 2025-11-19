@@ -210,3 +210,26 @@ export const apiKeyApi = {
     await api.delete(`/api-keys/${keyId}`);
   },
 };
+
+// Helper function to get default trip ID
+export const getDefaultTripId = async (): Promise<number> => {
+  // Try localStorage first (last viewed trip)
+  const lastTripId = localStorage.getItem('lastViewedTripId');
+  if (lastTripId) {
+    const tripId = parseInt(lastTripId, 10);
+    if (!isNaN(tripId)) {
+      return tripId;
+    }
+  }
+
+  // Fallback: get first trip from API
+  const trips = await tripApi.getTrips();
+  if (trips.length === 0) {
+    throw new Error('No trips found. Please create a trip first.');
+  }
+
+  // Return first trip and save to localStorage
+  const firstTrip = trips[0];
+  localStorage.setItem('lastViewedTripId', firstTrip.id.toString());
+  return firstTrip.id;
+};

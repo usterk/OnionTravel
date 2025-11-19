@@ -11,6 +11,7 @@ const Trips = lazy(() => import('./pages/Trips'));
 const CreateTrip = lazy(() => import('./pages/CreateTrip'));
 const TripDetail = lazy(() => import('./pages/TripDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
+const QuickVoiceAdd = lazy(() => import('./pages/QuickVoiceAdd'));
 
 function App() {
   const basePath = import.meta.env.VITE_BASE_PATH || '';
@@ -28,6 +29,14 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route
+            path="/quick-add"
+            element={
+              <ProtectedRoute>
+                <QuickVoiceAdd />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/"
             element={

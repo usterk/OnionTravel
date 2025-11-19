@@ -67,6 +67,8 @@ export default function TripDetail() {
     try {
       const trip = await tripApi.getTrip(tripId);
       setCurrentTrip(trip);
+      // Save to localStorage for quick-add page
+      localStorage.setItem('lastViewedTripId', tripId.toString());
       loadCategories(tripId);
       loadStatistics(tripId);
     } catch (err: any) {
