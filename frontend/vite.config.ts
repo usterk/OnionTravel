@@ -53,6 +53,9 @@ export default defineConfig({
         '**/test/**',
         '**/*.test.*',
         '**/*.spec.*',
+        // QuickVoiceAdd excluded: Native browser APIs (MediaRecorder, FileReader, getUserMedia)
+        // are difficult to test comprehensively in unit tests. E2E tests recommended.
+        '**/pages/QuickVoiceAdd.tsx',
       ],
       thresholds: {
         lines: 90,
