@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createVoiceExpense } from '@/lib/ai-expenses-api';
-import { getDefaultTripId } from '@/lib/api';
+import { getDefaultTripId, tripApi } from '@/lib/api';
 
 interface AddedExpense {
   id: number;
@@ -13,13 +13,21 @@ interface AddedExpense {
   category_icon?: string;
 }
 
-type RecordingState = 'idle' | 'requesting-permission' | 'recording' | 'processing' | 'success' | 'error';
+interface Trip {
+  id: number;
+  name: string;
+  currency_code: string;
+}
+
+type RecordingState = 'idle' | 'requesting-permission' | 'recording' | 'processing' | 'success' | 'error' | 'selecting-trip';
 
 export default function QuickVoiceAdd() {
   const navigate = useNavigate();
   const [state, setState] = useState<RecordingState>('idle');
   const [error, setError] = useState<string>('');
   const [tripId, setTripId] = useState<number | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
   const [addedExpenses, setAddedExpenses] = useState<AddedExpense[]>([]);
   const [timeLeft, setTimeLeft] = useState(10);
   const [progress, setProgress] = useState(0);
@@ -34,10 +42,32 @@ export default function QuickVoiceAdd() {
   useEffect(() => {
     const loadTripId = async () => {
       try {
-        const id = await getDefaultTripId();
-        setTripId(id);
+        // Check localStorage first
+        const lastTripId = localStorage.getItem('lastViewedTripId');
+
+        if (lastTripId) {
+          // Have saved trip, use it
+          const id = parseInt(lastTripId, 10);
+          if (!isNaN(id)) {
+            setTripId(id);
+            return;
+          }
+        }
+
+        // No saved trip, load all trips and show selector
+        const allTrips = await tripApi.getTrips();
+
+        if (allTrips.length === 0) {
+          setError('Nie masz żadnych wycieczek. Najpierw utwórz wycieczkę na głównej stronie.');
+          setState('error');
+          return;
+        }
+
+        // Show trip selector
+        setTrips(allTrips);
+        setState('selecting-trip');
       } catch (err) {
-        setError('Nie znaleziono aktywnej wycieczki. Najpierw wejdź na główną stronę i wybierz wycieczkę z kategoriami.');
+        setError('Nie udało się załadować wycieczek. Sprawdź połączenie internetowe.');
         setState('error');
       }
     };
@@ -199,6 +229,24 @@ export default function QuickVoiceAdd() {
     }
   };
 
+  const handleTripSelect = () => {
+    if (!selectedTripId) {
+      setError('Wybierz wycieczkę');
+      return;
+    }
+
+    const id = parseInt(selectedTripId, 10);
+    if (isNaN(id)) {
+      setError('Nieprawidłowe ID wycieczki');
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem('lastViewedTripId', id.toString());
+    setTripId(id);
+    setState('idle');
+  };
+
   const handleAddAnother = () => {
     setState('idle');
     setError('');
@@ -271,6 +319,68 @@ export default function QuickVoiceAdd() {
         }}>
           Nagraj swoją wiadomość głosową
         </p>
+
+        {/* Trip Selection State */}
+        {state === 'selecting-trip' && (
+          <div style={{ padding: '20px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#1f2937',
+              marginBottom: '20px',
+            }}>
+              Wybierz wycieczkę
+            </h2>
+            <select
+              value={selectedTripId}
+              onChange={(e) => setSelectedTripId(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                backgroundColor: 'white',
+                color: '#1f2937',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">-- Wybierz wycieczkę --</option>
+              {trips.map((trip) => (
+                <option key={trip.id} value={trip.id}>
+                  {trip.name} ({trip.currency_code})
+                </option>
+              ))}
+            </select>
+            {error && (
+              <p style={{
+                color: '#ef4444',
+                fontSize: '14px',
+                marginBottom: '15px',
+              }}>
+                {error}
+              </p>
+            )}
+            <button
+              onClick={handleTripSelect}
+              style={{
+                width: '100%',
+                background: '#667eea',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '14px 24px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              Kontynuuj
+            </button>
+          </div>
+        )}
 
         {/* Recording State */}
         {state === 'requesting-permission' && (
