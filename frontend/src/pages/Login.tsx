@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,8 +19,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAuth, setLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+
+  // Get the page user tried to access before being redirected to login
+  const from = (location.state as any)?.from?.pathname || '/';
 
   const {
     register,
@@ -51,8 +55,8 @@ export default function Login() {
       // Update auth store with complete user info
       setAuth(user, tokenResponse.access_token, tokenResponse.refresh_token);
 
-      // Redirect to dashboard
-      navigate('/');
+      // Redirect to the page user tried to access, or dashboard
+      navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
       setError(

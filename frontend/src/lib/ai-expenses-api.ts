@@ -58,6 +58,22 @@ export const parseAndCreateVoiceExpense = async (
 };
 
 /**
+ * Create voice expense with base64 audio string
+ * (simplified version for quick-add page)
+ */
+export const createVoiceExpense = async (
+  tripId: number,
+  requestData: VoiceExpenseRequest
+): Promise<Expense[]> => {
+  const response = await api.post<Expense[]>(
+    `/trips/${tripId}/expenses/voice-parse`,
+    requestData
+  );
+
+  return response.data;
+};
+
+/**
  * Convert Blob to base64 string
  */
 const blobToBase64 = (blob: Blob): Promise<string> => {
