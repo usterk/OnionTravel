@@ -37,6 +37,7 @@ export default function QuickVoiceAdd() {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const cancelledRef = useRef<boolean>(false);
 
   // Load trip ID on mount
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function QuickVoiceAdd() {
       setState('requesting-permission');
       setError('');
       chunksRef.current = [];
+      cancelledRef.current = false;
       setTimeLeft(10);
       setProgress(0);
 
@@ -131,9 +133,17 @@ export default function QuickVoiceAdd() {
       };
 
       mediaRecorder.onstop = async () => {
+        stopStream();
+
+        // If cancelled, don't process audio - just return to idle
+        if (cancelledRef.current) {
+          setState('idle');
+          return;
+        }
+
+        // Otherwise process the audio
         const audioBlob = new Blob(chunksRef.current, { type: supportedType });
         await processAudio(audioBlob);
-        stopStream();
       };
 
       mediaRecorder.start();
@@ -168,6 +178,11 @@ export default function QuickVoiceAdd() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
+  };
+
+  const cancelRecording = () => {
+    cancelledRef.current = true;
+    stopRecording();
   };
 
   const processAudio = async (audioBlob: Blob) => {
@@ -346,12 +361,20 @@ export default function QuickVoiceAdd() {
               max={100}
               className="w-full h-2 rounded mb-5"
             />
-            <button
-              onClick={stopRecording}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors mt-2.5"
-            >
-              ⏹️ Zatrzymaj i dodaj
-            </button>
+            <div className="flex flex-col gap-2.5 mt-2.5">
+              <button
+                onClick={stopRecording}
+                className="w-full bg-red-500 hover:bg-red-600 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors"
+              >
+                ⏹️ Zatrzymaj i dodaj
+              </button>
+              <button
+                onClick={cancelRecording}
+                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md px-6 py-3 text-base font-semibold transition-colors"
+              >
+                ❌ Anuluj
+              </button>
+            </div>
           </div>
         )}
 
