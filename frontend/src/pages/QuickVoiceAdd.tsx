@@ -283,69 +283,28 @@ export default function QuickVoiceAdd() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
       {/* Main Card */}
-      <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        padding: '40px',
-        maxWidth: '500px',
-        width: '100%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        textAlign: 'center',
-      }}>
+      <div className="bg-white rounded-lg border shadow-sm p-10 max-w-md w-full text-center">
         {/* Title */}
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: '700',
-          marginBottom: '10px',
-          color: '#1f2937',
-        }}>
+        <h1 className="text-2xl font-bold mb-2 text-gray-800">
           Szybkie dodawanie wydatków
         </h1>
-        <p style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          marginBottom: '30px',
-        }}>
+        <p className="text-sm text-gray-500 mb-8">
           Nagraj swoją wiadomość głosową
         </p>
 
         {/* Trip Selection State */}
         {state === 'selecting-trip' && (
-          <div style={{ padding: '20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🗺️</div>
-            <h2 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1f2937',
-              marginBottom: '20px',
-            }}>
+          <div className="p-5">
+            <div className="text-5xl mb-5">🗺️</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-5">
               Wybierz wycieczkę
             </h2>
             <select
               value={selectedTripId}
               onChange={(e) => setSelectedTripId(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                backgroundColor: 'white',
-                color: '#1f2937',
-                cursor: 'pointer',
-              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base mb-5 cursor-pointer"
             >
               <option value="">-- Wybierz wycieczkę --</option>
               {trips.map((trip) => (
@@ -355,27 +314,13 @@ export default function QuickVoiceAdd() {
               ))}
             </select>
             {error && (
-              <p style={{
-                color: '#ef4444',
-                fontSize: '14px',
-                marginBottom: '15px',
-              }}>
+              <p className="text-red-500 text-sm mb-4">
                 {error}
               </p>
             )}
             <button
               onClick={handleTripSelect}
-              style={{
-                width: '100%',
-                background: '#667eea',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '14px 24px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3.5 text-base font-semibold transition-colors"
             >
               Kontynuuj
             </button>
@@ -384,47 +329,26 @@ export default function QuickVoiceAdd() {
 
         {/* Recording State */}
         {state === 'requesting-permission' && (
-          <div style={{ padding: '40px 20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎤</div>
-            <p style={{ color: '#6b7280' }}>Czekam na dostęp do mikrofonu...</p>
+          <div className="py-10 px-5">
+            <div className="text-5xl mb-5">🎤</div>
+            <p className="text-gray-500">Czekam na dostęp do mikrofonu...</p>
           </div>
         )}
 
         {state === 'recording' && (
-          <div style={{ padding: '40px 20px' }}>
-            <div style={{
-              fontSize: '72px',
-              fontWeight: '700',
-              color: '#ef4444',
-              marginBottom: '20px',
-              animation: 'pulse 1s infinite',
-            }}>
+          <div className="py-10 px-5">
+            <div className="text-7xl font-bold text-red-500 mb-5 animate-pulse">
               {timeLeft}
             </div>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎤</div>
+            <div className="text-5xl mb-5">🎤</div>
             <progress
               value={progress}
               max={100}
-              style={{
-                width: '100%',
-                height: '8px',
-                borderRadius: '4px',
-                marginBottom: '20px',
-              }}
+              className="w-full h-2 rounded mb-5"
             />
             <button
               onClick={stopRecording}
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                marginTop: '10px',
-              }}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors mt-2.5"
             >
               ⏹️ Zatrzymaj i dodaj
             </button>
@@ -432,45 +356,26 @@ export default function QuickVoiceAdd() {
         )}
 
         {state === 'processing' && (
-          <div style={{ padding: '40px 20px' }}>
-            <div style={{
-              fontSize: '48px',
-              marginBottom: '20px',
-              animation: 'spin 1s linear infinite',
-            }}>
+          <div className="py-10 px-5">
+            <div className="text-5xl mb-5 animate-spin">
               ⏳
             </div>
-            <p style={{ color: '#6b7280', fontSize: '18px' }}>Przetwarzam nagranie...</p>
-            <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '10px' }}>
+            <p className="text-gray-500 text-lg">Przetwarzam nagranie...</p>
+            <p className="text-gray-400 text-sm mt-2.5">
               To może potrwać 3-15 sekund
             </p>
           </div>
         )}
 
         {state === 'success' && (
-          <div style={{ padding: '20px' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>✅</div>
-            <p style={{
-              color: '#10b981',
-              fontSize: '20px',
-              fontWeight: '600',
-              marginBottom: '30px',
-            }}>
+          <div className="p-5">
+            <div className="text-6xl mb-5">✅</div>
+            <p className="text-green-600 text-xl font-semibold mb-8">
               Wydatek dodany!
             </p>
             <button
               onClick={handleAddAnother}
-              style={{
-                background: '#667eea',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                width: '100%',
-              }}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3 text-base font-semibold transition-colors"
             >
               ➕ Dodaj kolejny
             </button>
@@ -478,51 +383,26 @@ export default function QuickVoiceAdd() {
         )}
 
         {state === 'error' && (
-          <div style={{ padding: '40px 20px' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>❌</div>
-            <p style={{
-              color: '#ef4444',
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '10px',
-            }}>
+          <div className="py-10 px-5">
+            <div className="text-6xl mb-5">❌</div>
+            <p className="text-red-500 text-lg font-semibold mb-2.5">
               Błąd
             </p>
-            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '30px' }}>
+            <p className="text-gray-500 text-sm mb-8">
               {error}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               {error.includes('kategorii') ? (
                 <button
                   onClick={() => window.location.href = '/OnionTravel'}
-                  style={{
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white rounded-md px-6 py-3 text-base font-semibold transition-colors"
                 >
                   Wróć do głównej strony
                 </button>
               ) : (
                 <button
                   onClick={handleAddAnother}
-                  style={{
-                    background: '#667eea',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 py-3 text-base font-semibold transition-colors"
                 >
                   Spróbuj ponownie
                 </button>
@@ -533,73 +413,35 @@ export default function QuickVoiceAdd() {
 
         {/* Added Expenses List */}
         {addedExpenses.length > 0 && (
-          <div style={{ marginTop: '30px' }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1f2937',
-              marginBottom: '15px',
-              textAlign: 'left',
-            }}>
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 text-left">
               Dodane wydatki ({addedExpenses.length})
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               {addedExpenses.map((expense) => (
                 <div
                   key={expense.id}
                   onClick={handleExpenseClick}
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    transition: 'transform 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
+                  className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow rounded-lg p-4 cursor-pointer flex items-center gap-3"
                 >
-                  <div style={{ fontSize: '32px' }}>
+                  <div className="text-3xl">
                     {getCategoryEmoji(expense.category_id, expense.category_name)}
                   </div>
-                  <div style={{ flex: 1, textAlign: 'left' }}>
-                    <div style={{
-                      fontWeight: '600',
-                      fontSize: '16px',
-                      marginBottom: '4px',
-                    }}>
+                  <div className="flex-1 text-left">
+                    <div className="font-semibold text-base text-gray-800 mb-1">
                       {expense.title}
                     </div>
-                    <div style={{ fontSize: '14px', opacity: 0.9 }}>
+                    <div className="text-sm text-gray-600">
                       {expense.amount.toFixed(2)} {expense.currency_code}
                     </div>
                   </div>
-                  <div style={{ fontSize: '20px' }}>→</div>
+                  <div className="text-xl text-gray-400">→</div>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
