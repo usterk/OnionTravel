@@ -80,13 +80,14 @@ def get_categories_sorted_by_usage(db: Session, trip_id: int) -> List[Category]:
     Get all categories for a trip, sorted by expense count (most used first).
 
     Categories with no expenses will appear at the end, sorted by display_order.
+    The "Other" category is always placed at the very end regardless of usage.
 
     Args:
         db: Database session
         trip_id: Trip ID
 
     Returns:
-        List of categories sorted by usage frequency
+        List of categories sorted by usage frequency, with "Other" always last
     """
     # Get expense counts per category
     expense_counts = db.query(
@@ -102,11 +103,15 @@ def get_categories_sorted_by_usage(db: Session, trip_id: int) -> List[Category]:
     # Get all categories
     categories = get_categories_by_trip(db, trip_id)
 
-    # Sort by expense count (descending), then by display_order for categories with same count
-    sorted_categories = sorted(
-        categories,
-        key=lambda c: (-count_dict.get(c.id, 0), c.display_order)
-    )
+    # Sort by:
+    # 1. "Other" category always last (is_other = 1 for Other, 0 for others)
+    # 2. Expense count (descending)
+    # 3. Display order for categories with same count
+    def sort_key(c: Category):
+        is_other = 1 if c.name.lower() == "other" else 0
+        return (is_other, -count_dict.get(c.id, 0), c.display_order)
+
+    sorted_categories = sorted(categories, key=sort_key)
 
     return sorted_categories
 
