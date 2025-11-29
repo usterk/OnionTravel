@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { DatePickerInput } from '@/components/ui/date-picker-input';
+import { TitleAutocomplete } from '@/components/ui/title-autocomplete';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense, updateExpense } from '@/lib/expenses-api';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -268,11 +269,11 @@ export function QuickExpenseEntry({
             <Label htmlFor="quick-expense-title" className="text-sm font-medium">
               Title
             </Label>
-            <Input
+            <TitleAutocomplete
               id="quick-expense-title"
-              type="text"
+              tripId={tripId}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={setTitle}
               placeholder={
                 selectedCategory ? `${selectedCategory.name} expense` : 'Enter title'
               }

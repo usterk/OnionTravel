@@ -99,11 +99,12 @@ export function useDailyBudgetData({
   }, [tripId, selectedDate]);
 
   /**
-   * Load categories for trip
+   * Load categories for trip (sorted by usage frequency for expense forms)
    */
   const loadCategories = useCallback(async () => {
     try {
-      const cats = await getCategories(tripId);
+      // Sort by usage for expense forms - most frequently used categories first
+      const cats = await getCategories(tripId, true);
       setCategories(cats);
     } catch (err: any) {
       console.error('Failed to load categories:', err);

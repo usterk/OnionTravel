@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { TitleAutocomplete } from '@/components/ui/title-autocomplete';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { createExpense, updateExpense } from '@/lib/expenses-api';
 import type { Expense, Category } from '@/types/models';
@@ -171,10 +172,11 @@ export function ExpenseForm({
       {/* Title */}
       <div>
         <Label htmlFor="title">Title *</Label>
-        <Input
+        <TitleAutocomplete
           id="title"
+          tripId={tripId}
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, title: value })}
           placeholder="e.g., Hotel booking, Dinner at restaurant"
           required
           disabled={isLoading}

@@ -17,9 +17,13 @@ export interface CategoryUpdate {
 
 /**
  * Get all categories for a trip
+ * @param tripId - Trip ID
+ * @param sortByUsage - If true, sort categories by expense frequency (most used first)
  */
-export const getCategories = async (tripId: number): Promise<Category[]> => {
-  const response = await api.get<Category[]>(`/trips/${tripId}/categories`);
+export const getCategories = async (tripId: number, sortByUsage: boolean = false): Promise<Category[]> => {
+  const response = await api.get<Category[]>(`/trips/${tripId}/categories`, {
+    params: sortByUsage ? { sort_by_usage: true } : undefined
+  });
   return response.data;
 };
 

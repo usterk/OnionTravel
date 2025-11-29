@@ -75,6 +75,42 @@ def get_categories_by_trip(db: Session, trip_id: int) -> List[Category]:
     ).order_by(Category.display_order, Category.created_at).all()
 
 
+def get_categories_sorted_by_usage(db: Session, trip_id: int) -> List[Category]:
+    """
+    Get all categories for a trip, sorted by expense count (most used first).
+
+    Categories with no expenses will appear at the end, sorted by display_order.
+
+    Args:
+        db: Database session
+        trip_id: Trip ID
+
+    Returns:
+        List of categories sorted by usage frequency
+    """
+    # Get expense counts per category
+    expense_counts = db.query(
+        Expense.category_id,
+        func.count(Expense.id).label("expense_count")
+    ).filter(
+        Expense.trip_id == trip_id
+    ).group_by(Expense.category_id).all()
+
+    # Create lookup dict
+    count_dict = {cat_id: count for cat_id, count in expense_counts}
+
+    # Get all categories
+    categories = get_categories_by_trip(db, trip_id)
+
+    # Sort by expense count (descending), then by display_order for categories with same count
+    sorted_categories = sorted(
+        categories,
+        key=lambda c: (-count_dict.get(c.id, 0), c.display_order)
+    )
+
+    return sorted_categories
+
+
 def get_categories_with_stats(db: Session, trip_id: int, trip_budget: float) -> List[CategoryWithStats]:
     """
     Get all categories for a trip with spending statistics.
