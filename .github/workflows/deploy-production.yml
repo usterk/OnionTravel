@@ -214,6 +214,37 @@ jobs:
         if: ${{ vars.DISCORD_WEBHOOK_URL }}
         run: |
           VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+          OLD_VERSION="${{ needs.version-and-release.outputs.old_version || '' }}"
+
+          # Get changelog from release notes
+          RELEASE_NOTES='${{ needs.version-and-release.outputs.release_notes }}'
+
+          if [ -n "$RELEASE_NOTES" ]; then
+            # Extract just the commit lines (starting with "- "), limit to 5 for preview
+            CHANGELOG=$(echo "$RELEASE_NOTES" | grep -E "^[[:space:]]*- " | head -5 || echo "")
+            # Count total changes
+            TOTAL_CHANGES=$(echo "$RELEASE_NOTES" | grep -cE "^[[:space:]]*- " || echo "0")
+            if [ "$TOTAL_CHANGES" -gt 5 ]; then
+              CHANGELOG="$CHANGELOG
+... and $((TOTAL_CHANGES - 5)) more changes"
+            fi
+          else
+            CHANGELOG="No changelog available"
+          fi
+
+          # Escape for JSON
+          CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | \
+            sed 's/\\/\\\\/g' | \
+            sed 's/"/\\"/g' | \
+            sed ':a;N;$!ba;s/\n/\\n/g' | \
+            head -c 600)
+
+          # Build version display
+          if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$VERSION" ]; then
+            VERSION_DISPLAY="$OLD_VERSION → $VERSION"
+          else
+            VERSION_DISPLAY="$VERSION"
+          fi
 
           curl -H "Content-Type: application/json" \
             -d "{
@@ -222,10 +253,11 @@ jobs:
                 \"description\": \"Deploying OnionTravel to production\",
                 \"color\": 3447003,
                 \"fields\": [
-                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Version\", \"value\": \"$VERSION_DISPLAY\", \"inline\": true},
                   {\"name\": \"Branch\", \"value\": \"main\", \"inline\": true},
                   {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
-                  {\"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true}
+                  {\"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                  {\"name\": \"📝 Changes\", \"value\": \"$CHANGELOG_ESCAPED\", \"inline\": false}
                 ],
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
               }]
@@ -460,6 +492,37 @@ jobs:
         if: success() && vars.DISCORD_WEBHOOK_URL
         run: |
           VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+          OLD_VERSION="${{ needs.version-and-release.outputs.old_version || '' }}"
+
+          # Get changelog from release notes or generate from commits
+          RELEASE_NOTES='${{ needs.version-and-release.outputs.release_notes }}'
+
+          if [ -n "$RELEASE_NOTES" ]; then
+            # Extract just the commit lines (starting with "- ")
+            CHANGELOG=$(echo "$RELEASE_NOTES" | grep -E "^[[:space:]]*- " | head -15 || echo "")
+          else
+            # Fallback: get recent commits if release notes not available
+            CHANGELOG=$(git log --oneline -10 --pretty=format:"- %s" 2>/dev/null || echo "No changelog available")
+          fi
+
+          # Escape for JSON: replace newlines with \n, escape quotes and backslashes
+          CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | \
+            sed 's/\\/\\\\/g' | \
+            sed 's/"/\\"/g' | \
+            sed ':a;N;$!ba;s/\n/\\n/g' | \
+            head -c 900)
+
+          # Add ellipsis if truncated
+          if [ ${#CHANGELOG} -gt 900 ]; then
+            CHANGELOG_ESCAPED="${CHANGELOG_ESCAPED}..."
+          fi
+
+          # Build version display
+          if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$VERSION" ]; then
+            VERSION_DISPLAY="$OLD_VERSION → $VERSION"
+          else
+            VERSION_DISPLAY="$VERSION"
+          fi
 
           curl -H "Content-Type: application/json" \
             -d "{
@@ -468,9 +531,10 @@ jobs:
                 \"description\": \"OnionTravel deployed successfully to production\",
                 \"color\": 3066993,
                 \"fields\": [
-                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Version\", \"value\": \"$VERSION_DISPLAY\", \"inline\": true},
                   {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
                   {\"name\": \"Deployed by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                  {\"name\": \"📝 Changelog\", \"value\": \"$CHANGELOG_ESCAPED\", \"inline\": false},
                   {\"name\": \"Production URL\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}\", \"inline\": false},
                   {\"name\": \"API Docs\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs\", \"inline\": false}
                 ],
