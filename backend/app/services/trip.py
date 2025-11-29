@@ -88,6 +88,7 @@ class TripService:
             currency_code=trip_data.currency_code.upper(),
             total_budget=total_budget,
             daily_budget=daily_budget,
+            sort_categories_by_usage=trip_data.sort_categories_by_usage,
             owner_id=owner_id
         )
         self.db.add(db_trip)

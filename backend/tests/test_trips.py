@@ -681,3 +681,127 @@ class TestTripMembers:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Cannot remove trip owner" in response.json()["detail"]
+
+
+class TestCategorySortPreference:
+    """Tests for category sort preference field"""
+
+    def test_create_trip_with_default_sort_preference(self, client, auth_headers, test_trip_data):
+        """Test creating trip has default sort_categories_by_usage=True"""
+        response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert "sort_categories_by_usage" in data
+        assert data["sort_categories_by_usage"] is True
+
+    def test_create_trip_with_explicit_sort_preference(self, client, auth_headers, test_trip_data):
+        """Test creating trip with explicit sort_categories_by_usage=False"""
+        test_trip_data["sort_categories_by_usage"] = False
+
+        response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["sort_categories_by_usage"] is False
+
+    def test_update_trip_sort_preference(self, client, auth_headers, test_trip_data):
+        """Test owner can update sort preference"""
+        # Create a trip with default (True)
+        create_response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+        trip_id = create_response.json()["id"]
+        assert create_response.json()["sort_categories_by_usage"] is True
+
+        # Update to False
+        update_data = {"sort_categories_by_usage": False}
+        response = client.put(
+            f"/api/v1/trips/{trip_id}",
+            json=update_data,
+            headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["sort_categories_by_usage"] is False
+
+        # Verify change persisted
+        get_response = client.get(f"/api/v1/trips/{trip_id}", headers=auth_headers)
+        assert get_response.json()["sort_categories_by_usage"] is False
+
+    def test_update_sort_preference_back_to_true(self, client, auth_headers, test_trip_data):
+        """Test toggling sort preference back to True"""
+        # Create trip with False
+        test_trip_data["sort_categories_by_usage"] = False
+        create_response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+        trip_id = create_response.json()["id"]
+
+        # Update to True
+        update_data = {"sort_categories_by_usage": True}
+        response = client.put(
+            f"/api/v1/trips/{trip_id}",
+            json=update_data,
+            headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["sort_categories_by_usage"] is True
+
+    def test_partial_update_keeps_sort_preference(self, client, auth_headers, test_trip_data):
+        """Test that partial update without sort_categories_by_usage doesn't change it"""
+        # Create trip with False
+        test_trip_data["sort_categories_by_usage"] = False
+        create_response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+        trip_id = create_response.json()["id"]
+
+        # Update only name (not sort preference)
+        update_data = {"name": "Updated Trip Name"}
+        response = client.put(
+            f"/api/v1/trips/{trip_id}",
+            json=update_data,
+            headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["name"] == "Updated Trip Name"
+        assert data["sort_categories_by_usage"] is False  # Should remain False
+
+    def test_non_owner_cannot_update_sort_preference(self, client, auth_headers, auth_headers_user2, test_trip_data):
+        """Test that non-owner member cannot update sort preference"""
+        # User 1 creates a trip
+        create_response = client.post(
+            "/api/v1/trips/",
+            json=test_trip_data,
+            headers=auth_headers
+        )
+        trip_id = create_response.json()["id"]
+
+        # User 2 tries to update sort preference (should fail - no access)
+        update_data = {"sort_categories_by_usage": False}
+        response = client.put(
+            f"/api/v1/trips/{trip_id}",
+            json=update_data,
+            headers=auth_headers_user2
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
