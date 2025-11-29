@@ -17,6 +17,7 @@ export interface Trip {
   currency_code: string;
   total_budget?: number;
   daily_budget?: number;
+  sort_categories_by_usage: boolean;
   owner_id: number;
   created_at: string;
   updated_at: string;

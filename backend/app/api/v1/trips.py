@@ -106,6 +106,7 @@ def get_trip(
         currency_code=trip.currency_code,
         total_budget=trip.total_budget,
         daily_budget=trip.daily_budget,
+        sort_categories_by_usage=trip.sort_categories_by_usage,
         owner_id=trip.owner_id,
         created_at=trip.created_at,
         updated_at=trip.updated_at,

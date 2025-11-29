@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, Numeric, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -15,6 +15,7 @@ class Trip(Base):
     currency_code = Column(String(3), nullable=False)  # ISO 4217 (USD, EUR, PLN, THB, etc.)
     total_budget = Column(Numeric(12, 2), nullable=True)
     daily_budget = Column(Numeric(12, 2), nullable=True)
+    sort_categories_by_usage = Column(Boolean, default=True, nullable=False, doc="Whether to sort categories by usage count (True) or by display_order (False)")
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

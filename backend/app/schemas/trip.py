@@ -13,6 +13,7 @@ class TripBase(BaseModel):
     currency_code: str = Field(..., min_length=3, max_length=3, description="ISO 4217 currency code (e.g., USD, EUR, PLN)")
     total_budget: Optional[Decimal] = Field(None, ge=0)
     daily_budget: Optional[Decimal] = Field(None, ge=0)
+    sort_categories_by_usage: bool = True
 
 
 class TripCreate(TripBase):
@@ -29,6 +30,7 @@ class TripUpdate(BaseModel):
     currency_code: Optional[str] = Field(None, min_length=3, max_length=3)
     total_budget: Optional[Decimal] = Field(None, ge=0)
     daily_budget: Optional[Decimal] = Field(None, ge=0)
+    sort_categories_by_usage: Optional[bool] = None
 
 
 class TripUserBase(BaseModel):

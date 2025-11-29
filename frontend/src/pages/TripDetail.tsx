@@ -69,7 +69,7 @@ export default function TripDetail() {
       setCurrentTrip(trip);
       // Save to localStorage for quick-add page
       localStorage.setItem('lastViewedTripId', tripId.toString());
-      loadCategories(tripId);
+      loadCategories(tripId, trip);
       loadStatistics(tripId);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load trip');
@@ -78,13 +78,17 @@ export default function TripDetail() {
     }
   };
 
-  const loadCategories = async (tripId: number) => {
+  const loadCategories = async (tripId: number, trip?: typeof currentTrip) => {
     try {
       const { getCategoriesWithStats, getCategories } = await import('@/lib/categories-api');
+      // Use trip preference if available, otherwise default to true
+      const tripToUse = trip || currentTrip;
+      const sortByUsage = tripToUse?.sort_categories_by_usage ?? true;
+
       const [categoriesData, plainCategoriesData] = await Promise.all([
         getCategoriesWithStats(tripId),
-        // Sort by usage for expense forms - most frequently used categories first
-        getCategories(tripId, true),
+        // Sort by usage preference from trip settings
+        getCategories(tripId, sortByUsage),
       ]);
       setCategories(categoriesData);
       setPlainCategories(plainCategoriesData);
@@ -133,6 +137,30 @@ export default function TripDetail() {
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to delete trip');
       setIsLoading(false);
+    }
+  };
+
+  const handleSortPreferenceChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentTrip) return;
+
+    const newValue = e.target.checked;
+
+    try {
+      // Update trip on backend
+      const updated = await tripApi.updateTrip(currentTrip.id, {
+        sort_categories_by_usage: newValue
+      });
+
+      // Update local state
+      const updatedTrip = { ...currentTrip, sort_categories_by_usage: newValue };
+      setCurrentTrip(updatedTrip);
+      updateTrip(currentTrip.id, updated);
+
+      // Reload categories with new sort preference
+      await loadCategories(currentTrip.id, updatedTrip);
+    } catch (err: any) {
+      console.error('Failed to update sort preference:', err);
+      setError(err.response?.data?.detail || 'Failed to update category sort preference');
     }
   };
 
@@ -405,6 +433,43 @@ export default function TripDetail() {
                     <Button onClick={() => setIsEditDialogOpen(true)}>
                       Edit Trip Details
                     </Button>
+                  </div>
+                )}
+
+                {/* Categories Section */}
+                {canEdit() && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium">Categories</h3>
+                    </div>
+
+                    {/* Sort Preference Checkbox */}
+                    <div className="flex items-start gap-3 mb-4 p-3 bg-gray-50 rounded-md">
+                      <input
+                        type="checkbox"
+                        id="sort-by-usage"
+                        checked={currentTrip.sort_categories_by_usage}
+                        onChange={handleSortPreferenceChange}
+                        className="h-4 w-4 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="sort-by-usage"
+                        className="text-sm cursor-pointer select-none"
+                      >
+                        <div className="font-medium text-gray-900">Sort categories by usage frequency</div>
+                        <div className="text-gray-600 mt-0.5">
+                          When enabled, categories in expense forms are sorted by how often you use them.
+                          When disabled, they appear in your custom order.
+                        </div>
+                      </label>
+                    </div>
+
+                    <CategoryList
+                      categories={categories}
+                      tripId={currentTrip.id}
+                      onCategoryUpdated={() => loadCategories(currentTrip.id)}
+                      showStats={false}
+                    />
                   </div>
                 )}
 
