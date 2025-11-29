@@ -212,12 +212,11 @@ jobs:
     steps:
       - name: Notify deployment start
         if: ${{ vars.DISCORD_WEBHOOK_URL }}
+        env:
+          VERSION: ${{ needs.version-and-release.outputs.new_version || 'current' }}
+          OLD_VERSION: ${{ needs.version-and-release.outputs.old_version || '' }}
+          RELEASE_NOTES: ${{ needs.version-and-release.outputs.release_notes }}
         run: |
-          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
-          OLD_VERSION="${{ needs.version-and-release.outputs.old_version || '' }}"
-
-          # Get changelog from release notes
-          RELEASE_NOTES='${{ needs.version-and-release.outputs.release_notes }}'
 
           if [ -n "$RELEASE_NOTES" ]; then
             # Extract just the commit lines (starting with "- "), limit to 5 for preview
@@ -490,12 +489,11 @@ jobs:
 
       - name: Notify deployment success
         if: success() && vars.DISCORD_WEBHOOK_URL
+        env:
+          VERSION: ${{ needs.version-and-release.outputs.new_version || 'current' }}
+          OLD_VERSION: ${{ needs.version-and-release.outputs.old_version || '' }}
+          RELEASE_NOTES: ${{ needs.version-and-release.outputs.release_notes }}
         run: |
-          VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
-          OLD_VERSION="${{ needs.version-and-release.outputs.old_version || '' }}"
-
-          # Get changelog from release notes or generate from commits
-          RELEASE_NOTES='${{ needs.version-and-release.outputs.release_notes }}'
 
           if [ -n "$RELEASE_NOTES" ]; then
             # Extract just the commit lines (starting with "- ")
