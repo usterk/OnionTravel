@@ -460,19 +460,46 @@ jobs:
         if: success() && vars.DISCORD_WEBHOOK_URL
         run: |
           VERSION="${{ needs.version-and-release.outputs.new_version || 'current' }}"
+          OLD_VERSION="${{ needs.version-and-release.outputs.old_version || '' }}"
+
+          # Get changelog from release notes (extract commits list)
+          RELEASE_NOTES='${{ needs.version-and-release.outputs.release_notes }}'
+
+          # Extract only the commit lines (lines starting with "- ")
+          CHANGELOG=$(echo "$RELEASE_NOTES" | grep "^- " | head -15 || echo "")
+
+          # If changelog is empty, show a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No changes recorded"
+          fi
+
+          # Truncate if too long (Discord field limit is 1024 chars)
+          if [ ${#CHANGELOG} -gt 900 ]; then
+            CHANGELOG="${CHANGELOG:0:900}..."
+          fi
+
+          # Escape special characters for JSON
+          CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          # Build description with changelog
+          if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$VERSION" ]; then
+            DESCRIPTION="OnionTravel **v${OLD_VERSION}** → **v${VERSION}**"
+          else
+            DESCRIPTION="OnionTravel deployed successfully to production"
+          fi
 
           curl -H "Content-Type: application/json" \
             -d "{
               \"embeds\": [{
                 \"title\": \"✅ Deployment Successful\",
-                \"description\": \"OnionTravel deployed successfully to production\",
+                \"description\": \"$DESCRIPTION\",
                 \"color\": 3066993,
                 \"fields\": [
-                  {\"name\": \"Version\", \"value\": \"$VERSION\", \"inline\": true},
+                  {\"name\": \"Version\", \"value\": \"v$VERSION\", \"inline\": true},
                   {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
                   {\"name\": \"Deployed by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
-                  {\"name\": \"Production URL\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}\", \"inline\": false},
-                  {\"name\": \"API Docs\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs\", \"inline\": false}
+                  {\"name\": \"📋 Changelog\", \"value\": \"$CHANGELOG_ESCAPED\", \"inline\": false},
+                  {\"name\": \"🔗 Links\", \"value\": \"[Production](https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}) • [API Docs](https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs) • [Release](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION)\", \"inline\": false}
                 ],
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
               }]
