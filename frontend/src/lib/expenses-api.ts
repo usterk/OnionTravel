@@ -176,3 +176,25 @@ export const getDailyBudgetStatistics = async (
   const response = await api.get<DailyBudgetStatistics>(url);
   return response.data;
 };
+
+/**
+ * Get expense title suggestions for autocomplete
+ * @param tripId - Trip ID
+ * @param query - Optional search query to filter titles
+ * @param limit - Maximum number of suggestions (default 10)
+ */
+export const getExpenseTitleSuggestions = async (
+  tripId: number,
+  query: string = '',
+  limit: number = 10
+): Promise<string[]> => {
+  const params = new URLSearchParams();
+  if (query) params.append('q', query);
+  params.append('limit', limit.toString());
+
+  const queryString = params.toString();
+  const url = `/trips/${tripId}/expenses/title-suggestions?${queryString}`;
+
+  const response = await api.get<string[]>(url);
+  return response.data;
+};

@@ -51,18 +51,28 @@ def get_trip_or_404(db: Session, trip_id: int, user: User) -> Trip:
 @router.get("/trips/{trip_id}/categories", response_model=List[CategoryResponse])
 def list_categories(
     trip_id: int,
+    sort_by_usage: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Get all categories for a trip.
 
-    Returns categories ordered by default status (defaults first) and creation date.
+    Args:
+        trip_id: Trip ID
+        sort_by_usage: If True, sort categories by expense frequency (most used first).
+                      If False (default), sort by display_order.
+
+    Returns categories ordered by default status (defaults first) and creation date,
+    or by usage frequency if sort_by_usage=True.
     """
     # Verify trip access
     get_trip_or_404(db, trip_id, current_user)
 
-    categories = category_service.get_categories_by_trip(db, trip_id)
+    if sort_by_usage:
+        categories = category_service.get_categories_sorted_by_usage(db, trip_id)
+    else:
+        categories = category_service.get_categories_by_trip(db, trip_id)
     return categories
 
 

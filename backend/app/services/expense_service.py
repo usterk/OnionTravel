@@ -289,6 +289,50 @@ def delete_expense(db: Session, expense_id: int, trip_id: int) -> bool:
     return True
 
 
+def get_expense_title_suggestions(
+    db: Session,
+    trip_id: int,
+    query: str = "",
+    limit: int = 10
+) -> List[str]:
+    """
+    Get unique expense titles for a trip, optionally filtered by a query string.
+
+    Titles are sorted by frequency (most used first).
+
+    Args:
+        db: Database session
+        trip_id: Trip ID
+        query: Optional search query to filter titles
+        limit: Maximum number of suggestions to return
+
+    Returns:
+        List of unique expense titles sorted by frequency
+    """
+    # Query expense titles with count, filtered by query if provided
+    title_query = db.query(
+        Expense.title,
+        func.count(Expense.id).label("usage_count")
+    ).filter(
+        Expense.trip_id == trip_id
+    )
+
+    # Filter by query if provided (case-insensitive)
+    if query:
+        title_query = title_query.filter(
+            func.lower(Expense.title).contains(func.lower(query))
+        )
+
+    # Group by title and order by count
+    results = title_query.group_by(
+        Expense.title
+    ).order_by(
+        func.count(Expense.id).desc()
+    ).limit(limit).all()
+
+    return [title for title, _ in results]
+
+
 def get_expense_statistics(db: Session, trip_id: int) -> ExpenseStatistics:
     """
     Get comprehensive expense statistics for a trip.

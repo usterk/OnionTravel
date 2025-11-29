@@ -135,6 +135,32 @@ async def create_expense(
     return new_expense
 
 
+@router.get("/trips/{trip_id}/expenses/title-suggestions", response_model=List[str])
+def get_expense_title_suggestions(
+    trip_id: int,
+    q: Optional[str] = Query("", description="Search query to filter titles"),
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get expense title suggestions for autocomplete.
+
+    Returns unique expense titles from the trip, sorted by usage frequency.
+    Optionally filter by a search query (case-insensitive contains match).
+    """
+    # Verify trip access
+    get_trip_or_404(db, trip_id, current_user)
+
+    suggestions = expense_service.get_expense_title_suggestions(
+        db=db,
+        trip_id=trip_id,
+        query=q,
+        limit=limit
+    )
+    return suggestions
+
+
 @router.get("/trips/{trip_id}/expenses/stats", response_model=ExpenseStatistics)
 def get_expense_stats(
     trip_id: int,

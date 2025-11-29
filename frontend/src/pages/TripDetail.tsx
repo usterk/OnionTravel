@@ -83,7 +83,8 @@ export default function TripDetail() {
       const { getCategoriesWithStats, getCategories } = await import('@/lib/categories-api');
       const [categoriesData, plainCategoriesData] = await Promise.all([
         getCategoriesWithStats(tripId),
-        getCategories(tripId),
+        // Sort by usage for expense forms - most frequently used categories first
+        getCategories(tripId, true),
       ]);
       setCategories(categoriesData);
       setPlainCategories(plainCategoriesData);
