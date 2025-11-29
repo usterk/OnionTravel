@@ -224,7 +224,7 @@ jobs:
             # Count total changes
             TOTAL_CHANGES=$(echo "$RELEASE_NOTES" | grep -cE "^[[:space:]]*- " || echo "0")
             if [ "$TOTAL_CHANGES" -gt 5 ]; then
-              CHANGELOG="$CHANGELOG
+              CHANGELOG="${CHANGELOG}
 ... and $((TOTAL_CHANGES - 5)) more changes"
             fi
           else
