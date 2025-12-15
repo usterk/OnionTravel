@@ -223,7 +223,7 @@ async def parse_and_create_voice_expense(
                 description=None
             )
 
-            created_expense = await expense_service.create_expense(
+            created_expense = expense_service.create_expense(
                 db=db,
                 trip_id=trip_id,
                 user_id=current_user.id,

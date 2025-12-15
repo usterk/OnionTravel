@@ -12,7 +12,7 @@ from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseStatistics,
 from app.services.currency import CurrencyService
 
 
-async def create_expense(
+def create_expense(
     db: Session,
     trip_id: int,
     user_id: int,
@@ -60,7 +60,7 @@ async def create_expense(
     # Get exchange rate and convert if needed
     if expense_data.currency_code != trip.currency_code:
         currency_service = CurrencyService(db)
-        rate = await currency_service.get_rate(
+        rate = currency_service.get_rate(
             expense_data.currency_code,
             trip.currency_code,
             expense_data.start_date
@@ -178,7 +178,7 @@ def get_expenses_by_trip(
     return query.offset(skip).limit(limit).all()
 
 
-async def update_expense(
+def update_expense(
     db: Session,
     expense_id: int,
     trip_id: int,
@@ -247,7 +247,7 @@ async def update_expense(
 
         if currency != trip.currency_code:
             currency_service = CurrencyService(db)
-            rate = await currency_service.get_rate(currency, trip.currency_code, rate_date)
+            rate = currency_service.get_rate(currency, trip.currency_code, rate_date)
             if not rate:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
