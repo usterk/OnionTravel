@@ -2,7 +2,7 @@
 Tests for currency API endpoints
 """
 import pytest
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.models.exchange_rate import ExchangeRate
@@ -435,3 +435,170 @@ class TestCurrencyService:
         converted = await service.convert_amount(Decimal("100"), "USD", "EUR")
 
         assert converted == Decimal("85.0")
+
+
+class TestCurrencyHistoryEndpoint:
+    """Tests for GET /api/v1/currency/history"""
+
+    def test_get_currency_history_unauthorized(self, client):
+        """Test that endpoint requires authentication"""
+        response = client.get(
+            "/api/v1/currency/history",
+            params={
+                "from_currencies": "USD,EUR",
+                "to_currency": "THB"
+            }
+        )
+        assert response.status_code in [401, 403]
+
+    def test_get_currency_history_missing_params(self, client, auth_headers):
+        """Test validation for missing required parameters"""
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={"to_currency": "THB"}  # missing from_currencies
+        )
+        assert response.status_code == 422
+
+    def test_get_currency_history_invalid_currency(self, client, auth_headers):
+        """Test validation for unsupported currency"""
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "XXX",
+                "to_currency": "THB"
+            }
+        )
+        assert response.status_code == 400
+        assert "not supported" in response.json()["detail"]
+
+    def test_get_currency_history_too_many_currencies(self, client, auth_headers):
+        """Test validation for too many from_currencies (max 3)"""
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "USD,EUR,PLN,GBP",
+                "to_currency": "THB"
+            }
+        )
+        assert response.status_code == 400
+        assert "Maximum 3" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_get_currency_history_from_db(self, client, auth_headers, db_session):
+        """Test getting history from database"""
+        # Insert test rates for the last 7 days
+        base_date = date.today()
+        for i in range(7):
+            rate_date = base_date - timedelta(days=i)
+            test_rate = ExchangeRate(
+                from_currency="USD",
+                to_currency="THB",
+                rate=Decimal("35.0") + Decimal(str(i * 0.1)),
+                date=rate_date
+            )
+            db_session.add(test_rate)
+        db_session.commit()
+
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "USD",
+                "to_currency": "THB",
+                "days": 7
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "pairs" in data
+        assert len(data["pairs"]) == 1
+        assert data["pairs"][0]["from_currency"] == "USD"
+        assert data["pairs"][0]["to_currency"] == "THB"
+        assert len(data["pairs"][0]["data"]) >= 1
+
+    def test_get_currency_history_days_validation(self, client, auth_headers):
+        """Test validation for days parameter (1-365)"""
+        # Too many days
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "USD",
+                "to_currency": "THB",
+                "days": 400
+            }
+        )
+        assert response.status_code == 422
+
+        # Zero days
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "USD",
+                "to_currency": "THB",
+                "days": 0
+            }
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_get_currency_history_multiple_pairs(self, client, auth_headers, db_session):
+        """Test getting history for multiple currency pairs"""
+        base_date = date.today()
+
+        # Insert rates for USD and EUR to THB
+        for curr in ["USD", "EUR"]:
+            for i in range(3):
+                rate_date = base_date - timedelta(days=i)
+                test_rate = ExchangeRate(
+                    from_currency=curr,
+                    to_currency="THB",
+                    rate=Decimal("35.0") if curr == "USD" else Decimal("38.0"),
+                    date=rate_date
+                )
+                db_session.add(test_rate)
+        db_session.commit()
+
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "USD,EUR",
+                "to_currency": "THB",
+                "days": 3
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data["pairs"]) == 2
+        currencies = [p["from_currency"] for p in data["pairs"]]
+        assert "USD" in currencies
+        assert "EUR" in currencies
+
+    def test_get_currency_history_case_insensitive(self, client, auth_headers, db_session):
+        """Test that currency codes are case insensitive"""
+        test_rate = ExchangeRate(
+            from_currency="USD",
+            to_currency="THB",
+            rate=Decimal("35.0"),
+            date=date.today()
+        )
+        db_session.add(test_rate)
+        db_session.commit()
+
+        response = client.get(
+            "/api/v1/currency/history",
+            headers=auth_headers,
+            params={
+                "from_currencies": "usd",
+                "to_currency": "thb",
+                "days": 1
+            }
+        )
+        assert response.status_code == 200

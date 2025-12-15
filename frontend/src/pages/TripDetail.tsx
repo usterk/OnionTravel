@@ -22,10 +22,11 @@ import { CategoryList, BudgetAllocation, CategoryPieChart } from '@/components/c
 import { QuickExpenseEntry, ExpenseList } from '@/components/expenses';
 import { BudgetOverviewCards } from '@/components/trip/BudgetOverviewCards';
 import { TripMembers } from '@/components/trip/TripMembers';
+import { CurrencyChartsTab } from '@/components/currency';
 import { getCategoriesWithStats } from '@/lib/categories-api';
 import { getExpenseStatistics } from '@/lib/expenses-api';
 import type { ExpenseStatistics } from '@/lib/expenses-api';
-import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Users, Settings as SettingsIcon, Trash2, Tag, Receipt, Info, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TripUpdate, TripRole } from '@/types/trip';
 import { getTripStatus } from '@/lib/tripUtils';
@@ -261,7 +262,7 @@ export default function TripDetail() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full gap-1 h-auto p-1">
+          <TabsList className="grid grid-cols-6 w-full gap-1 h-auto p-1">
             <TabsTrigger value="overview" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
               <Info className="h-4 w-4 shrink-0" />
               <span className="leading-tight">Overview</span>
@@ -273,6 +274,10 @@ export default function TripDetail() {
             <TabsTrigger value="categories" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
               <Tag className="h-4 w-4 shrink-0" />
               <span className="leading-tight">Categories</span>
+            </TabsTrigger>
+            <TabsTrigger value="currency" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">Currency</span>
             </TabsTrigger>
             <TabsTrigger value="members" className="text-[10px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2">
               <Users className="h-4 w-4 shrink-0" />
@@ -402,6 +407,14 @@ export default function TripDetail() {
                 showStats={true}
               />
             </div>
+          </TabsContent>
+
+          {/* Currency Tab */}
+          <TabsContent value="currency">
+            <CurrencyChartsTab
+              tripCurrency={currentTrip.currency_code}
+              tripBudget={currentTrip.total_budget || 0}
+            />
           </TabsContent>
 
           {/* Members Tab */}

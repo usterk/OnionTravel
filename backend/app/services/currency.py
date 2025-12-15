@@ -1,5 +1,5 @@
 import httpx
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional, Dict, List
 from sqlalchemy.orm import Session
@@ -183,6 +183,111 @@ class CurrencyService:
 
         # Run async function
         asyncio.run(_update())
+
+    async def fetch_historical_rate_from_api(
+        self,
+        from_currency: str,
+        to_currency: str,
+        rate_date: date
+    ) -> Optional[Decimal]:
+        """Fetch historical exchange rate from external API"""
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{self.api_url}/{self.api_key}/history/{from_currency}/{rate_date.year}/{rate_date.month}/{rate_date.day}"
+                response = await client.get(url, timeout=10.0)
+                response.raise_for_status()
+                data = response.json()
+
+                if data.get("result") == "success":
+                    conversion_rates = data.get("conversion_rates", {})
+                    if to_currency in conversion_rates:
+                        rate = Decimal(str(conversion_rates[to_currency]))
+                        logger.info(f"Fetched historical rate {from_currency}/{to_currency} for {rate_date}: {rate}")
+                        return rate
+                    else:
+                        logger.error(f"Currency {to_currency} not found in response")
+                        return None
+                else:
+                    logger.error(f"API error: {data.get('error-type')}")
+                    return None
+        except Exception as e:
+            logger.error(f"Failed to fetch historical rate {from_currency}/{to_currency} for {rate_date}: {str(e)}")
+            return None
+
+    async def get_historical_rates(
+        self,
+        from_currencies: List[str],
+        to_currency: str,
+        days: int = 90
+    ) -> Dict[str, List[Dict]]:
+        """
+        Get historical rates for multiple currency pairs.
+
+        Strategy:
+        1. Query DB for existing rates in date range
+        2. For missing dates, use current rate (fetched once)
+        3. Fill all dates with nearest available rate
+        4. Return immediately without blocking on API
+        """
+        result = {}
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days - 1)
+
+        # Generate all dates in range
+        all_dates = [start_date + timedelta(days=i) for i in range(days)]
+
+        for from_currency in from_currencies:
+            if from_currency == to_currency:
+                # Same currency - all rates are 1.0
+                result[from_currency] = [
+                    {"date": d, "rate": 1.0} for d in all_dates
+                ]
+                continue
+
+            # Query existing rates from DB
+            existing_rates = self.db.query(ExchangeRate).filter(
+                ExchangeRate.from_currency == from_currency,
+                ExchangeRate.to_currency == to_currency,
+                ExchangeRate.date >= start_date,
+                ExchangeRate.date <= end_date
+            ).all()
+
+            # Build map of existing dates
+            rates_map = {r.date: float(r.rate) for r in existing_rates}
+
+            # Also check reverse rates
+            reverse_rates = self.db.query(ExchangeRate).filter(
+                ExchangeRate.from_currency == to_currency,
+                ExchangeRate.to_currency == from_currency,
+                ExchangeRate.date >= start_date,
+                ExchangeRate.date <= end_date
+            ).all()
+
+            for r in reverse_rates:
+                if r.date not in rates_map:
+                    rates_map[r.date] = float(Decimal("1.0") / r.rate)
+
+            # If we don't have today's rate, fetch it from API (just once)
+            if end_date not in rates_map:
+                current_rate = await self.get_rate(from_currency, to_currency)
+                if current_rate:
+                    rates_map[end_date] = float(current_rate)
+
+            # Fill missing dates with nearest available rate
+            if rates_map:
+                for d in all_dates:
+                    if d not in rates_map:
+                        # Find nearest date with data
+                        nearest_date = min(rates_map.keys(), key=lambda x: abs((x - d).days))
+                        rates_map[d] = rates_map[nearest_date]
+
+            # Build result list sorted by date
+            result[from_currency] = sorted(
+                [{"date": d, "rate": rates_map.get(d, 0.0)} for d in all_dates if rates_map.get(d)],
+                key=lambda x: x["date"]
+            )
+
+        return result
 
     def get_supported_currencies(self) -> List[str]:
         """Get list of supported currencies"""
