@@ -75,27 +75,19 @@ class TestCurrencyRatesEndpoint:
         expected_rate = 1.0 / 0.85
         assert abs(data["rate"] - expected_rate) < 0.01
 
-    @patch('app.services.currency.CurrencyService.fetch_rate_from_api')
-    def test_get_exchange_rate_from_api(self, mock_fetch, client, auth_headers):
-        """Test fetching rate from API when not in database"""
-        mock_fetch.return_value = Decimal("0.92")
-
+    def test_get_exchange_rate_not_in_db_returns_404(self, client, auth_headers):
+        """Test that missing rate returns 404 (DB-only, no API fallback)"""
         response = client.get(
             "/api/v1/currency/rates",
             headers=auth_headers,
-            params={"from_currency": "USD", "to_currency": "EUR"}
+            params={"from_currency": "AUD", "to_currency": "CAD"}
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["from_currency"] == "USD"
-        assert data["to_currency"] == "EUR"
-        assert abs(data["rate"] - 0.92) < 0.0001
+        # DB-only: if rate not in database, return 404
+        assert response.status_code == 404
+        assert "Exchange rate not found" in response.json()["detail"]
 
-    @patch('app.services.currency.CurrencyService.fetch_rate_from_api')
-    def test_get_exchange_rate_api_failure(self, mock_fetch, client, auth_headers):
-        """Test handling API failure"""
-        mock_fetch.return_value = None
-
+    def test_get_exchange_rate_unsupported_currency(self, client, auth_headers):
+        """Test that unsupported currency returns 404"""
         response = client.get(
             "/api/v1/currency/rates",
             headers=auth_headers,
@@ -209,31 +201,23 @@ class TestCurrencyConvertEndpoint:
         assert abs(data["converted_amount"] - 85.0) < 0.01
         assert abs(data["exchange_rate"] - 0.85) < 0.0001
 
-    @patch('app.services.currency.CurrencyService.fetch_rate_from_api')
-    def test_convert_currency_from_api(self, mock_fetch, client, auth_headers):
-        """Test converting using rate from API"""
-        mock_fetch.return_value = Decimal("0.92")
-
+    def test_convert_currency_not_in_db_returns_404(self, client, auth_headers):
+        """Test that conversion fails when rate not in database (DB-only)"""
         response = client.get(
             "/api/v1/currency/convert",
             headers=auth_headers,
             params={
                 "amount": 50.0,
-                "from_currency": "USD",
-                "to_currency": "EUR"
+                "from_currency": "AUD",
+                "to_currency": "CAD"
             }
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["amount"] == 50.0
-        assert abs(data["converted_amount"] - 46.0) < 0.1
-        assert abs(data["exchange_rate"] - 0.92) < 0.0001
+        # DB-only: if rate not in database, return 404
+        assert response.status_code == 404
+        assert "Could not convert" in response.json()["detail"]
 
-    @patch('app.services.currency.CurrencyService.fetch_rate_from_api')
-    def test_convert_currency_api_failure(self, mock_fetch, client, auth_headers):
-        """Test handling conversion failure"""
-        mock_fetch.return_value = None
-
+    def test_convert_currency_unsupported_currency(self, client, auth_headers):
+        """Test handling conversion with unsupported currency"""
         response = client.get(
             "/api/v1/currency/convert",
             headers=auth_headers,
@@ -416,9 +400,8 @@ class TestCurrencyService:
 
         assert rate == Decimal("0.85")
 
-    @pytest.mark.asyncio
-    async def test_convert_amount(self, db_session):
-        """Test converting amount"""
+    def test_convert_amount(self, db_session):
+        """Test converting amount (sync, DB-only)"""
         from app.services.currency import CurrencyService
 
         # Insert test rate
@@ -432,13 +415,12 @@ class TestCurrencyService:
         db_session.commit()
 
         service = CurrencyService(db_session)
-        converted = await service.convert_amount(Decimal("100"), "USD", "EUR")
+        converted = service.convert_amount(Decimal("100"), "USD", "EUR")
 
         assert converted == Decimal("85.0")
 
-    @pytest.mark.asyncio
-    async def test_get_rate_uses_cache_not_api(self, db_session):
-        """Test that cached rate is used instead of API call"""
+    def test_get_rate_uses_cache(self, db_session):
+        """Test that cached rate is returned from DB (DB-only, no API calls)"""
         from app.services.currency import CurrencyService
 
         # Insert cached rate for today
@@ -453,32 +435,22 @@ class TestCurrencyService:
 
         service = CurrencyService(db_session)
 
-        # Mock API call - should NOT be called when data is in cache
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            rate = await service.get_rate("USD", "EUR")
+        # get_rate is now sync and DB-only
+        rate = service.get_rate("USD", "EUR")
+        assert rate == Decimal("0.85")
 
-            assert rate == Decimal("0.85")
-            mock_api.assert_not_called()  # API should not be called
-
-    @pytest.mark.asyncio
-    async def test_get_rate_calls_api_when_not_in_cache(self, db_session):
-        """Test that API is called when rate is not in cache"""
+    def test_get_rate_returns_none_when_not_in_db(self, db_session):
+        """Test that None is returned when rate not in DB (DB-only, no API fallback)"""
         from app.services.currency import CurrencyService
 
         service = CurrencyService(db_session)
 
-        # Mock API call - should be called when no data in cache
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            mock_api.return_value = Decimal("0.90")
+        # get_rate is now sync and DB-only - returns None if not found
+        rate = service.get_rate("GBP", "JPY")
+        assert rate is None
 
-            rate = await service.get_rate("GBP", "JPY")
-
-            assert rate == Decimal("0.90")
-            mock_api.assert_called_once_with("GBP", "JPY")
-
-    @pytest.mark.asyncio
-    async def test_historical_rates_uses_cache(self, db_session):
-        """Test that historical rates are served from cache without API calls"""
+    def test_historical_rates_from_cache(self, db_session):
+        """Test that historical rates are served from DB (DB-only, no API calls)"""
         from app.services.currency import CurrencyService
 
         # Insert cached rates for last 5 days
@@ -495,30 +467,21 @@ class TestCurrencyService:
 
         service = CurrencyService(db_session)
 
-        # Mock API - should NOT be called when we have today's rate
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            result = await service.get_historical_rates(["USD"], "THB", days=5)
+        # get_historical_rates is now sync and DB-only
+        result = service.get_historical_rates(["USD"], "THB", days=5)
 
-            assert "USD" in result
-            assert len(result["USD"]) == 5
-            mock_api.assert_not_called()  # All data from cache
+        assert "USD" in result
+        assert len(result["USD"]) == 5
 
-    @pytest.mark.asyncio
-    async def test_api_failure_returns_none(self, db_session):
-        """Test that API failure is handled gracefully"""
+    def test_get_rate_returns_none_for_missing_currency(self, db_session):
+        """Test that get_rate returns None for missing currency pair (DB-only)"""
         from app.services.currency import CurrencyService
 
         service = CurrencyService(db_session)
 
-        # Mock API to return None (simulating failure)
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            mock_api.return_value = None
-
-            rate = await service.get_rate("XYZ", "ABC")
-
-            assert rate is None
-            # API may be called multiple times (for date fallback), but should still return None
-            assert mock_api.call_count >= 1
+        # DB-only: should return None for missing pairs
+        rate = service.get_rate("XYZ", "ABC")
+        assert rate is None
 
     @pytest.mark.asyncio
     async def test_api_exception_handled_in_fetch(self, db_session):
@@ -542,38 +505,40 @@ class TestCurrencyService:
             assert rate is None  # Should return None, not raise
 
     @pytest.mark.asyncio
-    async def test_rate_saved_after_api_fetch(self, db_session):
-        """Test that rate is saved to DB after fetching from API"""
+    async def test_fetch_all_rates_for_currency(self, db_session):
+        """Test that fetch_all_rates_for_currency fetches and returns rates"""
         from app.services.currency import CurrencyService
+        import httpx
 
         service = CurrencyService(db_session)
 
-        # Verify no rate exists initially
-        existing = db_session.query(ExchangeRate).filter(
-            ExchangeRate.from_currency == "CHF",
-            ExchangeRate.to_currency == "JPY"
-        ).first()
-        assert existing is None
+        # Mock httpx client to return a successful response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "result": "success",
+            "conversion_rates": {
+                "USD": 1.0,
+                "EUR": 0.85,
+                "PLN": 4.0,
+                "THB": 35.0
+            }
+        }
+        mock_response.raise_for_status = MagicMock()
 
-        # Mock API to return a rate
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            mock_api.return_value = Decimal("165.50")
+        with patch('httpx.AsyncClient') as mock_client:
+            mock_instance = AsyncMock()
+            mock_instance.get.return_value = mock_response
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_instance.__aexit__.return_value = None
+            mock_client.return_value = mock_instance
 
-            rate = await service.get_rate("CHF", "JPY")
+            rates = await service.fetch_all_rates_for_currency("USD")
 
-            assert rate == Decimal("165.50")
+            assert len(rates) == 4
+            assert rates["EUR"] == Decimal("0.85")
+            assert rates["THB"] == Decimal("35.0")
 
-        # Verify rate was saved to DB
-        saved_rate = db_session.query(ExchangeRate).filter(
-            ExchangeRate.from_currency == "CHF",
-            ExchangeRate.to_currency == "JPY",
-            ExchangeRate.date == date.today()
-        ).first()
-        assert saved_rate is not None
-        assert saved_rate.rate == Decimal("165.50")
-
-    @pytest.mark.asyncio
-    async def test_reverse_rate_used_when_direct_missing(self, db_session):
+    def test_reverse_rate_used_when_direct_missing(self, db_session):
         """Test that reverse rate (1/rate) is used when direct rate is missing"""
         from app.services.currency import CurrencyService
 
@@ -596,8 +561,7 @@ class TestCurrencyService:
         assert rate is not None
         assert abs(float(rate) - 0.909) < 0.01
 
-    @pytest.mark.asyncio
-    async def test_historical_fills_gaps_with_nearest(self, db_session):
+    def test_historical_fills_gaps_with_nearest(self, db_session):
         """Test that missing dates are filled with nearest available rate"""
         from app.services.currency import CurrencyService
 
@@ -621,8 +585,8 @@ class TestCurrencyService:
 
         service = CurrencyService(db_session)
 
-        # Request 5 days of history
-        result = await service.get_historical_rates(["GBP"], "THB", days=5)
+        # Request 5 days of history (sync, DB-only)
+        result = service.get_historical_rates(["GBP"], "THB", days=5)
 
         assert "GBP" in result
         assert len(result["GBP"]) == 5  # All 5 days should have data
@@ -659,51 +623,47 @@ class TestCurrencyService:
 
             assert rate is None  # Should return None, not crash
 
-    @pytest.mark.asyncio
-    async def test_historical_rates_minimal_api_calls(self, db_session):
-        """Test that historical rates makes minimal API calls (max 1 per currency)"""
+    def test_historical_rates_returns_empty_for_missing_data(self, db_session):
+        """Test that historical rates returns empty list when no data in DB"""
         from app.services.currency import CurrencyService
 
         service = CurrencyService(db_session)
 
-        # Mock API - track number of calls
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            mock_api.return_value = Decimal("35.00")
+        # No data in DB - should return empty list (DB-only, no API calls)
+        result = service.get_historical_rates(["USD", "EUR", "PLN"], "THB", days=90)
 
-            # Request 90 days of history for 3 currencies
-            result = await service.get_historical_rates(
-                ["USD", "EUR", "PLN"], "THB", days=90
-            )
+        # Should return empty lists for each currency
+        assert "USD" in result
+        assert "EUR" in result
+        assert "PLN" in result
+        assert len(result["USD"]) == 0
+        assert len(result["EUR"]) == 0
+        assert len(result["PLN"]) == 0
 
-            # Should make at most 3 API calls (one per currency for today's rate)
-            # NOT 90*3 = 270 calls!
-            assert mock_api.call_count <= 3, \
-                f"Too many API calls: {mock_api.call_count}. Expected max 3 (one per currency)"
-
-    @pytest.mark.asyncio
-    async def test_multiple_get_rate_calls_use_cache(self, db_session):
-        """Test that multiple calls to get_rate use cache, not API"""
+    def test_multiple_get_rate_calls_return_same_cached_value(self, db_session):
+        """Test that multiple calls to get_rate return same cached value"""
         from app.services.currency import CurrencyService
+
+        # Insert rate to DB
+        cached_rate = ExchangeRate(
+            from_currency="USD",
+            to_currency="EUR",
+            rate=Decimal("0.85"),
+            date=date.today()
+        )
+        db_session.add(cached_rate)
+        db_session.commit()
 
         service = CurrencyService(db_session)
 
-        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
-            mock_api.return_value = Decimal("0.85")
+        # Multiple calls should return same value (DB-only)
+        rate1 = service.get_rate("USD", "EUR")
+        rate2 = service.get_rate("USD", "EUR")
+        rate3 = service.get_rate("USD", "EUR")
 
-            # First call - should hit API
-            rate1 = await service.get_rate("USD", "EUR")
-            assert rate1 == Decimal("0.85")
-            assert mock_api.call_count == 1
-
-            # Second call - should use cache, NOT hit API again
-            rate2 = await service.get_rate("USD", "EUR")
-            assert rate2 == Decimal("0.85")
-            assert mock_api.call_count == 1  # Still 1, not 2!
-
-            # Third call - still from cache
-            rate3 = await service.get_rate("USD", "EUR")
-            assert rate3 == Decimal("0.85")
-            assert mock_api.call_count == 1  # Still 1!
+        assert rate1 == Decimal("0.85")
+        assert rate2 == Decimal("0.85")
+        assert rate3 == Decimal("0.85")
 
 
 class TestCurrencyHistoryEndpoint:

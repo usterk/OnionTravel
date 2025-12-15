@@ -25,7 +25,7 @@ router = APIRouter()
 
 
 @router.get("/rates", response_model=ExchangeRateResponse)
-async def get_exchange_rate(
+def get_exchange_rate(
     from_currency: str = Query(..., description="Source currency code (e.g., USD)"),
     to_currency: str = Query(..., description="Target currency code (e.g., EUR)"),
     date_param: Optional[date] = Query(None, alias="date", description="Date for historical rate (defaults to today)"),
@@ -36,8 +36,7 @@ async def get_exchange_rate(
     Get exchange rate between two currencies.
 
     Returns the exchange rate for a specific date (defaults to today).
-    If the rate is not in the database, it will be fetched from the external API
-    and cached for future use.
+    Rates are read from the database ONLY - they are populated by the daily scheduler.
 
     Example: GET /currency/rates?from=USD&to=EUR
     """
@@ -47,8 +46,8 @@ async def get_exchange_rate(
     from_currency = from_currency.upper()
     to_currency = to_currency.upper()
 
-    # Get rate
-    rate = await currency_service.get_rate(from_currency, to_currency, date_param)
+    # Get rate from database
+    rate = currency_service.get_rate(from_currency, to_currency, date_param)
 
     if rate is None:
         raise HTTPException(
@@ -65,7 +64,7 @@ async def get_exchange_rate(
 
 
 @router.get("/convert", response_model=ConversionResponse)
-async def convert_currency(
+def convert_currency(
     amount: float = Query(..., gt=0, description="Amount to convert"),
     from_currency: str = Query(..., description="Source currency code (e.g., USD)"),
     to_currency: str = Query(..., description="Target currency code (e.g., EUR)"),
@@ -75,7 +74,7 @@ async def convert_currency(
     """
     Convert an amount from one currency to another.
 
-    Uses the latest exchange rate from the database or fetches from API if not available.
+    Uses exchange rates from the database ONLY - rates are populated by the daily scheduler.
 
     Example: GET /currency/convert?amount=100&from=USD&to=EUR
     """
@@ -87,7 +86,7 @@ async def convert_currency(
 
     # Convert amount
     amount_decimal = Decimal(str(amount))
-    converted = await currency_service.convert_amount(
+    converted = currency_service.convert_amount(
         amount_decimal,
         from_currency,
         to_currency
@@ -100,7 +99,7 @@ async def convert_currency(
         )
 
     # Get the exchange rate for response
-    rate = await currency_service.get_rate(from_currency, to_currency)
+    rate = currency_service.get_rate(from_currency, to_currency)
 
     return ConversionResponse(
         amount=amount,
@@ -129,7 +128,7 @@ def get_supported_currencies(
 
 
 @router.get("/history", response_model=CurrencyHistoryResponse)
-async def get_currency_history(
+def get_currency_history(
     from_currencies: str = Query(
         ...,
         description="Comma-separated source currency codes (e.g., PLN,EUR,USD)"
@@ -151,7 +150,7 @@ async def get_currency_history(
     Get historical exchange rates for multiple currency pairs.
 
     Returns time-series data for the last N days for each currency pair.
-    Data is cached in the database to minimize external API calls.
+    Data is read from the database ONLY - rates are populated by the daily scheduler.
 
     Example: GET /currency/history?from_currencies=PLN,EUR,USD&to_currency=THB&days=90
     """
@@ -183,8 +182,8 @@ async def get_currency_history(
                 detail=f"Currency {curr} is not supported. Supported: {', '.join(supported)}"
             )
 
-    # Get historical rates
-    history_data = await currency_service.get_historical_rates(
+    # Get historical rates from database
+    history_data = currency_service.get_historical_rates(
         from_currency_list, to_currency, days
     )
 

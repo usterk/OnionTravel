@@ -72,45 +72,50 @@ class CurrencyService:
 
         return None
 
-    async def get_rate(
+    def get_rate(
         self,
         from_currency: str,
         to_currency: str,
         rate_date: Optional[date] = None
     ) -> Optional[Decimal]:
         """
-        Get exchange rate. First tries database, then API if not found.
-        For future dates or past dates without data, falls back to today's rate.
+        Get exchange rate from database ONLY.
+        Rates are populated by the daily scheduler - no API calls here.
+        Falls back to nearest available date if requested date not found.
         """
         if from_currency == to_currency:
             return Decimal("1.0")
 
-        # Try to get from database first for the requested date
+        # Try to get from database for the requested date
         rate = self.get_rate_from_db(from_currency, to_currency, rate_date)
         if rate:
             return rate
 
-        # If not in database and it's today's rate, fetch from API
-        if rate_date is None or rate_date == date.today():
-            rate = await self.fetch_rate_from_api(from_currency, to_currency)
-            if rate:
-                # Save to database
-                self.save_rate(from_currency, to_currency, rate)
-                return rate
+        # Fall back to today's rate if available
+        if rate_date and rate_date != date.today():
+            today_rate = self.get_rate_from_db(from_currency, to_currency, date.today())
+            if today_rate:
+                logger.info(f"Using today's rate for {from_currency}/{to_currency} on {rate_date}: {today_rate}")
+                return today_rate
 
-        # For past/future dates without data, fall back to today's rate
-        # First check if we have today's rate in DB
-        today_rate = self.get_rate_from_db(from_currency, to_currency, date.today())
-        if today_rate:
-            logger.info(f"Using today's rate for {from_currency}/{to_currency} on {rate_date}: {today_rate}")
-            return today_rate
+        # Try to find the most recent rate in DB
+        recent_rate = self.db.query(ExchangeRate).filter(
+            ExchangeRate.from_currency == from_currency,
+            ExchangeRate.to_currency == to_currency
+        ).order_by(ExchangeRate.date.desc()).first()
 
-        # If not in DB, fetch from API and save
-        rate = await self.fetch_rate_from_api(from_currency, to_currency)
-        if rate:
-            self.save_rate(from_currency, to_currency, rate)
-            logger.info(f"Fetched and using current rate for {from_currency}/{to_currency} on {rate_date}: {rate}")
-            return rate
+        if recent_rate:
+            logger.info(f"Using most recent rate from {recent_rate.date} for {from_currency}/{to_currency}")
+            return recent_rate.rate
+
+        # Try reverse rate
+        reverse_recent = self.db.query(ExchangeRate).filter(
+            ExchangeRate.from_currency == to_currency,
+            ExchangeRate.to_currency == from_currency
+        ).order_by(ExchangeRate.date.desc()).first()
+
+        if reverse_recent:
+            return Decimal("1.0") / reverse_recent.rate
 
         return None
 
@@ -147,39 +152,143 @@ class CurrencyService:
         self.db.commit()
         logger.info(f"Saved rate {from_currency}/{to_currency}: {rate} for {rate_date}")
 
-    async def convert_amount(
+    def convert_amount(
         self,
         amount: Decimal,
         from_currency: str,
         to_currency: str,
         rate_date: Optional[date] = None
     ) -> Optional[Decimal]:
-        """Convert amount from one currency to another"""
-        rate = await self.get_rate(from_currency, to_currency, rate_date)
+        """Convert amount from one currency to another (sync, DB-only)"""
+        rate = self.get_rate(from_currency, to_currency, rate_date)
         if rate:
             return amount * rate
         return None
 
+    async def fetch_all_rates_for_currency(self, base_currency: str) -> Dict[str, Decimal]:
+        """
+        Fetch ALL exchange rates for a base currency using /latest/{base} endpoint.
+        Returns dict of {currency_code: rate} for all supported currencies.
+        This is ONE API call that returns ALL rates.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{self.api_url}/{self.api_key}/latest/{base_currency}"
+                response = await client.get(url, timeout=10.0)
+                response.raise_for_status()
+                data = response.json()
+
+                if data.get("result") == "success":
+                    conversion_rates = data.get("conversion_rates", {})
+                    rates = {}
+                    for currency, rate in conversion_rates.items():
+                        rates[currency] = Decimal(str(rate))
+                    logger.info(f"Fetched {len(rates)} rates for base currency {base_currency}")
+                    return rates
+                else:
+                    logger.error(f"API error for {base_currency}: {data.get('error-type')}")
+                    return {}
+        except Exception as e:
+            logger.error(f"Failed to fetch rates for {base_currency}: {str(e)}")
+            return {}
+
+    def save_rates_for_currency(self, base_currency: str, rates: Dict[str, Decimal], rate_date: Optional[date] = None):
+        """
+        Save all rates for a base currency to the database.
+        Rates are stored as base_currency -> target_currency.
+        """
+        if rate_date is None:
+            rate_date = date.today()
+
+        saved_count = 0
+        for to_currency, rate in rates.items():
+            if to_currency == base_currency:
+                continue  # Skip same currency
+
+            # Check if rate already exists
+            existing_rate = self.db.query(ExchangeRate).filter(
+                ExchangeRate.from_currency == base_currency,
+                ExchangeRate.to_currency == to_currency,
+                ExchangeRate.date == rate_date
+            ).first()
+
+            if existing_rate:
+                existing_rate.rate = rate
+                existing_rate.fetched_at = datetime.now()
+            else:
+                new_rate = ExchangeRate(
+                    from_currency=base_currency,
+                    to_currency=to_currency,
+                    rate=rate,
+                    date=rate_date
+                )
+                self.db.add(new_rate)
+            saved_count += 1
+
+        self.db.commit()
+        logger.info(f"Saved {saved_count} rates for base currency {base_currency} on {rate_date}")
+
+    def get_unique_trip_currencies(self) -> List[str]:
+        """
+        Get unique currency codes from all trips in the database.
+        """
+        from app.models.trip import Trip
+
+        currencies = self.db.query(Trip.currency_code).distinct().all()
+        return [c[0] for c in currencies if c[0]]
+
     def update_all_rates(self):
         """
-        Update all common currency pairs.
-        This is called by the scheduler daily.
+        Update exchange rates for all trip currencies.
+        Called by the scheduler daily.
+
+        Strategy:
+        1. Query all trips, collect unique currency codes
+        2. For each unique currency, call /latest/{currency} ONCE
+        3. Save ALL rates from the response
+        4. Log successes and errors
+
+        This minimizes API calls: ~1-3 calls/day instead of 72.
         """
         import asyncio
 
         async def _update():
             today = date.today()
-            logger.info(f"Updating exchange rates for {today}")
 
-            # Fetch rates for all combinations of base currencies
-            for from_curr in self.BASE_CURRENCIES:
-                for to_curr in self.BASE_CURRENCIES:
-                    if from_curr != to_curr:
-                        rate = await self.fetch_rate_from_api(from_curr, to_curr)
-                        if rate:
-                            self.save_rate(from_curr, to_curr, rate, today)
-                        # Small delay to avoid rate limiting
-                        await asyncio.sleep(0.5)
+            # Get unique currencies from all trips
+            trip_currencies = self.get_unique_trip_currencies()
+
+            if not trip_currencies:
+                logger.warning("No trips found, skipping currency update")
+                return
+
+            logger.info(f"Updating exchange rates for {today}. Trip currencies: {trip_currencies}")
+
+            success_count = 0
+            error_count = 0
+
+            for base_currency in trip_currencies:
+                try:
+                    # Fetch ALL rates for this base currency (ONE API call)
+                    rates = await self.fetch_all_rates_for_currency(base_currency)
+
+                    if rates:
+                        # Save all rates to database
+                        self.save_rates_for_currency(base_currency, rates, today)
+                        success_count += 1
+                        logger.info(f"SUCCESS: Updated rates for {base_currency} ({len(rates)} currencies)")
+                    else:
+                        error_count += 1
+                        logger.error(f"FAILED: No rates returned for {base_currency}")
+
+                except Exception as e:
+                    error_count += 1
+                    logger.error(f"FAILED: Error updating rates for {base_currency}: {str(e)}")
+
+                # Small delay between API calls to be nice to the API
+                await asyncio.sleep(0.5)
+
+            logger.info(f"Currency update completed. Success: {success_count}, Errors: {error_count}")
 
         # Run async function
         asyncio.run(_update())
@@ -214,20 +323,16 @@ class CurrencyService:
             logger.error(f"Failed to fetch historical rate {from_currency}/{to_currency} for {rate_date}: {str(e)}")
             return None
 
-    async def get_historical_rates(
+    def get_historical_rates(
         self,
         from_currencies: List[str],
         to_currency: str,
         days: int = 90
     ) -> Dict[str, List[Dict]]:
         """
-        Get historical rates for multiple currency pairs.
-
-        Strategy:
-        1. Query DB for existing rates in date range
-        2. For missing dates, use current rate (fetched once)
-        3. Fill all dates with nearest available rate
-        4. Return immediately without blocking on API
+        Get historical rates for multiple currency pairs from DB ONLY.
+        No API calls - rates are populated by the daily scheduler.
+        Missing dates are filled with nearest available rate.
         """
         result = {}
         end_date = date.today()
@@ -266,12 +371,6 @@ class CurrencyService:
             for r in reverse_rates:
                 if r.date not in rates_map:
                     rates_map[r.date] = float(Decimal("1.0") / r.rate)
-
-            # If we don't have today's rate, fetch it from API (just once)
-            if end_date not in rates_map:
-                current_rate = await self.get_rate(from_currency, to_currency)
-                if current_rate:
-                    rates_map[end_date] = float(current_rate)
 
             # Fill missing dates with nearest available rate
             if rates_map:
