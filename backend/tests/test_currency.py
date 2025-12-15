@@ -436,6 +436,73 @@ class TestCurrencyService:
 
         assert converted == Decimal("85.0")
 
+    @pytest.mark.asyncio
+    async def test_get_rate_uses_cache_not_api(self, db_session):
+        """Test that cached rate is used instead of API call"""
+        from app.services.currency import CurrencyService
+
+        # Insert cached rate for today
+        cached_rate = ExchangeRate(
+            from_currency="USD",
+            to_currency="EUR",
+            rate=Decimal("0.85"),
+            date=date.today()
+        )
+        db_session.add(cached_rate)
+        db_session.commit()
+
+        service = CurrencyService(db_session)
+
+        # Mock API call - should NOT be called when data is in cache
+        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
+            rate = await service.get_rate("USD", "EUR")
+
+            assert rate == Decimal("0.85")
+            mock_api.assert_not_called()  # API should not be called
+
+    @pytest.mark.asyncio
+    async def test_get_rate_calls_api_when_not_in_cache(self, db_session):
+        """Test that API is called when rate is not in cache"""
+        from app.services.currency import CurrencyService
+
+        service = CurrencyService(db_session)
+
+        # Mock API call - should be called when no data in cache
+        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
+            mock_api.return_value = Decimal("0.90")
+
+            rate = await service.get_rate("GBP", "JPY")
+
+            assert rate == Decimal("0.90")
+            mock_api.assert_called_once_with("GBP", "JPY")
+
+    @pytest.mark.asyncio
+    async def test_historical_rates_uses_cache(self, db_session):
+        """Test that historical rates are served from cache without API calls"""
+        from app.services.currency import CurrencyService
+
+        # Insert cached rates for last 5 days
+        today = date.today()
+        for i in range(5):
+            rate = ExchangeRate(
+                from_currency="USD",
+                to_currency="THB",
+                rate=Decimal(f"35.{i}"),
+                date=today - timedelta(days=i)
+            )
+            db_session.add(rate)
+        db_session.commit()
+
+        service = CurrencyService(db_session)
+
+        # Mock API - should NOT be called when we have today's rate
+        with patch.object(service, 'fetch_rate_from_api', new_callable=AsyncMock) as mock_api:
+            result = await service.get_historical_rates(["USD"], "THB", days=5)
+
+            assert "USD" in result
+            assert len(result["USD"]) == 5
+            mock_api.assert_not_called()  # All data from cache
+
 
 class TestCurrencyHistoryEndpoint:
     """Tests for GET /api/v1/currency/history"""
