@@ -6,18 +6,38 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/store/uiStore';
 import { useTripStore } from '@/store/tripStore';
-import { getTripStatus, formatTripDates, getDuration } from '@/lib/tripUtils';
+import { tripApi } from '@/lib/api';
+import { getTripStatus, formatTripDates, getDuration, sortTrips } from '@/lib/tripUtils';
 
 export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSidebarOpen, closeSidebar } = useUIStore();
-  const { trips, selectedTripId, setSelectedTripId, isLoading } = useTripStore();
+  const { trips, selectedTripId, setSelectedTripId, setTrips, isLoading, setLoading } = useTripStore();
 
   // Close sidebar on route change
   useEffect(() => {
     closeSidebar();
   }, [location.pathname, closeSidebar]);
+
+  // Load trips when sidebar opens and trips are empty
+  useEffect(() => {
+    if (isSidebarOpen && trips.length === 0 && !isLoading) {
+      const loadTrips = async () => {
+        setLoading(true);
+        try {
+          const data = await tripApi.getTrips();
+          const sortedTrips = sortTrips(data);
+          setTrips(sortedTrips);
+        } catch (err) {
+          console.error('Failed to load trips for sidebar:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadTrips();
+    }
+  }, [isSidebarOpen, trips.length, isLoading, setTrips, setLoading]);
 
   const handleTripClick = (tripId: number) => {
     setSelectedTripId(tripId);

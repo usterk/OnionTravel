@@ -457,7 +457,7 @@ export default function TripDetail() {
                     </div>
 
                     {/* Sort Preference Checkbox */}
-                    <div className="flex items-start gap-3 mb-4 p-3 bg-gray-50 rounded-md">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
                       <input
                         type="checkbox"
                         id="sort-by-usage"
@@ -476,13 +476,6 @@ export default function TripDetail() {
                         </div>
                       </label>
                     </div>
-
-                    <CategoryList
-                      categories={categories}
-                      tripId={currentTrip.id}
-                      onCategoryUpdated={() => loadCategories(currentTrip.id)}
-                      showStats={false}
-                    />
                   </div>
                 )}
 
