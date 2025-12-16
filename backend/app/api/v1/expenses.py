@@ -97,7 +97,7 @@ def list_expenses(
 
 
 @router.post("/trips/{trip_id}/expenses", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
-async def create_expense(
+def create_expense(
     trip_id: int,
     expense: ExpenseCreate,
     db: Session = Depends(get_db),
@@ -126,7 +126,7 @@ async def create_expense(
     # Verify trip access
     get_trip_or_404(db, trip_id, current_user)
 
-    new_expense = await expense_service.create_expense(
+    new_expense = expense_service.create_expense(
         db=db,
         trip_id=trip_id,
         user_id=current_user.id,
@@ -236,7 +236,7 @@ def get_expense(
 
 
 @router.put("/trips/{trip_id}/expenses/{expense_id}", response_model=ExpenseResponse)
-async def update_expense(
+def update_expense(
     trip_id: int,
     expense_id: int,
     expense: ExpenseUpdate,
@@ -254,7 +254,7 @@ async def update_expense(
     # Verify trip access
     get_trip_or_404(db, trip_id, current_user)
 
-    updated_expense = await expense_service.update_expense(
+    updated_expense = expense_service.update_expense(
         db=db,
         expense_id=expense_id,
         trip_id=trip_id,

@@ -64,3 +64,46 @@ export function formatDate(dateString: string, dateFormat = 'MMM d, yyyy'): stri
     return dateString;
   }
 }
+
+type TripStatusType = 'active' | 'upcoming' | 'completed';
+
+function getTripStatusType(trip: TripResponse): TripStatusType {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = new Date(trip.start_date);
+  const endDate = new Date(trip.end_date);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  if (today >= startDate && today <= endDate) {
+    return 'active';
+  } else if (today < startDate) {
+    return 'upcoming';
+  } else {
+    return 'completed';
+  }
+}
+
+export function sortTrips(trips: TripResponse[]): TripResponse[] {
+  return [...trips].sort((a, b) => {
+    const statusA = getTripStatusType(a);
+    const statusB = getTripStatusType(b);
+
+    // Priority order: active > upcoming > completed
+    const statusPriority = { active: 0, upcoming: 1, completed: 2 };
+
+    if (statusA !== statusB) {
+      return statusPriority[statusA] - statusPriority[statusB];
+    }
+
+    // Within same status, sort by date
+    if (statusA === 'active' || statusA === 'upcoming') {
+      // Sort by start_date ascending (nearest first)
+      return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+    } else {
+      // For completed, sort by end_date descending (most recent first)
+      return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+    }
+  });
+}

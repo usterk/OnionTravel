@@ -37,3 +37,40 @@ class ConversionResponse(BaseModel):
 class SupportedCurrenciesResponse(BaseModel):
     """Schema for supported currencies response"""
     currencies: List[str]
+
+
+class RateDataPoint(BaseModel):
+    """Single data point in time series"""
+    date: date
+    rate: float
+
+
+class CurrencyPairHistory(BaseModel):
+    """Historical data for one currency pair"""
+    from_currency: str
+    to_currency: str
+    data: List[RateDataPoint]
+
+
+class CurrencyHistoryResponse(BaseModel):
+    """Response containing history for multiple currency pairs"""
+    pairs: List[CurrencyPairHistory]
+    from_date: date
+    to_date: date
+
+
+class CurrencyPairStats(BaseModel):
+    """Statistics for a single currency pair"""
+    from_currency: str
+    to_currency: str
+    record_count: int
+    oldest_date: Optional[date]
+    newest_date: Optional[date]
+
+
+class CurrencyDbStatsResponse(BaseModel):
+    """Response with database statistics for exchange rates"""
+    total_records: int
+    pairs: List[CurrencyPairStats]
+    date_range_start: Optional[date]
+    date_range_end: Optional[date]

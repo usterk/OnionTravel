@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ class TestExpenseCreation:
 
         # Mock the currency service to return a fixed exchange rate
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         response = client.post(
             f"/api/v1/trips/{trip_id}/expenses",
@@ -198,7 +198,7 @@ class TestExpenseList:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create two expenses
         client.post(
@@ -230,7 +230,7 @@ class TestExpenseList:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         response = client.post(
@@ -260,7 +260,7 @@ class TestExpenseList:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         client.post(
@@ -296,7 +296,7 @@ class TestExpenseList:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         client.post(
@@ -354,7 +354,7 @@ class TestExpenseGet:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         response = client.post(
@@ -397,7 +397,7 @@ class TestExpenseUpdate:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         response = client.post(
@@ -428,7 +428,7 @@ class TestExpenseUpdate:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         response = client.post(
@@ -459,7 +459,7 @@ class TestExpenseUpdate:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("0.028"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("0.028"))
 
         # Create expense in THB (same as trip currency)
         response = client.post(
@@ -506,7 +506,7 @@ class TestExpenseUpdate:
         # Mock currency service and create expense in first trip
         with patch('app.services.expense_service.CurrencyService') as mock_currency_service:
             mock_service_instance = mock_currency_service.return_value
-            mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+            mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
             response = client.post(
                 f"/api/v1/trips/{trip_id}/expenses",
@@ -550,7 +550,7 @@ class TestExpenseDeletion:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expense
         response = client.post(
@@ -597,7 +597,7 @@ class TestExpenseStatistics:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create expenses
         client.post(
@@ -697,7 +697,7 @@ class TestMultiDayExpenses:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create multi-day expense
         response = client.post(
@@ -720,7 +720,7 @@ class TestMultiDayExpenses:
 
         # Mock currency service
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("35.5"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("35.5"))
 
         # Create multi-day expense
         client.post(
@@ -752,7 +752,7 @@ class TestDailyBudgetStatistics:
 
         # Create some expenses for today
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("1.0"))
 
         expense1_data = {
             "title": "Lunch",
@@ -805,7 +805,7 @@ class TestDailyBudgetStatistics:
 
         # Create expense for specific date
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("1.0"))
 
         expense_data = {
             "title": "Shopping",
@@ -840,7 +840,7 @@ class TestDailyBudgetStatistics:
 
         # Create 3-day hotel expense
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("1.0"))
 
         hotel_data = {
             "title": "Hotel",
@@ -952,7 +952,7 @@ class TestDailyBudgetStatistics:
 
         # Create expenses in different categories
         mock_service_instance = mock_currency_service.return_value
-        mock_service_instance.get_rate = AsyncMock(return_value=Decimal("1.0"))
+        mock_service_instance.get_rate = MagicMock(return_value=Decimal("1.0"))
 
         expense1 = {
             "title": "Food",

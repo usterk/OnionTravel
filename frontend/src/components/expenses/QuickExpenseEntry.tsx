@@ -26,7 +26,7 @@ interface QuickExpenseEntryProps {
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Mobile Payment', 'Other'];
 
-const COMMON_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'THB', 'VND', 'SGD', 'AUD', 'CAD'];
+const COMMON_CURRENCIES = ['PLN', 'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'THB', 'VND', 'SGD', 'AUD', 'CAD', 'CHF', 'CZK', 'NOK', 'SEK'];
 
 export function QuickExpenseEntry({
   tripId,

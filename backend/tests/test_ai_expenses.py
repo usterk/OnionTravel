@@ -12,13 +12,30 @@ from app.models.category import Category
 from app.models.trip import Trip
 
 
-# Mock currency API for all tests in this module
+# Seed exchange rates for all tests in this module (currency service is now DB-only)
 @pytest.fixture(autouse=True)
-def mock_currency_fetch():
-    """Auto-mock currency API for all tests in this module"""
-    with patch('app.services.currency.CurrencyService.fetch_rate_from_api') as mock:
-        mock.return_value = Decimal("1.0")
-        yield mock
+def seed_exchange_rates(db_session):
+    """Seed exchange rates for tests - currency service now reads from DB only"""
+    from app.models.exchange_rate import ExchangeRate
+    from datetime import date
+
+    # Add common exchange rates needed for tests
+    rates = [
+        # USD to THB (trip currency is THB)
+        ExchangeRate(from_currency="USD", to_currency="THB", rate=Decimal("35.0"), date=date.today()),
+        ExchangeRate(from_currency="USD", to_currency="THB", rate=Decimal("35.0"), date=date(2025, 7, 5)),
+        # PLN to THB
+        ExchangeRate(from_currency="PLN", to_currency="THB", rate=Decimal("9.0"), date=date.today()),
+        ExchangeRate(from_currency="PLN", to_currency="THB", rate=Decimal("9.0"), date=date(2025, 7, 5)),
+        # EUR to THB
+        ExchangeRate(from_currency="EUR", to_currency="THB", rate=Decimal("38.0"), date=date.today()),
+        ExchangeRate(from_currency="EUR", to_currency="THB", rate=Decimal("38.0"), date=date(2025, 7, 5)),
+    ]
+    for rate in rates:
+        db_session.add(rate)
+    db_session.commit()
+    yield
+    # Cleanup is handled by db_session fixture rollback
 
 
 @pytest.fixture
