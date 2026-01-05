@@ -1,14 +1,12 @@
-name: ${COMPOSE_PROJECT_NAME:-OnionTravel}
+name: oniontravel
 
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ${COMPOSE_PROJECT_NAME:-OnionTravel}-backend
+    container_name: oniontravel-backend
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:7011:7001"  # Expose backend only on localhost
     volumes:
       - backend-data:/app/data
       - backend-uploads:/app/uploads
@@ -17,8 +15,15 @@ services:
       - SECRET_KEY=${SECRET_KEY:-changeme-generate-with-openssl-rand-hex-32}
       - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY:-changeme}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - BASE_PATH=${BASE_PATH:-/OnionTravel}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:7000,http://localhost:3000,https://${PRODUCTION_DOMAIN:-oniontravel.bieda.it}}
+      - BASE_PATH=
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:7000,http://localhost:3000,https://oniontravel.bieda.it}
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oniontravel-api.rule=Host(`oniontravel.bieda.it`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.oniontravel-api.priority=100"
+      - "traefik.http.services.oniontravel-api.loadbalancer.server.port=7001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
       interval: 30s
@@ -31,15 +36,19 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://${PRODUCTION_DOMAIN:-oniontravel.bieda.it}${BASE_PATH:-/OnionTravel}/api/v1}
-        - VITE_BASE_PATH=${BASE_PATH:-/OnionTravel}
-    container_name: ${COMPOSE_PROJECT_NAME:-OnionTravel}-frontend
+        - VITE_API_BASE_URL=https://oniontravel.bieda.it/api/v1
+        - VITE_BASE_PATH=
+    container_name: oniontravel-frontend
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:7010:80"  # Expose frontend only on localhost
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oniontravel.rule=Host(`oniontravel.bieda.it`)"
+      - "traefik.http.services.oniontravel.loadbalancer.server.port=80"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 30s
@@ -52,3 +61,7 @@ volumes:
     driver: local
   backend-uploads:
     driver: local
+
+networks:
+  web:
+    external: true

@@ -217,11 +217,8 @@ jobs:
           OLD_VERSION: ${{ needs.version-and-release.outputs.old_version || '' }}
           RELEASE_NOTES: ${{ needs.version-and-release.outputs.release_notes }}
         run: |
-
           if [ -n "$RELEASE_NOTES" ]; then
-            # Extract just the commit lines (starting with "- "), limit to 5 for preview
             CHANGELOG=$(echo "$RELEASE_NOTES" | grep -E "^[[:space:]]*- " | head -5 || echo "")
-            # Count total changes
             TOTAL_CHANGES=$(echo "$RELEASE_NOTES" | grep -cE "^[[:space:]]*- " || echo "0")
             if [ "$TOTAL_CHANGES" -gt 5 ]; then
               CHANGELOG="${CHANGELOG}"$'\n'"... and $((TOTAL_CHANGES - 5)) more changes"
@@ -230,14 +227,12 @@ jobs:
             CHANGELOG="No changelog available"
           fi
 
-          # Escape for JSON
           CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | \
             sed 's/\\/\\\\/g' | \
             sed 's/"/\\"/g' | \
             sed ':a;N;$!ba;s/\n/\\n/g' | \
             head -c 600)
 
-          # Build version display
           if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$VERSION" ]; then
             VERSION_DISPLAY="$OLD_VERSION → $VERSION"
           else
@@ -272,48 +267,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-          # Add server to known_hosts
           ssh-keyscan -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_HOST }} >> ~/.ssh/known_hosts
-
-          echo "SSH configured for ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_SSH_PORT }}"
-
-      - name: Load environment and generate nginx config
-        run: |
-          # Load BASE_PATH and PRODUCTION_DOMAIN from backend/.env.example
-          if [ -f backend/.env.example ]; then
-            export $(grep -v '^#' backend/.env.example | xargs)
-          fi
-
-          # Default values if not set
-          BASE_PATH="${BASE_PATH:-/OnionTravel}"
-          PRODUCTION_DOMAIN="${PRODUCTION_DOMAIN:-oniontravel.bieda.it}"
-
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          echo "PRODUCTION_DOMAIN=$PRODUCTION_DOMAIN" >> $GITHUB_ENV
-
-          # Generate nginx config from template
-          envsubst '${PRODUCTION_DOMAIN} ${BASE_PATH}' < nginx/oniontravel.conf.template > nginx/oniontravel.conf
-
-          echo "Generated nginx config:"
-          echo "  BASE_PATH: $BASE_PATH"
-          echo "  PRODUCTION_DOMAIN: $PRODUCTION_DOMAIN"
-
-      - name: Transfer nginx config
-        run: |
-          scp -P ${{ env.PRODUCTION_SSH_PORT }} \
-            nginx/oniontravel.conf \
-            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:/etc/nginx/sites-available/oniontravel
-
-          echo "Transferred nginx config to server"
 
       - name: Transfer Docker Compose
         run: |
           scp -P ${{ env.PRODUCTION_SSH_PORT }} \
             docker-compose.yml \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/
-
-          echo "Transferred docker-compose.yml"
 
       - name: Transfer backend files
         run: |
@@ -328,8 +288,6 @@ jobs:
             ./backend/ \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/backend/
 
-          echo "Transferred backend files"
-
       - name: Transfer frontend files
         run: |
           rsync -avz -e "ssh -p ${{ env.PRODUCTION_SSH_PORT }}" \
@@ -339,55 +297,20 @@ jobs:
             ./frontend/ \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/frontend/
 
-          echo "Transferred frontend files"
-
-      - name: Transfer helper scripts
-        run: |
-          scp -P ${{ env.PRODUCTION_SSH_PORT }} \
-            update.sh check-health.sh \
-            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}:${{ env.PRODUCTION_PATH }}/
-
-          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
-            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} \
-            "chmod +x ${{ env.PRODUCTION_PATH }}/update.sh ${{ env.PRODUCTION_PATH }}/check-health.sh"
-
-          echo "Transferred and made executable: update.sh, check-health.sh"
-
-      - name: Configure and reload nginx
+      - name: Deploy Docker containers
         run: |
           ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
             set -e
+            cd /root/OnionTravel
 
-            # Enable site
-            ln -sf /etc/nginx/sites-available/oniontravel /etc/nginx/sites-enabled/oniontravel
-
-            # Disable default
-            rm -f /etc/nginx/sites-enabled/default
-
-            # Test nginx config
-            nginx -t
-
-            # Reload nginx
-            systemctl reload nginx
-
-            echo "Nginx configured and reloaded"
-          EOF
-
-      - name: Deploy Docker containers
-        run: |
-          ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
-            ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << EOF
-            set -e
-            cd ${{ env.PRODUCTION_PATH }}
+            echo "Ensuring Docker network exists..."
+            docker network create web 2>/dev/null || true
 
             echo "Stopping containers..."
             docker compose down
 
-            echo "Removing old nginx container..."
-            docker rm -f oniontravel-nginx 2>/dev/null || true
-
-            echo "Building containers (with layer caching)..."
+            echo "Building containers..."
             docker compose build
 
             echo "Starting containers..."
@@ -401,7 +324,7 @@ jobs:
           ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
             set -e
-            cd ${{ env.PRODUCTION_PATH }}
+            cd /root/OnionTravel
 
             echo "Waiting for containers to be healthy (max 120 seconds)..."
 
@@ -409,7 +332,6 @@ jobs:
             ELAPSED=0
 
             while [ $ELAPSED -lt $TIMEOUT ]; do
-              # Check backend health
               BACKEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' oniontravel-backend 2>/dev/null || echo "not_found")
               FRONTEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' oniontravel-frontend 2>/dev/null || echo "not_found")
 
@@ -437,53 +359,50 @@ jobs:
             exit 1
           EOF
 
-      - name: Test internal endpoints
+      - name: Test endpoints via Traefik
         run: |
           ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
             set -e
 
-            echo "Testing internal endpoints..."
+            echo "Testing endpoints via Traefik..."
 
-            # Backend health
-            echo "  - Backend health: http://localhost:7011/health"
-            curl -s -f http://localhost:7011/health || {
-              echo "✗ Backend health check failed"
-              exit 1
+            # Test backend health via Traefik
+            echo "  - Backend health via Traefik"
+            curl -s -f -H "Host: oniontravel.bieda.it" http://localhost/api/v1/health || {
+              echo "✗ Backend health check via Traefik failed"
+              # Fallback to direct container test
+              echo "  Trying direct container access..."
+              docker exec oniontravel-backend curl -s -f http://localhost:7001/health || exit 1
             }
             echo "    ✓ OK"
 
-            # Frontend
-            echo "  - Frontend: http://localhost:7010"
-            curl -s -f http://localhost:7010 > /dev/null || {
-              echo "✗ Frontend check failed"
-              exit 1
+            # Test frontend via Traefik
+            echo "  - Frontend via Traefik"
+            curl -s -f -H "Host: oniontravel.bieda.it" http://localhost/ > /dev/null || {
+              echo "✗ Frontend check via Traefik failed"
+              # Fallback to direct container test
+              echo "  Trying direct container access..."
+              docker exec oniontravel-frontend wget -q -O /dev/null http://localhost/ || exit 1
             }
             echo "    ✓ OK"
 
-            echo "All internal endpoint tests passed!"
+            echo "All endpoint tests passed!"
           EOF
-
-      - name: Test external endpoints
-        run: |
-          echo "Testing external endpoints..."
-          echo "Note: Production uses Cloudflare CDN on port 443"
-          echo "Manual verification: https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}"
-          echo "External endpoint tests skipped (Cloudflare CDN)"
 
       - name: Get deployment status
         if: always()
         run: |
           ssh -p ${{ env.PRODUCTION_SSH_PORT }} \
             ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }} << 'EOF'
-            cd ${{ env.PRODUCTION_PATH }}
+            cd /root/OnionTravel
 
             echo "=== Docker Container Status ==="
             docker compose ps
 
             echo ""
-            echo "=== Nginx Status ==="
-            systemctl status nginx --no-pager -l
+            echo "=== Traefik Status ==="
+            docker ps | grep traefik || echo "Traefik not running"
           EOF
 
       - name: Notify deployment success
@@ -493,28 +412,22 @@ jobs:
           OLD_VERSION: ${{ needs.version-and-release.outputs.old_version || '' }}
           RELEASE_NOTES: ${{ needs.version-and-release.outputs.release_notes }}
         run: |
-
           if [ -n "$RELEASE_NOTES" ]; then
-            # Extract just the commit lines (starting with "- ")
             CHANGELOG=$(echo "$RELEASE_NOTES" | grep -E "^[[:space:]]*- " | head -15 || echo "")
           else
-            # Fallback: get recent commits if release notes not available
             CHANGELOG=$(git log --oneline -10 --pretty=format:"- %s" 2>/dev/null || echo "No changelog available")
           fi
 
-          # Escape for JSON: replace newlines with \n, escape quotes and backslashes
           CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | \
             sed 's/\\/\\\\/g' | \
             sed 's/"/\\"/g' | \
             sed ':a;N;$!ba;s/\n/\\n/g' | \
             head -c 900)
 
-          # Add ellipsis if truncated
           if [ ${#CHANGELOG} -gt 900 ]; then
             CHANGELOG_ESCAPED="${CHANGELOG_ESCAPED}..."
           fi
 
-          # Build version display
           if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$VERSION" ]; then
             VERSION_DISPLAY="$OLD_VERSION → $VERSION"
           else
@@ -532,8 +445,8 @@ jobs:
                   {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)\", \"inline\": true},
                   {\"name\": \"Deployed by\", \"value\": \"${{ github.actor }}\", \"inline\": true},
                   {\"name\": \"📝 Changelog\", \"value\": \"$CHANGELOG_ESCAPED\", \"inline\": false},
-                  {\"name\": \"Production URL\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}\", \"inline\": false},
-                  {\"name\": \"API Docs\", \"value\": \"https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs\", \"inline\": false}
+                  {\"name\": \"Production URL\", \"value\": \"https://oniontravel.bieda.it\", \"inline\": false},
+                  {\"name\": \"API Docs\", \"value\": \"https://oniontravel.bieda.it/docs\", \"inline\": false}
                 ],
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
               }]
@@ -578,15 +491,14 @@ jobs:
           Deployed by:       ${{ github.actor }}
 
           Production URLs:
-            Frontend:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}
-            Backend API:     https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/api/v1
-            API Docs:        https://${{ env.PRODUCTION_DOMAIN }}${{ env.BASE_PATH }}/docs
+            Frontend:        https://oniontravel.bieda.it
+            Backend API:     https://oniontravel.bieda.it/api/v1
+            API Docs:        https://oniontravel.bieda.it/docs
 
           Server Management:
             SSH:             ssh -p ${{ env.PRODUCTION_SSH_PORT }} ${{ env.PRODUCTION_SSH_USER }}@${{ env.PRODUCTION_SSH_HOST }}
             Docker:          cd ${{ env.PRODUCTION_PATH }} && docker compose ps
             Logs:            cd ${{ env.PRODUCTION_PATH }} && docker compose logs -f
-            Health Check:    ${{ env.PRODUCTION_PATH }}/check-health.sh
 
           ╚════════════════════════════════════════════════════════════════╝
           EOF

@@ -14,32 +14,32 @@ ssh root@jola209.mikrus.xyz -p 10209
 **Application URLs:**
 
 **Production:**
-- Frontend: https://oniontravel.bieda.it/OnionTravel
-- Backend API: https://oniontravel.bieda.it/OnionTravel/api/v1
-- API Docs: https://oniontravel.bieda.it/OnionTravel/docs
+- Frontend: https://oniontravel.bieda.it/
+- Backend API: https://oniontravel.bieda.it/api/v1
+- API Docs: https://oniontravel.bieda.it/docs
 
 **Server Architecture:**
 ```
 Production (oniontravel.bieda.it):
-Internet → Cloudflare CDN → System Nginx (port 443 HTTPS)
-                          → Frontend Container (localhost:7010)
-                          → Backend Container (localhost:7011)
+Internet → Cloudflare (SSL termination) → Traefik:80 → Docker containers
+                                               ↓
+                               oniontravel.bieda.it/ → Frontend
+                               oniontravel.bieda.it/api → Backend
 
 Features:
-- Cloudflare CDN provides DDoS protection and caching
-- SSL/TLS certificates from Let's Encrypt
-- Single standard HTTPS port (443)
-- No direct IP access (Cloudflare proxied)
+- Cloudflare provides SSL termination and DDoS protection
+- Traefik reverse proxy with Docker auto-discovery
+- No SSL on server (Cloudflare handles HTTPS)
+- Shared 'web' Docker network for all apps
 ```
 
 **Server paths:**
 - Application: `/root/OnionTravel/`
-- Nginx config: `/etc/nginx/sites-available/oniontravel`
+- Traefik config: `/root/infra/` (separate repo: usterk/infra)
 - Backups: `/root/backups/oniontravel/`
 - Docker volumes: `/var/lib/docker/volumes/oniontravel_*`
 
 **Important files:**
-- Nginx config: `/etc/nginx/sites-available/oniontravel`
 - Docker Compose: `/root/OnionTravel/docker-compose.yml`
 - Backup script: `/root/OnionTravel/backup.sh`
 - Restore script: `/root/OnionTravel/restore.sh`
@@ -54,14 +54,14 @@ docker compose logs -f               # View all logs
 docker compose logs -f backend       # Backend logs only
 docker compose restart               # Restart containers
 
-# System nginx
-systemctl status nginx               # Nginx status
-systemctl reload nginx               # Reload nginx config
+# Traefik (reverse proxy)
+docker logs traefik                  # Traefik logs
+curl -H "Host: sudo.bieda.it" localhost  # Traefik dashboard
 
-# Application
-/root/OnionTravel/check-health.sh    # Quick health check
-curl http://localhost:7010           # Test frontend (internal)
-curl http://localhost:7011/health    # Test backend (internal)
+# Application health
+curl -H "Host: oniontravel.bieda.it" localhost/           # Frontend
+curl -H "Host: oniontravel.bieda.it" localhost/api/v1/health  # Backend (404 expected - use /health internally)
+docker exec oniontravel-backend curl localhost:7001/health    # Backend direct
 
 # Backups
 /root/OnionTravel/backup.sh          # Run backup manually
@@ -72,40 +72,31 @@ ls -lh /root/backups/oniontravel/    # List backups
 
 ### BASE_PATH Configuration
 
-The application base path (URL prefix) is **fully configurable** via environment variables. This allows deploying multiple versions (production, dev, staging) on the same server with different paths.
+The application runs at root `/` (no URL prefix). Traefik handles routing via Docker labels.
 
 **Configuration Files:**
-- Backend: `backend/.env` → `BASE_PATH` variable
-- Frontend: `frontend/.env` → `VITE_BASE_PATH` variable
-- Production defaults: `backend/.env.example`, `frontend/.env.example`
+- Backend: `backend/.env` → `BASE_PATH` variable (empty for production)
+- Frontend: `frontend/.env` → `VITE_BASE_PATH` variable (empty for production)
 
-**Examples:**
+**Current setup:**
 ```bash
-# Production (backend/.env.example)
-BASE_PATH=/OnionTravel
-
-# Local development (backend/.env, frontend/.env)
+# Production and local development
 BASE_PATH=                    # Empty = runs at root (/)
 VITE_BASE_PATH=              # Empty = runs at root (/)
 ```
 
-**How it works:**
-1. Backend: `BASE_PATH` sets FastAPI `root_path` → affects OpenAPI docs URLs
-2. Frontend: `VITE_BASE_PATH` sets React Router `basename` and Vite `base` → affects all routes and asset paths
-3. Nginx: Template `nginx/oniontravel.conf.template` uses `${BASE_PATH}` placeholders
-4. Deploy: `deploy.sh` runs `envsubst` to generate final nginx config from template
-
-**Changing BASE_PATH:**
-1. Edit `backend/.env.example` and `frontend/.env.example` with new path
-2. Run `./deploy.sh` (automatically regenerates nginx config and rebuilds containers)
-3. Application will be available at new path (e.g., `/dev-oniontravel`)
+**How routing works:**
+1. Traefik uses Docker labels for auto-discovery
+2. `Host(\`oniontravel.bieda.it\`)` routes to frontend
+3. `Host(\`oniontravel.bieda.it\`) && PathPrefix(\`/api\`)` routes to backend
+4. No BASE_PATH prefix needed - each app has its own domain
 
 **Local Development:**
 - Keep `BASE_PATH=""` (empty) in `backend/.env` and `frontend/.env`
 - Application runs at http://localhost:7010/ (no prefix)
 - Backend at http://localhost:7011/api/v1
 
-**Troubleshooting**: See `nginx/README.md` for detailed troubleshooting, testing guides, and examples.
+**Troubleshooting**: Check Traefik logs with `docker logs traefik` and test routing with curl commands above.
 
 ## Deployment
 
@@ -151,18 +142,16 @@ EOF
    - Creates git commit: "Release vX.Y.Z"
    - Creates annotated git tag with release notes content
    - Pushes commit and tag to origin
-3. Generates nginx config from template
-4. Copies files to production server
-5. Rebuilds Docker containers with `--no-cache`
-6. Waits for health checks
-7. Tests all endpoints (internal + external)
-8. Shows deployment summary
+3. Copies files to production server
+4. Rebuilds Docker containers with `--no-cache`
+5. Waits for health checks
+6. Tests all endpoints (internal + external)
+7. Shows deployment summary
 
 **Important**:
 - Always create releases from `main` branch
 - Release notes should be in Markdown format (renders nicely on GitHub)
-- Nginx config is generated from template during deployment (don't edit `nginx/oniontravel.conf` directly)
-- Edit `nginx/oniontravel.conf.template` for nginx changes
+- Traefik handles routing via Docker labels (no separate config needed)
 
 ### GitHub Actions Deployment (Automated)
 
